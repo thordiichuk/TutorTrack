@@ -80,7 +80,7 @@ function StatsTab() {
 }
 
 function UsersTab() {
-  const { user: me } = useAuth();
+  const { user: me, setUser } = useAuth();
   const ov = useOverlay();
   const [f, setF] = useState({ q: "", role: "", status: "" });
   const [q, setQ] = useState(f);
@@ -121,14 +121,16 @@ function UsersTab() {
             {self && <span className="tag">Ty</span>}
             {u.blocked && <span className="tag rd">Zablokowane</span>}
           </div>
-          {!locked && <div className="acts">
-            {u.role === "tutor" && <button className="btn s" onClick={() => act(() => api("POST", `/api/admin/users/${u.id}/plan`, { plan: u.plan === "pro" ? "free" : "pro" }), "Zmieniono plan.")}>{u.plan === "pro" ? "Ustaw Free" : "Ustaw Pro"}</button>}
+          <div className="acts">
+            {u.role === "tutor" && <button className="btn s" onClick={() => act(async () => { await api("POST", `/api/admin/users/${u.id}/plan`, { plan: u.plan === "pro" ? "free" : "pro" }); if (self) setUser({ ...me!, plan: u.plan === "pro" ? "free" : "pro" }); }, "Zmieniono plan.")}>{u.plan === "pro" ? "Ustaw Free" : "Ustaw Pro"}</button>}
+            {!locked && <>
             <button className="btn s" onClick={() => u.blocked
               ? act(() => api("POST", `/api/admin/users/${u.id}/block`, { blocked: false }), "Konto odblokowane.")
               : ov.confirm({ title: "Zablokować konto?", text: <>{u.email} zostanie wylogowany i nie będzie mógł się zalogować, dopóki go nie odblokujesz. Dane konta zostaną zachowane.</>, ok: "Zablokuj", danger: true,
                 onOk: () => act(() => api("POST", `/api/admin/users/${u.id}/block`, { blocked: true }), "Konto zablokowane.") })}>{u.blocked ? "Odblokuj" : "Zablokuj"}</button>
             <button className="btn s d" onClick={() => del(u)}>Usuń</button>
-          </div>}
+            </>}
+          </div>
         </div>;
       })}</div>}
     {list.length < total && <p style={{ textAlign: "center" }}><button className="btn" disabled={busy} onClick={() => fetchPage(list.length)}>Pokaż więcej</button></p>}

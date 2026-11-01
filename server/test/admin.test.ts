@@ -59,4 +59,8 @@ test("admin can block, change plan and delete; actions are logged", async () => 
 test("admin cannot act on own account", async () => {
   const a = (await call("POST", "/api/auth/login", { email: ADMIN, password: "haslo123" }));
   assert.equal((await call("POST", `/api/admin/users/${a.body.user.id}/block`, { blocked: true }, a.cookie)).status, 400);
+  assert.equal((await call("DELETE", `/api/admin/users/${a.body.user.id}`, { confirmEmail: ADMIN }, a.cookie)).status, 400);
+  // ...but can change own plan
+  assert.equal((await call("POST", `/api/admin/users/${a.body.user.id}/plan`, { plan: "pro" }, a.cookie)).status, 200);
+  assert.equal((await call("GET", "/api/auth/me", undefined, a.cookie)).body.user.plan, "pro");
 });

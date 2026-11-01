@@ -624,7 +624,10 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
 
   app.post("/api/admin/users/:id/plan", async (req) => {
     const admin = await needAdmin(req);
-    const t = await adminTarget(admin, (req.params as any).id);
+    // Changing a plan is harmless, so it is allowed on the admin's own account too (unlike block/delete).
+    const id = (req.params as any).id;
+    if (!UUID.test(id)) fail(404, "Nie znaleziono konta.");
+    const t = (await q("SELECT * FROM users WHERE id=$1", [id]))[0] || fail(404, "Nie znaleziono konta.");
     const b = parse(z.object({ plan: z.enum(["free", "pro"]) }), req.body);
     if (t.role !== "tutor") fail(400, "Plan dotyczy tylko kont korepetytorów.");
     await q("UPDATE users SET plan=$2 WHERE id=$1", [t.id, b.plan]);
