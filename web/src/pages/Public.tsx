@@ -17,9 +17,9 @@ export function PubHeader({ aud }: { aud: Aud }) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [on, setOn] = useState("");
-  const links: [string, string][] = aud === "student"
-    ? [["korzysci", "Korzyści"], ["jak", "Jak to działa"], ["pytania-u", "Pytania"]]
-    : [["funkcje", "Funkcje"], ["kroki", "Pierwsze kroki"], ["cennik", "Cennik"]];
+  const links: [string, string, string][] = aud === "student"
+    ? [["korzysci", "Korzyści", "star"], ["jak", "Jak to działa", "check"], ["pytania-u", "Pytania", "note"]]
+    : [["funkcje", "Funkcje", "star"], ["kroki", "Pierwsze kroki", "check"], ["cennik", "Cennik", "wallet"]];
   const home = aud === "student" ? "/uczen" : "/";
 
   useEffect(() => {
@@ -45,15 +45,15 @@ export function PubHeader({ aud }: { aud: Aud }) {
       : <><a className="btn" href="/logowanie">Zaloguj się</a><a className="btn p" href="/rejestracja">Zacznij bezpłatnie</a></>;
   }
   return (
-    <header className="ph"><div className="pi phi">
+    <><header className="ph"><div className="pi phi">
       <a className="logo" href={home}><i><Logo /></i>TutorTrack</a>
       <nav className={"pn" + (open ? " open" : "")} id="pn" aria-label="Nawigacja główna">
-        {links.map(([id, t]) => <button key={id} className={"lk" + (on === id ? " on" : "")} aria-current={on === id ? "true" : undefined} onClick={() => { setOpen(false); scrollToId(id, home); }}>{t}</button>)}
+        {links.map(([id, t, ic]) => <button key={id} className={"lk" + (on === id ? " on" : "")} aria-current={on === id ? "true" : undefined} onClick={() => { setOpen(false); scrollToId(id, home); }}><span className="pni"><Ic n={ic} s={18} /></span>{t}</button>)}
         <span className="mo">{cta}</span>
       </nav>
       <div className="de">{cta}</div>
-      <button className="btn s mt" id="mt" aria-expanded={open} aria-controls="pn" aria-label="Menu" onClick={() => setOpen(!open)}><Ic n="menu" /></button>
-    </div></header>
+      <button className="btn s mt" id="mt" aria-expanded={open} aria-controls="pn" aria-label={open ? "Zamknij menu" : "Menu"} onClick={() => setOpen(!open)}><Ic n={open ? "x" : "menu"} /></button>
+    </div></header>{open && <div className="pnb" onClick={() => setOpen(false)} />}</>
   );
 }
 
