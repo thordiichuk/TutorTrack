@@ -59,6 +59,9 @@ test("student links with a code and sees lessons without private notes", async (
   assert.equal(d.links.length, 1);
   assert.equal(d.links[0].lessons[0].notes, "OK");
   assert.ok(!JSON.stringify(d).includes("TAJNE"));
+  // notes/homework of a lesson that has not taken place yet stay hidden from the student
+  await call("POST", "/api/lessons", { sid, date: "2026-12-01", time: "16:00", min: 60, status: "planned", amount: 12000, notes: "PRZYSZLA", hw: "PRZYSZLE" }, t);
+  assert.ok(!JSON.stringify((await call("GET", "/api/student/data", undefined, st)).body).includes("PRZYSZL"));
   // the code works for one student account only
   const other = await register("student");
   assert.equal((await call("POST", "/api/student/link", { code }, other)).status, 409);

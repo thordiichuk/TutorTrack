@@ -140,8 +140,11 @@ export function LessonForm({ l, pre, draft }: { l?: Lesson; pre?: string; draft?
     };
     setE(er); if (Object.values(er).some(Boolean)) return;
     const rec = {
-      sid: d.sid, subject: d.subject, date: d.date, time: d.time, min: m, topic: d.topic.trim(), prep: d.prep.trim(), notes: d.notes.trim(),
-      hw: d.hw.trim(), hd: d.hw.trim() ? d.hd : "", status: d.status, paid: d.paid, amount: a, fee: d.status === "cancelled" ? fe : 0,
+      sid: d.sid, subject: d.subject, date: d.date, time: d.time, min: m, topic: d.topic.trim(), prep: d.prep.trim(),
+      // notes and homework are only edited once the lesson is done; otherwise keep what was saved before
+      notes: d.status === "done" ? d.notes.trim() : l?.notes || "",
+      hw: d.status === "done" ? d.hw.trim() : l?.hw || "", hd: d.status === "done" ? (d.hw.trim() ? d.hd : "") : l?.hd || "",
+      status: d.status, paid: d.paid, amount: a, fee: d.status === "cancelled" ? fe : 0,
     };
     if (rec.status === "cancelled" && !rec.fee) rec.paid = false;
     const commit = async () => {
@@ -166,15 +169,17 @@ export function LessonForm({ l, pre, draft }: { l?: Lesson; pre?: string; draft?
     <div className="hint" style={{ margin: "-6px 0 10px" }}>Kwota liczy się automatycznie ze stawki ucznia. Możesz ją zmienić ręcznie.</div>
     <Field id="lto" label="Temat lekcji" value={d.topic} onChange={(v) => upd({ topic: v })} />
     <div className="f"><label htmlFor="lpn">Notatka przed zajęciami</label><TplSel onPick={(t) => upd({ prep: (d.prep ? d.prep + "\n" : "") + t })} /><textarea id="lpn" rows={2} placeholder="Plan lekcji, materiały, zadania do omówienia" value={d.prep} onChange={(ev) => upd({ prep: ev.target.value })} /></div>
-    <div className="f"><label htmlFor="lno">Notatka po zajęciach</label><TplSel onPick={(t) => upd({ notes: (d.notes ? d.notes + "\n" : "") + t })} /><textarea id="lno" rows={3} value={d.notes} onChange={(ev) => upd({ notes: ev.target.value })} /></div>
-    <div className="f2"><div className="f"><label htmlFor="lhw">Praca domowa</label><textarea id="lhw" rows={2} placeholder="Np. zad. 3–7, str. 52" value={d.hw} onChange={(ev) => upd({ hw: ev.target.value })} /></div><Field id="lhd" label="Termin pracy domowej" type="date" value={d.hd} onChange={(v) => upd({ hd: v })} /></div>
-    <p className="hint" style={{ margin: "-6px 0 10px" }}>Notatka po zajęciach i praca domowa są widoczne w panelu ucznia, jeśli uczeń jest połączony z Tobą kodem. Notatka przed zajęciami zostaje prywatna.</p>
     <div className="f2">
       <div className="f"><label htmlFor="lss">Status lekcji</label><select id="lss" value={d.status} onChange={(ev) => upd({ status: ev.target.value as Lesson["status"] }, false)}><option value="planned">Zaplanowana</option><option value="done">Przeprowadzona</option><option value="cancelled">Odwołana</option></select></div>
       <div className="f"><label htmlFor="lps">Status płatności</label><select id="lps" value={d.paid ? "1" : "0"} onChange={(ev) => upd({ paid: ev.target.value === "1" }, false)}><option value="0">Nieopłacona</option><option value="1">Opłacona</option></select></div>
     </div>
+    {d.status === "done" ? <>
+      <div className="f"><label htmlFor="lno">Notatka po zajęciach</label><TplSel onPick={(t) => upd({ notes: (d.notes ? d.notes + "\n" : "") + t })} /><textarea id="lno" rows={3} value={d.notes} onChange={(ev) => upd({ notes: ev.target.value })} /></div>
+      <div className="f2"><div className="f"><label htmlFor="lhw">Praca domowa</label><textarea id="lhw" rows={2} placeholder="Np. zad. 3–7, str. 52" value={d.hw} onChange={(ev) => upd({ hw: ev.target.value })} /></div><Field id="lhd" label="Termin pracy domowej" type="date" value={d.hd} onChange={(v) => upd({ hd: v })} /></div>
+      <p className="hint" style={{ margin: "-6px 0 10px" }}>Notatka po zajęciach i praca domowa są widoczne w panelu ucznia, jeśli uczeń jest połączony z Tobą kodem. Notatka przed zajęciami zostaje prywatna.</p>
+    </> : d.status === "planned" && <p className="hint" style={{ margin: "-6px 0 10px" }}>Notatkę po zajęciach i pracę domową dodasz, gdy oznaczysz lekcję jako przeprowadzoną.</p>}
     {d.status === "cancelled" && <Field id="lfe" label="Opłata za odwołanie (zł)" value={d.feeS} onChange={(v) => { setFeeManual(true); setD({ ...d, feeS: v }); }} error={e.fee} inputMode="decimal" />}
-    <p className="hint">Odwołana lekcja jest płatna tylko wtedy, gdy w danych ucznia ustawiono opłatę za odwołanie.</p>
+    {d.status === "cancelled" && <p className="hint">Odwołana lekcja jest płatna tylko wtedy, gdy w danych ucznia ustawiono opłatę za odwołanie.</p>}
     <div className="mf"><button className="btn" onClick={close}>Anuluj</button><button className="btn p" onClick={save}>Zapisz lekcję</button></div>
   </>;
 }

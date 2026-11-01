@@ -489,7 +489,8 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
         sid: s.id, tutor: s.tutor_brand || s.tutor_name, studentName: s.name, subject: s.subject,
         lessons: ls.filter((l: any) => l.student_id === s.id).map((l: any) => ({
           id: l.id, date: l.date, time: l.time, min: l.min, subject: l.subject || s.subject.split(",")[0].trim(), topic: l.topic, status: l.status,
-          notes: l.notes, hw: l.hw, hd: l.hw_due || "", amount: l.status === "cancelled" ? l.fee : l.amount, paid: l.paid,
+          notes: l.status === "done" ? l.notes : "", hw: l.status === "done" ? l.hw : "", hd: l.status === "done" ? l.hw_due || "" : "",
+          amount: l.status === "cancelled" ? l.fee : l.amount, paid: l.paid,
         })),
       })),
       events: ev.map(mapEvent),
