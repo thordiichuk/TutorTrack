@@ -7,11 +7,11 @@ import { useTutor } from "../state";
 /* ---------- per-session UI state shared by tutor views (filters, months) ---------- */
 export type Ui = {
   q: string; sf: "active" | "arch" | "all"; subj: string;
-  lf: { st: string; mo: string; ls: string; ps: string; q: string; o: "desc" | "asc" };
+  lf: { st: string; sb: string; mo: string; ls: string; ps: string; q: string; o: "desc" | "asc" };
   month: string; bm: string; open: Record<string, boolean>; lv: "list" | "cal"; cm: string; cd: string; sr: string;
 };
 export const initialUi = (): Ui => ({
-  q: "", sf: "active", subj: "", lf: { st: "", mo: "", ls: "", ps: "", q: "", o: "desc" },
+  q: "", sf: "active", subj: "", lf: { st: "", sb: "", mo: "", ls: "", ps: "", q: "", o: "desc" },
   month: ym(new Date()), bm: ym(new Date()), open: {}, lv: "list", cm: ym(new Date()), cd: "", sr: "6",
 });
 export const UiCtx = createContext<[Ui, Dispatch<SetStateAction<Ui>>]>(null as any);
