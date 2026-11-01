@@ -1,0 +1,24 @@
+# Local run: docker compose up --build  → http://localhost:3000
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: tutortrack
+      POSTGRES_PASSWORD: tutortrack
+      POSTGRES_DB: tutortrack
+    volumes: [db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tutortrack"]
+      interval: 2s
+      retries: 20
+  app:
+    build: .
+    ports: ["3000:3000"]
+    environment:
+      DATABASE_URL: postgres://tutortrack:tutortrack@db:5432/tutortrack
+      APP_URL: http://localhost:3000
+      NODE_ENV: development
+    depends_on:
+      db: { condition: service_healthy }
+volumes:
+  db:
