@@ -566,6 +566,19 @@ export async function buildApp(opts: { logger?: boolean; authRateLimit?: number 
     return { ok: true };
   });
 
+  /* student: replace own schedule from a backup file */
+  app.post("/api/student/import", async (req) => {
+    const u = await need(req, "student");
+    const b = parse(z.object({ events: z.array(z.any()).max(500) }), req.body);
+    const evs = b.events.map((e: any) => parse(eventIn, e));
+    await tx(async (c) => {
+      await q("DELETE FROM student_events WHERE user_id=$1", [u.id], c);
+      for (const e of evs) await q("INSERT INTO student_events(user_id,title,cat,repeat,weekday,date,start_time,end_time) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)",
+        [u.id, e.title, e.cat, e.repeat, e.weekday, e.repeat === "o" ? e.date : null, e.start, e.end], c);
+    });
+    return { ok: true, count: evs.length };
+  });
+
   /* student cancellation requests – student side */
   async function studentLesson(u: User, id: string) {
     if (!UUID.test(id)) fail(404, "Nie znaleziono lekcji.");

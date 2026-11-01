@@ -1,0 +1,150 @@
+{
+ "app": "TutorTrack",
+ "kind": "student-schedule",
+ "events": [
+  {
+   "title": "Szkoła",
+   "cat": "school",
+   "repeat": "w",
+   "weekday": 0,
+   "date": "",
+   "start": "08:00",
+   "end": "14:30"
+  },
+  {
+   "title": "Szkoła",
+   "cat": "school",
+   "repeat": "w",
+   "weekday": 1,
+   "date": "",
+   "start": "08:00",
+   "end": "15:20"
+  },
+  {
+   "title": "Szkoła",
+   "cat": "school",
+   "repeat": "w",
+   "weekday": 2,
+   "date": "",
+   "start": "08:55",
+   "end": "14:30"
+  },
+  {
+   "title": "Szkoła",
+   "cat": "school",
+   "repeat": "w",
+   "weekday": 3,
+   "date": "",
+   "start": "08:00",
+   "end": "13:35"
+  },
+  {
+   "title": "Szkoła",
+   "cat": "school",
+   "repeat": "w",
+   "weekday": 4,
+   "date": "",
+   "start": "08:00",
+   "end": "12:40"
+  },
+  {
+   "title": "Basen",
+   "cat": "extra",
+   "repeat": "w",
+   "weekday": 1,
+   "date": "",
+   "start": "18:00",
+   "end": "19:00"
+  },
+  {
+   "title": "Gitara",
+   "cat": "extra",
+   "repeat": "w",
+   "weekday": 3,
+   "date": "",
+   "start": "16:00",
+   "end": "17:00"
+  },
+  {
+   "title": "Trening piłki nożnej",
+   "cat": "extra",
+   "repeat": "w",
+   "weekday": 5,
+   "date": "",
+   "start": "09:00",
+   "end": "10:30"
+  },
+  {
+   "title": "Kółko szachowe",
+   "cat": "school",
+   "repeat": "w",
+   "weekday": 2,
+   "date": "",
+   "start": "14:40",
+   "end": "15:25"
+  },
+  {
+   "title": "Korepetycje z chemii (poza TutorTrack)",
+   "cat": "tutor",
+   "repeat": "w",
+   "weekday": 4,
+   "date": "",
+   "start": "15:00",
+   "end": "16:00"
+  },
+  {
+   "title": "Próbna matura – matematyka",
+   "cat": "school",
+   "repeat": "o",
+   "weekday": 0,
+   "date": "2026-11-04",
+   "start": "09:00",
+   "end": "12:00"
+  },
+  {
+   "title": "Dentysta",
+   "cat": "other",
+   "repeat": "o",
+   "weekday": 0,
+   "date": "2026-11-02",
+   "start": "17:00",
+   "end": "18:00"
+  },
+  {
+   "title": "Wycieczka klasowa",
+   "cat": "school",
+   "repeat": "o",
+   "weekday": 0,
+   "date": "2026-11-13",
+   "start": "07:30",
+   "end": "18:00"
+  },
+  {
+   "title": "Urodziny babci",
+   "cat": "other",
+   "repeat": "o",
+   "weekday": 0,
+   "date": "2026-11-07",
+   "start": "15:00",
+   "end": "19:00"
+  },
+  {
+   "title": "Konkurs fizyczny",
+   "cat": "school",
+   "repeat": "o",
+   "weekday": 0,
+   "date": "2026-11-19",
+   "start": "10:00",
+   "end": "13:00"
+  },
+  {
+   "title": "Kino z klasą",
+   "cat": "other",
+   "repeat": "o",
+   "weekday": 0,
+   "date": "2026-10-27",
+   "start": "18:00",
+   "end": "20:30"
+  }
+ ]
+}

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../lib/api";
 import { Empty, Ic, Logo } from "../lib/icons";
-import { addDays, CancelRequest, fd, fdt, fmtH, MSHORT, pd, pln, te, WDL, WDSHORT, ym, ymd } from "../lib/util";
+import { addDays, CancelRequest, download, fd, fdt, fmtH, MSHORT, pd, pln, te, WDL, WDSHORT, ym, ymd } from "../lib/util";
 import { useAuth } from "../state";
 import { errMsg, Field, useOverlay } from "../ui/overlay";
 import { ChangePassword, DeleteAccount } from "../app/Views";
@@ -223,7 +223,7 @@ export function StudentPanel() {
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}><span className="hint" id="usr">{user!.name}</span><button className="btn s lo" aria-label="Ustawienia" onClick={() => go("konto")}><Ic n="set" s={16} /></button>{action}</div>
         </header>
         {err && <p className="banner">{err} <button className="lk" onClick={load}>Spróbuj ponownie</button></p>}
-        <main className="content">{!d ? <p className="hint">Ładowanie…</p> : tab === "dash" ? Dash() : tab === "plan" ? Plan() : tab === "graf" ? Graf() : tab === "hw" ? Hw() : tab === "sum" ? Sum() : tab === "kor" ? <KorTab d={d} load={load} run={run} /> : <KontoTab out={out} />}</main>
+        <main className="content">{!d ? <p className="hint">Ładowanie…</p> : tab === "dash" ? Dash() : tab === "plan" ? Plan() : tab === "graf" ? Graf() : tab === "hw" ? Hw() : tab === "sum" ? Sum() : tab === "kor" ? <KorTab d={d} load={load} run={run} /> : <KontoTab out={out} d={d} load={load} />}</main>
       </div>
     </div>
     <nav className="tabs fit" aria-label="Menu">{TABS.filter((x) => x[0] !== "konto").map((x) => <button key={x[0]} className={tab === x[0] ? "on" : ""} aria-current={tab === x[0] ? "page" : undefined} onClick={() => go(x[0])}><Ic n={x[2]} s={22} />{x[3]}{x[0] === "hw" && nT > 0 && <i className="tbadge">{nT}</i>}</button>)}</nav>
@@ -284,7 +284,7 @@ function KorTab({ d, load, run }: { d: Data; load: () => Promise<void>; run: (fn
       <p className="hint" style={{ marginTop: 12 }}>Twoje lekcje widzisz tylko Ty i korepetytor, który je prowadzi. Wszystkie funkcje dla ucznia są bezpłatne.</p></>;
   }
 
-function KontoTab({ out }: { out: () => void }) {
+function KontoTab({ out, d, load }: { out: () => void; d: Data; load: () => Promise<void> }) {
   const ov = useOverlay();
   const { user, logout } = useAuth();
     const [name, setName] = useState(user!.name), [e, setE] = useState("");
@@ -293,6 +293,18 @@ function KontoTab({ out }: { out: () => void }) {
       <ThemePicker />
       <div className="card"><h2>Profil</h2><Field id="sn2" label="Imię" value={name} onChange={setName} error={e} /><p className="hint" style={{ margin: "4px 0 16px" }}>E-mail: {user!.email}</p>
         <button className="btn p" onClick={async () => { if (!name.trim()) { setE("Podaj imię."); return; } try { await updateMe({ name: name.trim() }); setE(""); ov.toast("Profil zapisany."); } catch (x) { ov.toast(errMsg(x)); } }}>Zapisz profil</button></div>
+      <div className="card"><h2>Kopia grafiku</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>Zapisz własny grafik (szkoła, zajęcia dodatkowe) do pliku albo wczytaj go z pliku. Lekcje od korepetytorów są zawsze na koncie i nie trzeba ich kopiować.</p>
+        <div className="acts"><button className="btn" onClick={() => download("tutortrack-grafik-" + ymd(new Date()) + ".json", JSON.stringify({ app: "TutorTrack", kind: "student-schedule", events: d.events.map(({ id, ...e }) => e) }, null, 1), "application/json")}>Eksportuj grafik</button>
+          <button className="btn" onClick={() => {
+            const f = document.createElement("input"); f.type = "file"; f.accept = ".json,application/json";
+            f.onchange = () => { const file = f.files?.[0]; if (!file) return; file.text().then((txt) => {
+              let o: any = null; try { o = JSON.parse(txt); } catch { /* invalid */ }
+              if (!o || !Array.isArray(o.events)) { ov.toast("Nieprawidłowy plik grafiku."); return; }
+              ov.confirm({ title: "Wczytać grafik?", text: `Obecny grafik zostanie zastąpiony (${o.events.length} zajęć z pliku). Lekcje od korepetytorów się nie zmienią.`, ok: "Wczytaj", danger: true,
+                onOk: async () => { try { await api("POST", "/api/student/import", { events: o.events }); await load(); ov.toast("Grafik wczytany."); } catch (x) { ov.toast(errMsg(x)); } } });
+            }); };
+            f.click();
+          }}>Importuj grafik</button></div></div>
       <div className="card"><h2>Konto i bezpieczeństwo</h2><div className="acts"><button className="btn" onClick={() => ov.modal(<ChangePassword />)}>Zmień hasło</button><button className="btn" onClick={out}>Wyloguj się</button><button className="btn d" onClick={() => ov.modal(<DeleteAccount onDone={() => { setUser(null); logout(); }} />)}>Usuń konto</button></div></div>
     </div>;
   }
