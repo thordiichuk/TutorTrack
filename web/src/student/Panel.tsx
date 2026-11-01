@@ -95,7 +95,9 @@ export function StudentPanel() {
       {l.amount > 0 && <p className="hint" style={{ marginTop: 14 }}>Kwota: {pln(l.amount)}{l.paid ? " · opłacona" : " · nieopłacona"}</p>}
       {l.cr?.status === "pending" && <div className="nt" style={{ marginTop: 12 }}><b>{l.cr.kind === "move" ? "Prośba o przeniesienie na następny tydzień wysłana" : "Prośba o odwołanie wysłana"}</b> {fdt(l.cr.at)} – czeka na potwierdzenie korepetytora.<br />Przyczyna: {l.cr.reason}</div>}
       {l.cr?.status === "rejected" && l.status === "planned" && <div className="lerr" style={{ marginTop: 12 }}><b>{l.cr.kind === "move" ? "Korepetytor odrzucił prośbę o przeniesienie." : "Korepetytor odrzucił prośbę o odwołanie."}</b>{l.cr.note && <><br />Komentarz: {l.cr.note}</>}<br />Twoja przyczyna: {l.cr.reason}</div>}
-      {l.cr?.status === "accepted" && l.status === "cancelled" && <p className="hint" style={{ marginTop: 12 }}>Lekcja odwołana na Twoją prośbę. Przyczyna: {l.cr.reason}</p>}
+      {l.cr?.status === "accepted" && l.status === "cancelled" && (l.cr.kind === "move"
+        ? <div className="lerr" style={{ marginTop: 12 }}><b>Korepetytor nie mógł przenieść lekcji i ją odwołał.</b>{l.cr.note && <><br />Komentarz: {l.cr.note}</>}<br />Twoja przyczyna: {l.cr.reason}</div>
+        : <p className="hint" style={{ marginTop: 12 }}>Lekcja odwołana na Twoją prośbę. Przyczyna: {l.cr.reason}{l.cr.note && <><br />Komentarz korepetytora: {l.cr.note}</>}</p>)}
       {l.cr?.status === "moved" && <div className="nt" style={{ marginTop: 12 }}><b>Korepetytor przeniósł lekcję na Twoją prośbę</b>{l.cr.note ? <> – z {fd(l.cr.note)} na {fd(l.date)}</> : null}.<br />Przyczyna: {l.cr.reason}</div>}
       <div className="mf">
         {l.status === "planned" && l.cr?.status !== "pending" && <button className="btn d" style={{ marginRight: "auto" }} onClick={() => ov.modal(<CancelRequestForm l={l} onSent={load} />)}>Odwołaj lub przenieś</button>}

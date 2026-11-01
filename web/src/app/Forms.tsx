@@ -221,6 +221,7 @@ export function CancelRequestActions({ l }: { l: Lesson }) {
         const ok = await run(() => api("POST", `/api/lessons/${l.id}/cancel-request/move`), "Lekcja przeniesiona na " + fd(nd) + ".");
         if (ok && overlap(lessons, nd, l.time, l.min, l.id).length) modal(<><h2>Uwaga: nakładające się terminy</h2><p>Lekcja została przeniesiona na {fd(nd)}, {l.time}, ale nakłada się na inną lekcję. Jeśli to pomyłka, zmień termin w edycji.</p><DoneBtn /></>);
       }}>Przenieś na {fd(nd).replace(/ \d{4}$/, "")}</button>
+      <button className="btn s" onClick={() => modal(<CancelInstead l={l} nd={nd} />)}>Odwołaj zamiast przenosić</button>
       <button className="btn s" onClick={() => modal(<RejectRequest l={l} />)}>Odrzuć prośbę</button>
     </>;
   }
@@ -231,6 +232,23 @@ export function CancelRequestActions({ l }: { l: Lesson }) {
       onOk: () => { run(() => api("POST", `/api/lessons/${l.id}/cancel-request/accept`, { fee }), "Lekcja odwołana. Uczeń zobaczy potwierdzenie."); },
     })}>Potwierdź odwołanie</button>
     <button className="btn s" onClick={() => modal(<RejectRequest l={l} />)}>Odrzuć prośbę</button>
+  </>;
+}
+/** Student asked to move the lesson, but the tutor cancels it instead and tells the student why. */
+function CancelInstead({ l, nd }: { l: Lesson; nd: string }) {
+  const { run } = useTutor();
+  const { close } = useOverlay();
+  const [note, setNote] = useState(""), [err, setErr] = useState("");
+  return <>
+    <h2>Odwołać lekcję zamiast przenosić?</h2>
+    <p className="hint">Uczeń prosił o przeniesienie na {fd(nd)}, {l.time}. Przyczyna ucznia: {l.cr?.reason}</p>
+    <div className="f"><label htmlFor="cin">Komentarz dla ucznia *</label><textarea id="cin" rows={3} maxLength={500} placeholder="Np. W tym terminie nie mogę – napisz, proszę, jaki inny dzień Ci pasuje." value={note} onChange={(e) => setNote(e.target.value)} aria-describedby="e_cin" />
+      <div className="er" id="e_cin" role="alert" style={{ color: "var(--rd)", fontSize: 12 }}>{err}</div></div>
+    <p className="hint">Lekcja zostanie odwołana bez opłaty. Uczeń zobaczy Twój komentarz w swoim panelu.</p>
+    <div className="mf"><button className="btn" onClick={close}>Anuluj</button><button className="btn p" onClick={async () => {
+      if (note.trim().length < 3) { setErr("Napisz krótki komentarz dla ucznia."); return; }
+      if (await run(() => api("POST", `/api/lessons/${l.id}/cancel-request/accept`, { fee: 0, note: note.trim() }), "Lekcja odwołana. Uczeń zobaczy Twój komentarz.")) close();
+    }}>Odwołaj lekcję</button></div>
   </>;
 }
 function RejectRequest({ l }: { l: Lesson }) {
@@ -378,7 +396,7 @@ export function LessonSheet({ id }: { id: string }) {
     {l.notes && <p className="pre" style={{ margin: "0 0 8px" }}><b>Po zajęciach:</b> {l.notes}</p>}
     {l.hw && <p className="pre" style={{ margin: "0 0 8px" }}><b>Praca domowa:</b> {l.hw}{l.hd ? " (termin: " + fd(l.hd) + ")" : ""}</p>}
     {l.cr?.status === "pending" && <div className="nt">{l.cr.kind === "move" ? "Uczeń prosi o przeniesienie lekcji na następny tydzień" : "Uczeń prosi o odwołanie"}: {l.cr.reason}</div>}
-    {l.cr?.status === "accepted" && l.status === "cancelled" && <p className="hint">Odwołana na prośbę ucznia: {l.cr.reason}</p>}
+    {l.cr?.status === "accepted" && l.status === "cancelled" && <p className="hint">{l.cr.kind === "move" ? "Uczeń prosił o przeniesienie – lekcja odwołana" : "Odwołana na prośbę ucznia"}: {l.cr.reason}{l.cr.note ? <><br />Twój komentarz: {l.cr.note}</> : null}</p>}
     {l.cr?.status === "moved" && <p className="hint">Przeniesiona na prośbę ucznia{l.cr.note ? " z " + fd(l.cr.note) : ""}. Przyczyna: {l.cr.reason}</p>}
     <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--bd)" }}><LessonActions l={l} /></div>
     <div className="mf"><button className="btn" onClick={close}>Zamknij</button></div>

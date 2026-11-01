@@ -401,8 +401,8 @@ export async function buildApp(opts: { logger?: boolean; authRateLimit?: number 
   app.post("/api/lessons/:id/cancel-request/accept", async (req) => {
     const u = await need(req, "tutor");
     const l = await pendingRequest(u, (req.params as any).id);
-    const b = parse(z.object({ fee: money.default(0) }), req.body ?? {});
-    const r = (await q("UPDATE lessons SET status='cancelled', fee=$2, paid=false, cr_status='accepted' WHERE id=$1 RETURNING *", [l.id, Math.min(b.fee, l.amount)]))[0];
+    const b = parse(z.object({ fee: money.default(0), note: str(500).default("") }), req.body ?? {});
+    const r = (await q("UPDATE lessons SET status='cancelled', fee=$2, paid=false, cr_status='accepted', cr_note=$3 WHERE id=$1 RETURNING *", [l.id, Math.min(b.fee, l.amount), b.note]))[0];
     return { lesson: mapLesson(r) };
   });
   /* resolve the request by moving the lesson one week later; cr_note keeps the original date */
