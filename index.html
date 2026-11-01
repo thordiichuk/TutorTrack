@@ -484,7 +484,7 @@ function route(){ob=0;
 }
 function pubHead(){
  var l=logged(),su=curPage==="uczen",lk=(su?[["korzysci","Korzyści"],["jak","Jak to działa"],["pytania-u","Pytania"]]:[["funkcje","Funkcje"],["kroki","Pierwsze kroki"],["cennik","Cennik"]]).map(function(x){return '<button class="lk" data-sc="'+x[0]+'">'+x[1]+'</button>'}).join("");
- var cta=su?'<a class="btn" href="#/">Jestem korepetytorem</a><a class="btn p" href="#/uczen/panel">Panel ucznia</a>':l?'<a class="btn p" href="#/aplikacja/dash">Przejdź do panelu</a>':'<a class="btn" href="#/logowanie">Zaloguj się</a><a class="btn p" href="#/rejestracja">Zacznij bezpłatnie</a>';
+ var cta=su?'<a class="btn" href="#/">Jestem korepetytorem</a><a class="btn p" href="#/uczen/panel">Zaloguj się</a>':l?'<a class="btn p" href="#/aplikacja/dash">Przejdź do panelu</a>':'<a class="btn" href="#/logowanie">Zaloguj się</a><a class="btn p" href="#/rejestracja">Zacznij bezpłatnie</a>';
  return '<header class="ph"><div class="pi phi"><a class="logo" href="#/" aria-label="TutorTrack"><i>'+LOGO+'</i></a><nav class="pn" id="pn" aria-label="Nawigacja główna">'+lk+'<span class="mo">'+cta+'</span></nav><div class="de">'+cta+'</div><button class="btn s mt" id="mt" aria-expanded="false" aria-controls="pn" aria-label="Menu">'+ic("menu")+'</button></div></header>'
 }
 function pubFoot(){return '<footer class="pi pf"><span>© '+new Date().getFullYear()+' TutorTrack</span><a href="#/regulamin">Regulamin</a><a href="#/prywatnosc">Polityka prywatności</a></footer>'}
