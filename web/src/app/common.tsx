@@ -42,6 +42,7 @@ export function LessonTags({ l, lessons, nd }: { l: Lesson; lessons: Lesson[]; n
     {l.status !== "cancelled" && overlap(lessons, l.date, l.time, l.min, l.id).length > 0 && <><span className="tag rd">Uwaga: termin nakłada się na inną lekcję</span> </>}
     {!nd && l.status === "planned" && l.date === td && <><span className="tag ac">Dziś</span> </>}
     {!nd && l.status === "planned" && l.date === addDays(1) && <><span className="tag">Jutro</span> </>}
+    {l.cr?.status === "pending" && <><span className="tag am">Prośba o odwołanie</span> </>}
     <span className={"tag " + st[1]}>{st[0]}</span>{" "}
     {(l.status !== "cancelled" || l.fee > 0) && (l.paid ? <span className="tag gr">Opłacona</span> : <span className="tag am">Nieopłacona</span>)}
   </>;
@@ -62,6 +63,8 @@ export function LessonRow({ l, full, nd, actions }: { l: Lesson; full?: boolean;
         {l.prep && <span style={{ display: "block" }}>Przed zajęciami: {l.prep}</span>}
         {l.notes && <span style={{ display: "block" }}>Po zajęciach: {l.notes}</span>}
         {l.hw && <span style={{ display: "block" }}>Praca domowa: {l.hw}{l.hd ? " (termin: " + fd(l.hd) + ")" : ""}</span>}
+        {l.cr?.status === "pending" && <span style={{ display: "block", color: "var(--am)" }}>Uczeń prosi o odwołanie: {l.cr.reason}</span>}
+        {l.cr?.status === "accepted" && l.status === "cancelled" && <span style={{ display: "block" }}>Odwołana na prośbę ucznia: {l.cr.reason}</span>}
       </div>
       <div><LessonTags l={l} lessons={lessons} nd={nd} /></div>
       {full && actions}

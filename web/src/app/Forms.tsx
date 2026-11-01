@@ -205,6 +205,36 @@ function DoneModal({ l }: { l: Lesson }) {
 }
 
 /* ---------- row actions ---------- */
+/* ---------- student's cancellation request: accept / reject ---------- */
+export function CancelRequestActions({ l }: { l: Lesson }) {
+  const { stu } = useData();
+  const { run } = useTutor();
+  const { modal, confirm } = useOverlay();
+  const s = stu(l.sid);
+  const fee = cancelFee(s, l.amount);
+  if (l.cr?.status !== "pending") return null;
+  return <>
+    <button className="btn s p" onClick={() => confirm({
+      title: "Potwierdzić odwołanie lekcji?", ok: "Potwierdź odwołanie",
+      text: <>{s ? s.name : ""} · {fd(l.date)}, {l.time}<br />Przyczyna: {l.cr!.reason}<br />{fee > 0 ? <>Zostanie naliczona opłata za odwołanie: <b>{pln(fee)}</b>.</> : "Odwołana lekcja nie będzie płatna."}</>,
+      onOk: () => { run(() => api("POST", `/api/lessons/${l.id}/cancel-request/accept`, { fee }), "Lekcja odwołana. Uczeń zobaczy potwierdzenie."); },
+    })}>Potwierdź odwołanie</button>
+    <button className="btn s" onClick={() => modal(<RejectRequest l={l} />)}>Odrzuć prośbę</button>
+  </>;
+}
+function RejectRequest({ l }: { l: Lesson }) {
+  const { run } = useTutor();
+  const { close } = useOverlay();
+  const [note, setNote] = useState("");
+  return <>
+    <h2>Odrzucić prośbę o odwołanie?</h2>
+    <p className="hint">Przyczyna podana przez ucznia: {l.cr?.reason}</p>
+    <div className="f"><label htmlFor="rjn">Komentarz dla ucznia (opcjonalnie)</label><textarea id="rjn" rows={3} maxLength={500} placeholder="Np. Odwołanie jest możliwe najpóźniej 24 godziny przed lekcją." value={note} onChange={(e) => setNote(e.target.value)} /></div>
+    <p className="hint">Lekcja zostanie zaplanowana bez zmian. Uczeń zobaczy Twoją decyzję i komentarz.</p>
+    <div className="mf"><button className="btn" onClick={close}>Anuluj</button><button className="btn p" onClick={async () => { if (await run(() => api("POST", `/api/lessons/${l.id}/cancel-request/reject`, { note: note.trim() }), "Prośba odrzucona.")) close(); }}>Odrzuć prośbę</button></div>
+  </>;
+}
+
 export function LessonActions({ l }: { l: Lesson }) {
   const { user } = useAuth();
   const { stu, lessons } = useData();
@@ -214,6 +244,7 @@ export function LessonActions({ l }: { l: Lesson }) {
   const fee = cancelFee(s, l.amount);
   const pro = user?.plan === "pro";
   return <div className="acts">
+    <CancelRequestActions l={l} />
     {l.status === "planned" && <>
       <button className="btn s" onClick={() => modal(<DoneModal l={l} />)}>Przeprowadzona</button>
       <button className="btn s" onClick={() => confirm({ title: "Odwołać lekcję?", text: <>{l.topic || "Bez tematu"} · {fd(l.date)}<br />{fee > 0 ? <>Zostanie naliczona opłata: <b>{pln(fee)}</b>.</> : "Odwołana lekcja nie jest płatna."}</>, ok: "Odwołaj lekcję",

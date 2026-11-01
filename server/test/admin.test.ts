@@ -11,7 +11,7 @@ before(async () => {
   const { buildApp } = await import("../src/app.js");
   ({ pool } = await import("../src/db.js"));
   await runMigrations(() => {});
-  app = await buildApp();
+  app = await buildApp({ authRateLimit: 10000 });
 });
 after(async () => { await app.close(); await pool.end(); });
 

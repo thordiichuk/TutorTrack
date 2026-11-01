@@ -8,7 +8,7 @@ import {
 import { useAuth, useTutor } from "../state";
 import { errMsg, Field, useOverlay } from "../ui/overlay";
 import { LessonRow, LessonTags, useData, useUi, useUpsell } from "./common";
-import { LessonActions, LessonForm, ShareModal, StudentDetail, StudentForm, SummaryModal, summaryText } from "./Forms";
+import { CancelRequestActions, LessonActions, LessonForm, ShareModal, StudentDetail, StudentForm, SummaryModal, summaryText } from "./Forms";
 
 /* ---------- small pieces ---------- */
 const MonthInput = ({ v, on }: { v: string; on: (m: string) => void }) => <input type="month" value={v} aria-label="Miesiąc" onChange={(e) => e.target.value && on(e.target.value)} />;
@@ -51,6 +51,7 @@ export function Dashboard() {
   const m = ui.month, done = monthDone(lessons, m), now = ymd(new Date()) + " " + new Date().toTimeString().slice(0, 5);
   const up = sortL(lessons.filter((l) => l.status === "planned" && l.date + " " + l.time >= now), 1).slice(0, 5);
   const un = sortL(lessons.filter((l) => billable(l) && !l.paid && l.date.slice(0, 7) === m), 1).slice(0, 5);
+  const reqs = sortL(lessons.filter((l) => l.cr?.status === "pending"), 1);
   const late = user?.settings.late === false ? [] : sortL(lessons.filter((l) => l.status === "planned" && l.date + " " + l.time < now), 1);
   const goal = user?.plan === "pro" ? user.settings.goal || 0 : 0;
   const tot = sumAmt(done, () => true), pc = goal ? Math.min(100, Math.round(tot / goal * 100)) : 0;
@@ -58,6 +59,8 @@ export function Dashboard() {
     <SetupBar />
     <div className="bar"><div><h2 style={{ fontSize: 22, margin: 0 }}>Cześć, {(user?.name || "korepetytorze").split(" ")[0]}!</h2><span className="hint">Oto Twoje podsumowanie za {fm(m)}.</span></div><span className="sp" />
       <MonthInput v={m} on={(v) => setUi((u) => ({ ...u, month: v }))} /><button className="btn" onClick={addStudent}><Ic n="plus" s={16} /> Dodaj ucznia</button><button className="btn p" onClick={() => addLesson()}><Ic n="plus" s={16} /> Dodaj lekcję</button></div>
+    {reqs.length > 0 && <div className="card" style={{ marginBottom: 16, borderColor: "#f3dca8", background: "var(--aml)" }}><h2>Prośby o odwołanie ({reqs.length})</h2><p className="hint" style={{ margin: "-6px 0 6px" }}>Uczniowie poprosili o odwołanie tych lekcji. Potwierdź albo odrzuć – uczeń zobaczy Twoją decyzję w swoim panelu.</p>
+      {reqs.map((l) => <LessonRow key={l.id} l={l} full actions={<div className="acts"><CancelRequestActions l={l} /></div>} />)}</div>}
     <div className="grid g4">
       <div className="card stat"><div className="l">Aktywni uczniowie</div><div className="v">{students.filter((s) => s.active).length}</div></div>
       <div className="card stat"><div className="l">Przeprowadzone lekcje</div><div className="v">{done.filter((l) => l.status === "done").length}</div></div>

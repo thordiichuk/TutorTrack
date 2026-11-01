@@ -15,7 +15,10 @@ export type Status = "planned" | "done" | "cancelled";
 export type Lesson = {
   id: string; sid: string; subject: string; date: string; time: string; min: number; topic: string; prep: string; notes: string;
   hw: string; hd: string; status: Status; paid: boolean; amount: number; fee: number;
+  /** Student's request to cancel the lesson. */
+  cr?: CancelRequest | null;
 };
+export type CancelRequest = { status: "pending" | "accepted" | "rejected"; reason: string; note: string; at: number };
 export type TrashItem = { kind: "student" | "lesson"; id: string; name: string; lessons?: number; date?: string; time?: string; deletedAt: number };
 export type TutorData = { students: Student[]; lessons: Lesson[]; trash: TrashItem[] };
 

@@ -32,12 +32,13 @@ export function TutorApp({ view: v0 }: { view: string }) {
     ok: demo ? "Wyjdź" : "Wyloguj się", onOk: logout,
   });
   const pro = user!.plan === "pro", active = data.students.filter((s) => s.active).length;
+  const pending = data.lessons.filter((l) => l.cr?.status === "pending").length;
   return (
     <UiCtx.Provider value={ui}>
       <div className="app">
         <aside className="side" aria-label="Menu główne">
           <div className="logo"><i><Logo /></i>TutorTrack</div>
-          <div>{VIEWS.map((x) => <button key={x[0]} className={"nav" + (x[0] === view ? " on" : "")} onClick={() => navigate("/aplikacja/" + x[0])} aria-current={x[0] === view ? "page" : undefined}><Ic n={x[2]} />{x[1]}</button>)}
+          <div>{VIEWS.map((x) => <button key={x[0]} className={"nav" + (x[0] === view ? " on" : "")} onClick={() => navigate("/aplikacja/" + x[0])} aria-current={x[0] === view ? "page" : undefined}><Ic n={x[2]} />{x[1]}{x[0] === "dash" && pending > 0 && <span className="tag am" style={{ marginLeft: "auto" }}>{pending}</span>}</button>)}
             {user!.isAdmin && !demo && <button className="nav" onClick={() => navigate("/admin")}><Ic n="alert" />Panel administratora</button>}
             <button className="nav" onClick={out}><Ic n="out" />{demo ? "Wyjdź z dema" : "Wyloguj się"}</button></div>
           <div className="planchip">Plan: <b>{pro ? "Pro" : "Free"}</b><br />Aktywni uczniowie: {active}{pro ? "" : " / " + FREE}</div>

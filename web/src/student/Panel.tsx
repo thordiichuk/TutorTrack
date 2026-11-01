@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../lib/api";
 import { Empty, Ic, Logo } from "../lib/icons";
-import { addDays, fd, fmtH, MSHORT, pd, pln, te, WDL, WDSHORT, ym, ymd } from "../lib/util";
+import { addDays, CancelRequest, fd, fdt, fmtH, MSHORT, pd, pln, te, WDL, WDSHORT, ym, ymd } from "../lib/util";
 import { useAuth } from "../state";
 import { errMsg, Field, useOverlay } from "../ui/overlay";
 import { ChangePassword, DeleteAccount } from "../app/Views";
 
-type SLesson = { id: string; date: string; time: string; min: number; subject: string; topic: string; status: "planned" | "done" | "cancelled"; notes: string; hw: string; hd: string; amount: number; paid: boolean };
+type SLesson = { id: string; date: string; time: string; min: number; subject: string; topic: string; status: "planned" | "done" | "cancelled"; notes: string; hw: string; hd: string; amount: number; paid: boolean; cr: CancelRequest | null };
 type Link = { sid: string; tutor: string; studentName: string; subject: string; lessons: SLesson[] };
 type Ev = { id: string; title: string; cat: string; repeat: "w" | "o"; weekday: number; date: string; start: string; end: string };
 type Data = { links: Link[]; events: Ev[]; done: string[] };
@@ -57,7 +57,7 @@ export function StudentPanel() {
 
   const tags = (l: L) => {
     const st = ({ planned: ["Zaplanowana", "ac"], done: ["Przeprowadzona", "gr"], cancelled: ["Odwołana", "rd"] } as const)[l.status];
-    return <><span className={"tag " + st[1]}>{st[0]}</span>{" "}{l.notes && <><span className="tag gr">Notatka</span>{" "}</>}{l.hw && (done.has(l.id) ? <span className="tag gr">Zadanie zrobione</span> : <span className="tag am">Zadanie</span>)}</>;
+    return <>{l.cr?.status === "pending" && <><span className="tag am">Prośba o odwołanie</span>{" "}</>}{l.cr?.status === "rejected" && l.status === "planned" && <><span className="tag rd">Odwołanie odrzucone</span>{" "}</>}<span className={"tag " + st[1]}>{st[0]}</span>{" "}{l.notes && <><span className="tag gr">Notatka</span>{" "}</>}{l.hw && (done.has(l.id) ? <span className="tag gr">Zadanie zrobione</span> : <span className="tag am">Zadanie</span>)}</>;
   };
   const due = (l: L) => {
     const td = ymd(new Date());
@@ -75,7 +75,13 @@ export function StudentPanel() {
       <h3 style={{ margin: "12px 0 4px", fontSize: 15 }}>Notatka po lekcji</h3><p className="pre" style={{ margin: 0 }}>{l.notes || <span className="hint">Brak notatki.</span>}</p>
       {l.hw && <><h3 style={{ margin: "16px 0 4px", fontSize: 15 }}>Praca domowa</h3><p className="pre" style={{ margin: "0 0 6px" }}>{l.hw}</p>{due(l)}</>}
       {l.amount > 0 && <p className="hint" style={{ marginTop: 14 }}>Kwota: {pln(l.amount)}{l.paid ? " · opłacona" : " · nieopłacona"}</p>}
-      <div className="mf"><button className="btn" onClick={ov.close}>Zamknij</button>{l.hw && <button className="btn p" onClick={() => toggleHw(l.id, true)}>{done.has(l.id) ? "Cofnij: niezrobione" : "Oznacz zadanie jako zrobione"}</button>}</div></>);
+      {l.cr?.status === "pending" && <div className="nt" style={{ marginTop: 12 }}><b>Prośba o odwołanie wysłana</b> {fdt(l.cr.at)} – czeka na potwierdzenie korepetytora.<br />Przyczyna: {l.cr.reason}</div>}
+      {l.cr?.status === "rejected" && l.status === "planned" && <div className="lerr" style={{ marginTop: 12 }}><b>Korepetytor odrzucił prośbę o odwołanie.</b>{l.cr.note && <><br />Komentarz: {l.cr.note}</>}<br />Twoja przyczyna: {l.cr.reason}</div>}
+      {l.cr?.status === "accepted" && l.status === "cancelled" && <p className="hint" style={{ marginTop: 12 }}>Lekcja odwołana na Twoją prośbę. Przyczyna: {l.cr.reason}</p>}
+      <div className="mf">
+        {l.status === "planned" && l.cr?.status !== "pending" && <button className="btn d" style={{ marginRight: "auto" }} onClick={() => ov.modal(<CancelRequestForm l={l} onSent={load} />)}>Odwołaj lekcję</button>}
+        {l.cr?.status === "pending" && <button className="btn d" style={{ marginRight: "auto" }} onClick={() => { ov.close(); run(() => api("DELETE", `/api/student/lessons/${l.id}/cancel-request`), "Prośba o odwołanie wycofana."); }}>Wycofaj prośbę</button>}
+        <button className="btn" onClick={ov.close}>Zamknij</button>{l.hw && <button className="btn p" onClick={() => toggleHw(l.id, true)}>{done.has(l.id) ? "Cofnij: niezrobione" : "Oznacz zadanie jako zrobione"}</button>}</div></>);
   };
   const evForm = (e?: Ev) => ov.modal(<EvForm e={e} lessons={all} events={d!.events} onSave={(b) => run(() => (e ? api("PATCH", "/api/student/events/" + e.id, b) : api("POST", "/api/student/events", b)), e ? "Zapisano zmiany." : "Dodano zajęcia do grafiku.")}
     onDel={e ? () => ov.confirm({ title: "Usunąć zajęcia?", text: "Zajęcia znikną z Twojego grafiku.", ok: "Usuń", danger: true, onOk: () => { run(() => api("DELETE", "/api/student/events/" + e.id), "Usunięto zajęcia."); } }) : undefined} />);
@@ -213,3 +219,22 @@ function KontoTab({ out }: { out: () => void }) {
       <div className="card"><h2>Konto i bezpieczeństwo</h2><div className="acts"><button className="btn" onClick={() => ov.modal(<ChangePassword />)}>Zmień hasło</button><button className="btn" onClick={out}>Wyloguj się</button><button className="btn d" onClick={() => ov.modal(<DeleteAccount onDone={() => { setUser(null); logout(); }} />)}>Usuń konto</button></div></div>
     </div>;
   }
+
+function CancelRequestForm({ l, onSent }: { l: L; onSent: () => Promise<void> }) {
+  const { close, toast } = useOverlay();
+  const [reason, setReason] = useState(""), [err, setErr] = useState(""), [busy, setBusy] = useState(false);
+  const send = async () => {
+    if (reason.trim().length < 3) { setErr("Napisz krótko przyczynę odwołania."); return; }
+    setBusy(true);
+    try { await api("POST", `/api/student/lessons/${l.id}/cancel-request`, { reason: reason.trim() }); close(); toast("Prośba wysłana do korepetytora."); await onSent(); }
+    catch (e) { setErr(errMsg(e)); } finally { setBusy(false); }
+  };
+  return <>
+    <h2>Odwołać lekcję?</h2>
+    <p className="hint" style={{ margin: "-6px 0 10px" }}>{l.subject || "Lekcja"} · {l.tutor} · {fd(l.date)}, {l.time}–{te(l.time, l.min)}</p>
+    <div className="f"><label htmlFor="crr">Przyczyna odwołania *</label><textarea id="crr" rows={3} maxLength={500} placeholder="Np. Jestem chory, mam sprawdzian w szkole, wyjazd rodzinny…" value={reason} onChange={(e) => setReason(e.target.value)} aria-describedby="e_crr" />
+      <div className="er" id="e_crr" role="alert" style={{ color: "var(--rd)", fontSize: 12 }}>{err}</div></div>
+    <p className="hint">Korepetytor musi potwierdzić odwołanie. Zgodnie z waszymi ustaleniami może naliczyć opłatę za odwołanie. Do czasu decyzji możesz wycofać prośbę.</p>
+    <div className="mf"><button className="btn" onClick={close}>Anuluj</button><button className="btn p" disabled={busy} onClick={send}>Wyślij prośbę</button></div>
+  </>;
+}

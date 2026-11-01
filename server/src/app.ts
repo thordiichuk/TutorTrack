@@ -98,9 +98,12 @@ const mapStudent = (r: any) => ({
   cancelMode: r.cancel_mode, cancelPct: r.cancel_pct, cancelFixed: r.cancel_fixed, active: r.active,
   inviteCode: r.invite_code ? fmtCode(r.invite_code) : null, linked: !!r.linked_user_id,
 });
+/** Student's request to cancel a lesson (null when there is none). */
+const mapCr = (r: any) => (r.cr_status ? { status: r.cr_status, reason: r.cr_reason, note: r.cr_note, at: r.cr_at ? new Date(r.cr_at).getTime() : 0 } : null);
 const mapLesson = (r: any) => ({
   id: r.id, sid: r.student_id, subject: r.subject, date: r.date, time: r.time, min: r.min, topic: r.topic, prep: r.prep,
   notes: r.notes, hw: r.hw, hd: r.hw_due || "", status: r.status, paid: r.paid, amount: r.amount, fee: r.fee,
+  cr: mapCr(r),
 });
 const mapEvent = (r: any) => ({ id: r.id, title: r.title, cat: r.cat, repeat: r.repeat, weekday: r.weekday, date: r.date || "", start: r.start_time, end: r.end_time });
 
@@ -174,7 +177,7 @@ async function linkCode(userId: string, code: string, db = pool as any) {
 }
 
 /* ---------- app ---------- */
-export async function buildApp(opts: { logger?: boolean } = {}) {
+export async function buildApp(opts: { logger?: boolean; authRateLimit?: number } = {}) {
   const app = Fastify({ logger: opts.logger ?? false, trustProxy: true, bodyLimit: 5 * 1024 * 1024 });
   await app.register(cookie);
   await app.register(rateLimit, { global: false });
@@ -205,7 +208,7 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
     if (req.url.startsWith("/api/")) reply.header("Cache-Control", "no-store");
   });
 
-  const authLimit = { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } };
+  const authLimit = { config: { rateLimit: { max: opts.authRateLimit ?? 10, timeWindow: "1 minute" } } };
 
   app.get("/api/health", async () => { await q("SELECT 1"); return { ok: true }; });
 
@@ -382,11 +385,33 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
     const l = await ownLesson(u.id, id, db);
     if (b.sid && b.sid !== l.student_id) await ownStudent(u.id, b.sid, db);
     const m = { ...mapLesson(l), ...b };
-    const r = (await q(`UPDATE lessons SET student_id=$2,subject=$3,date=$4,time=$5,min=$6,topic=$7,prep=$8,notes=$9,hw=$10,hw_due=$11,status=$12,paid=$13,amount=$14,fee=$15
+    const r = (await q(`UPDATE lessons SET student_id=$2,subject=$3,date=$4,time=$5,min=$6,topic=$7,prep=$8,notes=$9,hw=$10,hw_due=$11,status=$12,paid=$13,amount=$14,fee=$15,
+        cr_status = CASE WHEN cr_status = 'pending' AND $12 = 'cancelled' THEN 'accepted' WHEN cr_status = 'pending' AND $12 = 'done' THEN 'rejected' ELSE cr_status END
       WHERE id=$1 RETURNING *`,
       [id, m.sid, m.subject, m.date, m.time, m.min, m.topic, m.prep, m.notes, m.hw, m.hd || null, m.status, m.paid, m.amount, m.fee], db))[0];
     return mapLesson(r);
   }
+
+  /* student cancellation requests – tutor side */
+  async function pendingRequest(u: User, id: string) {
+    const l = await ownLesson(u.id, id);
+    if (l.cr_status !== "pending") fail(409, "Ta prośba o odwołanie została już rozpatrzona lub wycofana.");
+    return l;
+  }
+  app.post("/api/lessons/:id/cancel-request/accept", async (req) => {
+    const u = await need(req, "tutor");
+    const l = await pendingRequest(u, (req.params as any).id);
+    const b = parse(z.object({ fee: money.default(0) }), req.body ?? {});
+    const r = (await q("UPDATE lessons SET status='cancelled', fee=$2, paid=false, cr_status='accepted' WHERE id=$1 RETURNING *", [l.id, Math.min(b.fee, l.amount)]))[0];
+    return { lesson: mapLesson(r) };
+  });
+  app.post("/api/lessons/:id/cancel-request/reject", async (req) => {
+    const u = await need(req, "tutor");
+    const l = await pendingRequest(u, (req.params as any).id);
+    const b = parse(z.object({ note: str(500).default("") }), req.body ?? {});
+    const r = (await q("UPDATE lessons SET cr_status='rejected', cr_note=$2 WHERE id=$1 RETURNING *", [l.id, b.note]))[0];
+    return { lesson: mapLesson(r) };
+  });
 
   app.patch("/api/lessons/:id", async (req) => {
     const u = await need(req, "tutor");
@@ -490,7 +515,7 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
         lessons: ls.filter((l: any) => l.student_id === s.id).map((l: any) => ({
           id: l.id, date: l.date, time: l.time, min: l.min, subject: l.subject || s.subject.split(",")[0].trim(), topic: l.topic, status: l.status,
           notes: l.status === "done" ? l.notes : "", hw: l.status === "done" ? l.hw : "", hd: l.status === "done" ? l.hw_due || "" : "",
-          amount: l.status === "cancelled" ? l.fee : l.amount, paid: l.paid,
+          amount: l.status === "cancelled" ? l.fee : l.amount, paid: l.paid, cr: mapCr(l),
         })),
       })),
       events: ev.map(mapEvent),
@@ -538,6 +563,29 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
     const u = await need(req, "student");
     const id = (req.params as any).id;
     if (UUID.test(id)) await q("DELETE FROM student_events WHERE id=$1 AND user_id=$2", [id, u.id]);
+    return { ok: true };
+  });
+
+  /* student cancellation requests – student side */
+  async function studentLesson(u: User, id: string) {
+    if (!UUID.test(id)) fail(404, "Nie znaleziono lekcji.");
+    const l = (await q("SELECT l.* FROM lessons l JOIN students s ON s.id=l.student_id WHERE l.id=$1 AND s.linked_user_id=$2 AND l.deleted_at IS NULL AND s.deleted_at IS NULL", [id, u.id]))[0];
+    return l || fail(404, "Nie znaleziono lekcji.");
+  }
+  app.post("/api/student/lessons/:id/cancel-request", authLimit, async (req) => {
+    const u = await need(req, "student");
+    const l = await studentLesson(u, (req.params as any).id);
+    const b = parse(z.object({ reason: str(500).min(3, "Napisz krótko przyczynę odwołania.") }), req.body);
+    if (l.status !== "planned") fail(400, "Można odwołać tylko zaplanowaną lekcję.");
+    if (l.cr_status === "pending") fail(409, "Prośba o odwołanie tej lekcji już czeka na korepetytora.");
+    await q("UPDATE lessons SET cr_status='pending', cr_reason=$2, cr_note='', cr_at=now() WHERE id=$1", [l.id, b.reason]);
+    return { ok: true };
+  });
+  app.delete("/api/student/lessons/:id/cancel-request", async (req) => {
+    const u = await need(req, "student");
+    const l = await studentLesson(u, (req.params as any).id);
+    if (l.cr_status !== "pending") fail(409, "Tej prośby nie można już wycofać – korepetytor ją rozpatrzył.");
+    await q("UPDATE lessons SET cr_status=NULL, cr_reason='', cr_note='', cr_at=NULL WHERE id=$1", [l.id]);
     return { ok: true };
   });
 

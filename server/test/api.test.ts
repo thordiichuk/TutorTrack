@@ -7,7 +7,7 @@ import { pool } from "../src/db.js";
 let app: Awaited<ReturnType<typeof buildApp>>;
 const uniq = Date.now();
 
-before(async () => { await runMigrations(() => {}); app = await buildApp(); });
+before(async () => { await runMigrations(() => {}); app = await buildApp({ authRateLimit: 10000 }); });
 after(async () => { await app.close(); await pool.end(); });
 
 async function call(method: string, url: string, body?: unknown, cookie?: string) {
@@ -82,4 +82,35 @@ test("password reset flow invalidates sessions", async () => {
   assert.equal((await call("GET", "/api/auth/me", undefined, reg.cookie)).body.user, null);
   assert.equal((await call("POST", "/api/auth/login", { email, password: "nowehaslo1" })).status, 200);
   assert.equal((await call("POST", "/api/auth/reset", { token, password: "inne12345" })).status, 400);
+});
+
+test("student asks to cancel, tutor accepts or rejects", async () => {
+  const t = await register("tutor");
+  const sid = (await call("POST", "/api/students", { name: "Ola", subject: "Matematyka", rate: 10000 }, t)).body.student.id;
+  const mk = async () => (await call("POST", "/api/lessons", { sid, date: "2026-12-10", time: "16:00", min: 60, status: "planned", amount: 10000 }, t)).body.lesson.id;
+  const a = await mk(), b = await mk();
+  const code = (await call("POST", `/api/students/${sid}/invite`, undefined, t)).body.student.inviteCode;
+  const st = await register("student", { code });
+  const other = await register("student");
+  // validation and ownership
+  assert.equal((await call("POST", `/api/student/lessons/${a}/cancel-request`, { reason: "" }, st)).status, 400);
+  assert.equal((await call("POST", `/api/student/lessons/${a}/cancel-request`, { reason: "Choroba" }, other)).status, 404);
+  assert.equal((await call("POST", `/api/student/lessons/${a}/cancel-request`, { reason: "Choroba" }, st)).status, 200);
+  assert.equal((await call("POST", `/api/student/lessons/${a}/cancel-request`, { reason: "Choroba" }, st)).status, 409);
+  assert.equal((await call("POST", `/api/student/lessons/${b}/cancel-request`, { reason: "Wyjazd" }, st)).status, 200);
+  // tutor sees pending requests
+  const data = (await call("GET", "/api/tutor/data", undefined, t)).body;
+  assert.equal(data.lessons.filter((l: any) => l.cr?.status === "pending").length, 2);
+  // accept with fee, reject with note
+  const acc = await call("POST", `/api/lessons/${a}/cancel-request/accept`, { fee: 5000 }, t);
+  assert.equal(acc.body.lesson.status, "cancelled");
+  assert.equal(acc.body.lesson.fee, 5000);
+  assert.equal((await call("POST", `/api/lessons/${a}/cancel-request/accept`, {}, t)).status, 409);
+  const rej = await call("POST", `/api/lessons/${b}/cancel-request/reject`, { note: "Za późno" }, t);
+  assert.equal(rej.body.lesson.status, "planned");
+  // student sees the outcome; a decided request cannot be withdrawn
+  const ls = (await call("GET", "/api/student/data", undefined, st)).body.links[0].lessons;
+  assert.equal(ls.find((l: any) => l.id === a).cr.status, "accepted");
+  assert.equal(ls.find((l: any) => l.id === b).cr.note, "Za późno");
+  assert.equal((await call("DELETE", `/api/student/lessons/${b}/cancel-request`, undefined, st)).status, 409);
 });
