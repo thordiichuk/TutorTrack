@@ -121,7 +121,6 @@ export function LessonForm({ l, pre, draft }: { l?: Lesson; pre?: string; draft?
   const [d, setD] = useState({ ...d0, minS: String(d0.min), amtS: gStr(d0.amount), feeS: gStr(d0.fee > 0 ? d0.fee : cancelFee(stu(d0.sid), d0.amount)) });
   const [manual, setManual] = useState(!!l || !!draft);
   const [feeManual, setFeeManual] = useState(false);
-  const [more, setMore] = useState(!!(l?.prep || draft?.prep));
   const [e, setE] = useState<Record<string, string>>({});
   const upd = (p: Partial<typeof d>, auto = !manual) => {
     const n = { ...d, ...p };
@@ -166,13 +165,9 @@ export function LessonForm({ l, pre, draft }: { l?: Lesson; pre?: string; draft?
       {act.map((s) => <option key={s.id} value={s.id}>{s.name}{s.active ? "" : " (zarchiwizowany)"}</option>)}</select></div>
     {subOpts.length > 1 && <div className="f"><label htmlFor="lsu">Przedmiot</label><select id="lsu" value={d.subject} onChange={(ev) => { setManual(false); upd({ subject: ev.target.value }, true); }}>{subOpts.map((x) => <option key={x}>{x}</option>)}</select></div>}
     <div className="f2"><Field id="ld" label="Data *" type="date" value={d.date} onChange={(v) => upd({ date: v })} error={e.date} /><Field id="lt" label="Godzina *" type="time" value={d.time} onChange={(v) => upd({ time: v })} error={e.time} /></div>
-    <div className="f2"><Field id="lm" label="Czas trwania (min) *" type="number" min={1} step={5} value={d.minS} onChange={(v) => upd({ minS: v })} error={e.min} /><Field id="lto" label="Temat lekcji" value={d.topic} onChange={(v) => upd({ topic: v })} /></div>
-    <button type="button" className="more" aria-expanded={more || !!e.amount} onClick={() => setMore(!more)}>{more || e.amount ? "▾ Mniej opcji" : `▸ Więcej opcji · kwota ${d.amtS} zł${d.prep ? " · notatka przed zajęciami" : ""}`}</button>
-    {(more || !!e.amount) && <>
-    <Field id="la" label="Kwota (zł) *" value={d.amtS} onChange={(v) => { setManual(true); upd({ amtS: v }, false); }} error={e.amount} inputMode="decimal" />
-    <div className="hint" style={{ margin: "-6px 0 10px" }}>Kwota liczy się automatycznie ze stawki ucznia. Możesz ją zmienić ręcznie.</div>
-    <div className="f"><label htmlFor="lpn">Notatka przed zajęciami</label><TplSel onPick={(t) => upd({ prep: (d.prep ? d.prep + "\n" : "") + t })} /><textarea id="lpn" rows={2} placeholder="Plan lekcji, materiały, zadania do omówienia" value={d.prep} onChange={(ev) => upd({ prep: ev.target.value })} /></div>
-    </>}
+    <Field id="lto" label="Temat lekcji" value={d.topic} onChange={(v) => upd({ topic: v })} />
+    <div className="f2"><Field id="lm" label="Czas trwania (min) *" type="number" min={1} step={5} value={d.minS} onChange={(v) => upd({ minS: v })} error={e.min} /><Field id="la" label="Kwota (zł) *" value={d.amtS} onChange={(v) => { setManual(true); upd({ amtS: v }, false); }} error={e.amount} inputMode="decimal" /></div>
+    {(d.status === "planned" || !!d.prep) && <div className="f"><label htmlFor="lpn">Notatka przed zajęciami</label><TplSel onPick={(t) => upd({ prep: (d.prep ? d.prep + "\n" : "") + t })} /><textarea id="lpn" rows={2} placeholder="Plan lekcji, materiały – widzisz ją tylko Ty" value={d.prep} onChange={(ev) => upd({ prep: ev.target.value })} /></div>}
     <div className="f2">
       <div className="f"><label htmlFor="lss">Status lekcji</label><select id="lss" value={d.status} onChange={(ev) => upd({ status: ev.target.value as Lesson["status"] }, false)}><option value="planned">Zaplanowana</option><option value="done">Przeprowadzona</option><option value="cancelled">Odwołana</option></select></div>
       <div className="f"><label htmlFor="lps">Status płatności</label><select id="lps" value={d.paid ? "1" : "0"} onChange={(ev) => upd({ paid: ev.target.value === "1" }, false)}><option value="0">Nieopłacona</option><option value="1">Opłacona</option></select></div>
@@ -347,7 +342,7 @@ export function SummaryModal({ id }: { id: string }) {
     <textarea rows={11} readOnly value={t} />
     <div className="pt">{t}</div>
     <div className="mf"><button className="btn" onClick={close}>Zamknij</button>
-      <button className="btn" onClick={() => { if (user?.plan !== "pro") { proUp("Wydruk i PDF podsumowania"); return; } document.body.classList.add("printing"); window.print(); document.body.classList.remove("printing"); }}>Drukuj / PDF <span className="tag ac">Pro</span></button>
+      <button className="btn" onClick={() => { if (user?.plan !== "pro") { proUp("Wydruk i PDF podsumowania"); return; } document.body.classList.add("printing"); window.print(); document.body.classList.remove("printing"); }}>Drukuj / PDF{user?.plan !== "pro" && <> <span className="tag ac">Pro</span></>}</button>
       <button className="btn p" onClick={async () => toast((await copyText(t)) ? "Skopiowano." : "Zaznacz tekst i skopiuj go ręcznie.")}>Kopiuj</button></div>
   </>;
 }
