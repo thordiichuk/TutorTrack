@@ -105,10 +105,16 @@ export function Students() {
     if (subj && !subjList(s).map((x) => x.toLowerCase()).includes(subj.toLowerCase())) return false;
     return !q || (s.name + " " + s.subject).toLowerCase().includes(q);
   });
+  const last = (n: string) => { const p = n.trim().split(/\s+/); return p[p.length - 1]; };
+  const cmp = (a: string, b: string) => a.localeCompare(b, "pl", { sensitivity: "base" });
+  if (ui.so === "az") list.sort((a, b) => cmp(a.name, b.name));
+  else if (ui.so === "za") list.sort((a, b) => cmp(b.name, a.name));
+  else if (ui.so === "ln") list.sort((a, b) => cmp(last(a.name), last(b.name)) || cmp(a.name, b.name));
   const pro = user?.plan === "pro";
   return <>
-    <div className="bar"><input type="search" placeholder="Szukaj: imię, nazwisko, przedmiot" value={ui.q} aria-label="Szukaj ucznia" onChange={(e) => setUi((u) => ({ ...u, q: e.target.value }))} />
-      <select aria-label="Status ucznia" value={ui.sf} onChange={(e) => setUi((u) => ({ ...u, sf: e.target.value as any }))}><option value="active">Aktywni</option><option value="arch">Zarchiwizowani</option><option value="all">Wszyscy</option></select></div>
+    <div className="bar sbar"><input type="search" placeholder="Szukaj: imię, nazwisko, przedmiot" value={ui.q} aria-label="Szukaj ucznia" onChange={(e) => setUi((u) => ({ ...u, q: e.target.value }))} />
+      <select aria-label="Status ucznia" value={ui.sf} onChange={(e) => setUi((u) => ({ ...u, sf: e.target.value as any }))}><option value="active">Aktywni</option><option value="arch">Zarchiwizowani</option><option value="all">Wszyscy</option></select>
+      <select aria-label="Sortowanie uczniów" value={ui.so} onChange={(e) => setUi((u) => ({ ...u, so: e.target.value as any }))}><option value="az">Imię A–Z</option><option value="za">Imię Z–A</option><option value="ln">Nazwisko A–Z</option><option value="new">Kolejność dodania</option></select></div>
     {subjects.length > 0 && <div className="bar" role="group" aria-label="Filtr po przedmiotach"><span className="hint">Przedmiot:</span>
       <button className={"btn s" + (!subj ? " p" : "")} aria-pressed={!subj} onClick={() => setUi((u) => ({ ...u, subj: "" }))}>Wszystkie</button>
       {subjects.map((x) => <button key={x} className={"btn s" + (subj === x ? " p" : "")} aria-pressed={subj === x} onClick={() => setUi((u) => ({ ...u, subj: x }))}>{x}</button>)}</div>}
