@@ -85,6 +85,22 @@ Najprościej użyć darmowego planu **Brevo** (300 e-maili dziennie) lub **Resen
 
 ---
 
+## Panel administratora
+
+1. Załóż na stronie zwykłe konto (np. korepetytora) na swój adres e-mail.
+2. W Render → **Environment** dodaj zmienną **ADMIN_EMAILS** = ten adres e-mail
+   (kilka adresów oddziel przecinkami) → **Save Changes**.
+3. Po ponownym uruchomieniu wyloguj się i zaloguj ponownie. W menu pojawi się
+   **Panel administratora** (adres: `https://tutortrack.pl/admin`).
+
+Panel pokazuje statystyki i listę kont. Pozwala blokować i odblokowywać konta,
+zmieniać plan (Free/Pro) i usuwać konta. Każde działanie trafia do „Historii działań”.
+Nie pokazuje treści lekcji ani notatek uczniów.
+
+Konto administratora jest tak samo chronione jak inne – włącz silne, unikalne hasło.
+
+---
+
 ## Kopie zapasowe
 
 - **Neon (darmowy plan)** pozwala przywrócić bazę do stanu sprzed kilku godzin

@@ -18,3 +18,5 @@ services:
         sync: false       # opcjonalnie: poczta do resetu hasła
       - key: MAIL_FROM
         sync: false       # opcjonalnie: np. TutorTrack <no-reply@twojadomena.pl>
+      - key: ADMIN_EMAILS
+        sync: false       # e-mail(e) administratora, po przecinku – panel /admin

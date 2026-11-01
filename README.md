@@ -22,6 +22,9 @@ motywy, szablony notatek, kopia danych (eksport/import JSON), tryb demo.
 (można mieć kilku korepetytorów), plan tygodnia, własny grafik, prace domowe
 z odhaczaniem, podsumowanie miesiąca. Dane są na koncie – działają na każdym urządzeniu.
 
+**Administrator:** panel `/admin` dla adresów z `ADMIN_EMAILS` – statystyki, lista kont,
+blokowanie, zmiana planu, usuwanie kont i historia działań. Bez wglądu w treść lekcji i notatek.
+
 **Bezpieczeństwo:** hasła haszowane scrypt, sesje w ciasteczku `httpOnly`
 (`SameSite=Lax`, `Secure` w produkcji), ochrona przed żądaniami z obcych stron,
 limit prób logowania, nagłówki CSP / X-Frame-Options, walidacja danych (zod).
@@ -75,6 +78,7 @@ czy własnym serwerze – potrzebna jest tylko zmienna `DATABASE_URL`.
 | `DATABASE_SSL` | `true`, jeśli baza wymaga TLS bez zaufanego certyfikatu |
 | `APP_URL` | publiczny adres strony (linki w e-mailach) |
 | `PORT` | port serwera (domyślnie 3000) |
+| `ADMIN_EMAILS` | e-maile administratorów (po przecinku) – dostęp do panelu `/admin` |
 | `SMTP_URL`, `MAIL_FROM` | poczta wychodząca; bez nich linki resetu hasła trafiają do logu serwera |
 
 ## Co jeszcze nie jest prawdziwe

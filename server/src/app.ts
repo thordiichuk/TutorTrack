@@ -13,7 +13,7 @@ const FREE_LIMIT = 3;
 const COOKIE = "tt_session";
 const TRASH_MS = 30 * 864e5;
 
-type User = { id: string; email: string; role: "tutor" | "student"; name: string; brand: string; plan: "free" | "pro"; settings: Record<string, unknown> };
+type User = { id: string; email: string; role: "tutor" | "student"; name: string; brand: string; plan: "free" | "pro"; settings: Record<string, unknown>; isAdmin: boolean };
 
 class HttpError extends Error {
   constructor(public status: number, message: string) { super(message); }
@@ -91,7 +91,8 @@ function parse<T extends z.ZodType>(schema: T, data: unknown): z.infer<T> {
 }
 
 /* ---------- row mapping ---------- */
-const mapUser = (u: any): User => ({ id: u.id, email: u.email, role: u.role, name: u.name, brand: u.brand, plan: u.plan, settings: u.settings || {} });
+const isAdminEmail = (email: string) => config.adminEmails.includes(String(email).toLowerCase());
+const mapUser = (u: any): User => ({ id: u.id, email: u.email, role: u.role, name: u.name, brand: u.brand, plan: u.plan, settings: u.settings || {}, isAdmin: isAdminEmail(u.email) });
 const mapStudent = (r: any) => ({
   id: r.id, name: r.name, subject: r.subject, email: r.email, phone: r.phone, rate: r.rate, rates: r.rates || {}, note: r.note,
   cancelMode: r.cancel_mode, cancelPct: r.cancel_pct, cancelFixed: r.cancel_fixed, active: r.active,
@@ -108,6 +109,7 @@ async function createSession(reply: FastifyReply, userId: string, remember: bool
   const token = newToken();
   const expires = new Date(Date.now() + config.sessionDays * 864e5);
   await q("INSERT INTO sessions(token_hash, user_id, expires_at) VALUES ($1,$2,$3)", [sha256(token), userId, expires]);
+  await q("UPDATE users SET last_login_at=now() WHERE id=$1", [userId]);
   reply.setCookie(COOKIE, token, {
     path: "/", httpOnly: true, sameSite: "lax", secure: config.prod,
     ...(remember ? { expires } : {}),
@@ -117,7 +119,7 @@ async function createSession(reply: FastifyReply, userId: string, remember: bool
 async function currentUser(req: FastifyRequest): Promise<User | null> {
   const token = req.cookies[COOKIE];
   if (!token) return null;
-  const rows = await q("SELECT u.* FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = $1 AND s.expires_at > now()", [sha256(token)]);
+  const rows = await q("SELECT u.* FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = $1 AND s.expires_at > now() AND u.blocked_at IS NULL", [sha256(token)]);
   return rows[0] ? mapUser(rows[0]) : null;
 }
 
@@ -230,6 +232,7 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
     const u = (await q("SELECT * FROM users WHERE email=$1", [b.email]))[0];
     const ok = u ? await verifyPassword(b.password, u.password_hash) : (await hashPassword("x"), false);
     if (!u || !ok) fail(401, "Nieprawidłowy e-mail lub hasło.");
+    if (u.blocked_at) fail(403, "To konto zostało zablokowane. Skontaktuj się z administratorem TutorTrack.");
     await createSession(reply, u.id, b.remember);
     return { user: mapUser(u) };
   });
@@ -547,6 +550,102 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
     if (b.done) await q("INSERT INTO homework_done(user_id,lesson_id) VALUES ($1,$2) ON CONFLICT DO NOTHING", [u.id, id]);
     else await q("DELETE FROM homework_done WHERE user_id=$1 AND lesson_id=$2", [u.id, id]);
     return { ok: true };
+  });
+
+  /* ----- admin (e-mails listed in ADMIN_EMAILS) ----- */
+  async function needAdmin(req: FastifyRequest) {
+    const u = await need(req);
+    if (!u.isAdmin) fail(403, "Brak uprawnień administratora.");
+    return u;
+  }
+  const logAction = (admin: User, action: string, target: string, details: object = {}) =>
+    q("INSERT INTO admin_actions(admin_id, admin_email, action, target_email, details) VALUES ($1,$2,$3,$4,$5)", [admin.id, admin.email, action, target, JSON.stringify(details)]);
+  async function adminTarget(admin: User, id: string) {
+    if (!UUID.test(id)) fail(404, "Nie znaleziono konta.");
+    const t = (await q("SELECT * FROM users WHERE id=$1", [id]))[0];
+    if (!t) fail(404, "Nie znaleziono konta.");
+    if (t.id === admin.id) fail(400, "Nie możesz wykonać tej operacji na własnym koncie.");
+    if (isAdminEmail(t.email)) fail(400, "Nie można zmieniać kont innych administratorów.");
+    return t;
+  }
+
+  app.get("/api/admin/stats", async (req) => {
+    await needAdmin(req);
+    const u = (await q(`SELECT
+        count(*) FILTER (WHERE role='tutor')::int AS tutors,
+        count(*) FILTER (WHERE role='tutor' AND plan='pro')::int AS pro,
+        count(*) FILTER (WHERE role='student')::int AS student_accounts,
+        count(*) FILTER (WHERE created_at > now() - interval '7 days')::int AS new7,
+        count(*) FILTER (WHERE created_at > now() - interval '30 days')::int AS new30,
+        count(*) FILTER (WHERE last_login_at > now() - interval '7 days')::int AS active7,
+        count(*) FILTER (WHERE blocked_at IS NOT NULL)::int AS blocked
+      FROM users`))[0];
+    const s = (await q(`SELECT count(*)::int AS records, count(*) FILTER (WHERE linked_user_id IS NOT NULL)::int AS linked
+      FROM students WHERE deleted_at IS NULL`))[0];
+    const l = (await q(`SELECT count(*)::int AS total, count(*) FILTER (WHERE created_at > now() - interval '30 days')::int AS last30
+      FROM lessons WHERE deleted_at IS NULL`))[0];
+    const days = await q(`SELECT to_char(d, 'YYYY-MM-DD') AS day,
+        (SELECT count(*)::int FROM users WHERE role='tutor' AND created_at::date = d::date) AS tutors,
+        (SELECT count(*)::int FROM users WHERE role='student' AND created_at::date = d::date) AS students
+      FROM generate_series(current_date - 13, current_date, interval '1 day') d ORDER BY d`);
+    return { users: u, students: s, lessons: l, days };
+  });
+
+  app.get("/api/admin/users", async (req) => {
+    await needAdmin(req);
+    const b = parse(z.object({ q: z.string().max(200).default(""), role: z.enum(["", "tutor", "student"]).default(""), status: z.enum(["", "blocked"]).default(""), offset: z.coerce.number().int().min(0).default(0) }), req.query);
+    const term = b.q.trim() ? "%" + b.q.trim().replace(/[%_\\]/g, "\\$&") + "%" : "";
+    const where = `($1 = '' OR u.name ILIKE $1 OR u.email ILIKE $1) AND ($2 = '' OR u.role = $2) AND ($3 = '' OR u.blocked_at IS NOT NULL)`;
+    const total = (await q(`SELECT count(*)::int AS n FROM users u WHERE ${where}`, [term, b.role, b.status]))[0].n;
+    const rows = await q(`SELECT u.id, u.name, u.brand, u.email, u.role, u.plan, u.created_at, u.last_login_at, u.blocked_at,
+        (SELECT count(*)::int FROM students s WHERE s.tutor_id=u.id AND s.deleted_at IS NULL) AS students,
+        (SELECT count(*)::int FROM lessons l WHERE l.tutor_id=u.id AND l.deleted_at IS NULL) AS lessons,
+        (SELECT count(*)::int FROM students s WHERE s.linked_user_id=u.id AND s.deleted_at IS NULL) AS tutors
+      FROM users u WHERE ${where} ORDER BY u.created_at DESC LIMIT 50 OFFSET $4`, [term, b.role, b.status, b.offset]);
+    return {
+      total,
+      users: rows.map((r: any) => ({
+        id: r.id, name: r.name, brand: r.brand, email: r.email, role: r.role, plan: r.plan,
+        createdAt: new Date(r.created_at).getTime(), lastLoginAt: r.last_login_at ? new Date(r.last_login_at).getTime() : null,
+        blocked: !!r.blocked_at, isAdmin: isAdminEmail(r.email), students: r.students, lessons: r.lessons, tutors: r.tutors,
+      })),
+    };
+  });
+
+  app.post("/api/admin/users/:id/block", async (req) => {
+    const admin = await needAdmin(req);
+    const t = await adminTarget(admin, (req.params as any).id);
+    const b = parse(z.object({ blocked: z.boolean() }), req.body);
+    await q("UPDATE users SET blocked_at=$2 WHERE id=$1", [t.id, b.blocked ? new Date() : null]);
+    if (b.blocked) await q("DELETE FROM sessions WHERE user_id=$1", [t.id]);
+    await logAction(admin, b.blocked ? "block" : "unblock", t.email);
+    return { ok: true };
+  });
+
+  app.post("/api/admin/users/:id/plan", async (req) => {
+    const admin = await needAdmin(req);
+    const t = await adminTarget(admin, (req.params as any).id);
+    const b = parse(z.object({ plan: z.enum(["free", "pro"]) }), req.body);
+    if (t.role !== "tutor") fail(400, "Plan dotyczy tylko kont korepetytorów.");
+    await q("UPDATE users SET plan=$2 WHERE id=$1", [t.id, b.plan]);
+    await logAction(admin, "plan", t.email, { plan: b.plan });
+    return { ok: true };
+  });
+
+  app.delete("/api/admin/users/:id", async (req) => {
+    const admin = await needAdmin(req);
+    const t = await adminTarget(admin, (req.params as any).id);
+    const b = parse(z.object({ confirmEmail: z.string().trim().toLowerCase() }), req.body);
+    if (b.confirmEmail !== t.email) fail(400, "Wpisany adres e-mail nie zgadza się z adresem konta.");
+    await q("DELETE FROM users WHERE id=$1", [t.id]);
+    await logAction(admin, "delete", t.email, { role: t.role });
+    return { ok: true };
+  });
+
+  app.get("/api/admin/actions", async (req) => {
+    await needAdmin(req);
+    const rows = await q("SELECT admin_email, action, target_email, details, created_at FROM admin_actions ORDER BY created_at DESC LIMIT 200");
+    return { actions: rows.map((r: any) => ({ admin: r.admin_email, action: r.action, target: r.target_email, details: r.details, at: new Date(r.created_at).getTime() })) };
   });
 
   app.all("/api/*", async (_req, reply) => reply.status(404).send({ error: "Nie znaleziono." }));

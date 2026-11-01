@@ -5,6 +5,7 @@ import { Login, Register, ResetPassword } from "./pages/Auth";
 import { Home, Legal, StudentHome } from "./pages/Public";
 import { useAuth, TutorProvider } from "./state";
 import { StudentPanel } from "./student/Panel";
+import { AdminPanel } from "./admin/AdminPanel";
 import { ModalHost } from "./ui/overlay";
 
 const TITLES: Record<string, string> = {
@@ -42,6 +43,11 @@ function Routes({ path }: { path: string }) {
     if (!user) return <><Login role="tutor" notice /><ModalHost /></>;
     if (user.role !== "tutor") return <Redirect to="/uczen/panel" />;
     return <TutorProvider><TutorApp view={path.split("/")[2] || "dash"} /></TutorProvider>;
+  }
+  if (path === "/admin") {
+    if (!user || demo) return <Login role="tutor" notice />;
+    if (!user.isAdmin) return <Redirect to={user.role === "tutor" ? "/aplikacja/dash" : "/uczen/panel"} />;
+    return <AdminPanel />;
   }
   if (path === "/uczen/panel") {
     if (!user || demo) return <Login role="student" notice />;

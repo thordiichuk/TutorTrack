@@ -6,7 +6,7 @@ export type Settings = {
   dur?: number; time?: string; rate?: number; wk?: "mon" | "sun"; late?: boolean; goal?: number;
   tpl?: { n: string; t: string }[]; onbBilling?: boolean; welcomeSkipped?: boolean;
 };
-export type User = { id: string; email: string; role: Role; name: string; brand: string; plan: "free" | "pro"; settings: Settings };
+export type User = { id: string; email: string; role: Role; name: string; brand: string; plan: "free" | "pro"; settings: Settings; isAdmin?: boolean };
 export type Student = {
   id: string; name: string; subject: string; email: string; phone: string; rate: number; rates: Record<string, number>; note: string;
   cancelMode: "off" | "percent" | "fixed"; cancelPct: number; cancelFixed: number; active: boolean; inviteCode: string | null; linked: boolean;

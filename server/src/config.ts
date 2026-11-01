@@ -12,4 +12,6 @@ export const config = {
   mailFrom: env.MAIL_FROM || "TutorTrack <no-reply@tutortrack.app>",
   webDist: env.WEB_DIST || fileURLToPath(new URL("../../web/dist", import.meta.url)),
   sessionDays: 30,
+  /** Comma-separated e-mails of site administrators (admin panel at /admin). */
+  adminEmails: (env.ADMIN_EMAILS || "").split(",").map((x) => x.trim().toLowerCase()).filter(Boolean),
 };
