@@ -2,6 +2,7 @@ import { useState } from "react";
 import { api, isDemo } from "../lib/api";
 import {
   FREE, calc, cancelFee, copyText, emailOk, fd, fm, gStr, Lesson, lev, MSHORT, overlap, pd, pln, rateFor, sortL, Student, subjList, toG, ymd, amt, billable, sumAmt, te,
+  subjRates,
 } from "../lib/util";
 import { useAuth, useTutor } from "../state";
 import { errMsg, Field, useOverlay } from "../ui/overlay";
@@ -279,7 +280,7 @@ export function StudentDetail({ id }: { id: string }) {
   const ls = sortL(lessons.filter((l) => l.sid === id), -1), dn = ls.filter((l) => l.status === "done");
   return <>
     <h2>{s.name} <span className={"tag " + (s.active ? "gr" : "")}>{s.active ? "Aktywny" : "Zarchiwizowany"}</span></h2>
-    <div className="hint">{s.subject} · {pln(s.rate)} / 60 min</div>
+    <div className="rates">{subjRates(s).map(([x, r]) => <span key={x} className="rate">{x && <b>{x}</b>}{pln(r)} / 60 min</span>)}</div>
     <p>E-mail: {s.email || "brak"}<br />Telefon: {s.phone || "brak"}{s.note && <><br />Notatka: {s.note}</>}</p>
     <div className="grid g2" style={{ marginBottom: 12 }}><div className="card stat"><div className="l">Przeprowadzone lekcje</div><div className="v">{dn.length}</div></div><div className="card stat"><div className="l">Do zapłaty</div><div className="v am">{pln(sumAmt(ls.filter(billable), (l) => !l.paid))}</div></div></div>
     <h2>Historia lekcji</h2>

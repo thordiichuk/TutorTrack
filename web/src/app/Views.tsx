@@ -3,7 +3,7 @@ import { api, isDemo } from "../lib/api";
 import { Empty, Ic } from "../lib/icons";
 import { navigate } from "../lib/router";
 import {
-  amt, billable, cq, download, fd, fm, FREE, gStr, Lesson, MSHORT, pad, pd, pln, PRO_PLN, sortL, subjList, sumAmt, te, toG, ym, ymd, pwOk, copyText,
+  amt, billable, cq, download, fd, fm, FREE, gStr, Lesson, MSHORT, pad, pd, pln, PRO_PLN, sortL, subjList, sumAmt, te, toG, ym, ymd, pwOk, copyText, subjRates,
   lekcje,
 } from "../lib/util";
 import { useAuth, useTutor } from "../state";
@@ -117,7 +117,7 @@ export function Students() {
         const ls = lessons.filter((l) => l.sid === s.id && l.status === "done"), due = sumAmt(lessons.filter((l) => l.sid === s.id && billable(l)), (l) => !l.paid);
         const nx = sortL(lessons.filter((l) => l.sid === s.id && l.status === "planned" && l.date >= ymd(new Date())), 1)[0];
         return <div className="card" key={s.id}>
-          <div style={{ display: "flex", gap: 12, alignItems: "center" }}><div className="av">{s.name.charAt(0).toUpperCase()}</div><div style={{ minWidth: 0 }}><b>{s.name}</b><div className="hint">{s.subject} · {pln(s.rate)}/60 min</div></div></div>
+          <div style={{ display: "flex", gap: 12, alignItems: "center" }}><div className="av">{s.name.charAt(0).toUpperCase()}</div><div style={{ minWidth: 0 }}><b>{s.name}</b>{subjRates(s).map(([x, r]) => <div className="hint" key={x}>{x ? x + " · " : ""}{pln(r).replace(",00", "")}/h</div>)}</div></div>
           <div style={{ margin: "12px 0", display: "flex", gap: 6, flexWrap: "wrap" }}><span className={"tag " + (s.active ? "gr" : "")}>{s.active ? "Aktywny" : "Zarchiwizowany"}</span><span className="tag">{lekcje(ls.length)}</span>{s.linked ? <span className="tag ac">Panel ucznia</span> : s.inviteCode ? <span className="tag">Kod wysłany</span> : null}{due > 0 && <span className="tag am">Do zapłaty: {pln(due)}</span>}</div>
           {!s.active && <div className="hint" style={{ marginBottom: 6 }}>Przywrócisz lub usuniesz ucznia w oknie Edytuj.</div>}<div className="hint" style={{ marginBottom: 10 }}>{nx ? "Następna lekcja: " + fd(nx.date) + ", " + nx.time : "Brak zaplanowanych lekcji"}</div>
           <div className="acts">

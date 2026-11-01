@@ -50,7 +50,8 @@ export function ModalHost() {
   useEffect(() => {
     if (!m || !box.current) return;
     const f = box.current.querySelector<HTMLElement>("input,select,textarea,button");
-    (f || box.current).focus();
+    (f || box.current).focus({ preventScroll: true });
+    box.current.scrollTop = 0;
   }, [m]);
 
   useEffect(() => {
