@@ -243,27 +243,33 @@ export function LessonActions({ l }: { l: Lesson }) {
   const s = stu(l.sid);
   const fee = cancelFee(s, l.amount);
   const pro = user?.plan === "pro";
+  const pendingCr = l.cr?.status === "pending";
   return <div className="acts">
     <CancelRequestActions l={l} />
-    {l.status === "planned" && <>
+    {pendingCr && <button className="btn s" onClick={async () => {
+      const d = pd(l.date); d.setDate(d.getDate() + 7); const nd = ymd(d);
+      const ok = await run(() => api("POST", `/api/lessons/${l.id}/cancel-request/move`), "Lekcja przeniesiona na " + fd(nd) + ".");
+      if (ok && overlap(lessons, nd, l.time, l.min, l.id).length) modal(<><h2>Uwaga: nakładające się terminy</h2><p>Lekcja została przeniesiona na {fd(nd)}, {l.time}, ale nakłada się na inną lekcję. Jeśli to pomyłka, zmień termin w edycji.</p><DoneBtn /></>);
+    }}>Przenieś na następny tydzień</button>}
+    {!pendingCr && l.status === "planned" && <>
       <button className="btn s" onClick={() => modal(<DoneModal l={l} />)}>Przeprowadzona</button>
       <button className="btn s" onClick={() => confirm({ title: "Odwołać lekcję?", text: <>{l.topic || "Bez tematu"} · {fd(l.date)}<br />{fee > 0 ? <>Zostanie naliczona opłata: <b>{pln(fee)}</b>.</> : "Odwołana lekcja nie jest płatna."}</>, ok: "Odwołaj lekcję",
         onOk: () => { run(() => api("PATCH", "/api/lessons/" + l.id, { status: "cancelled", fee, paid: false }), "Lekcja odwołana."); } })}>Odwołana</button>
     </>}
-    {(l.status !== "cancelled" || l.fee > 0) && <button className="btn s" onClick={() => {
+    {!pendingCr && (l.status !== "cancelled" || l.fee > 0) && <button className="btn s" onClick={() => {
       if (l.paid) run(() => api("PATCH", "/api/lessons/" + l.id, { paid: false }), "Cofnięto oznaczenie płatności.");
       else confirm({ title: "Czy na pewno lekcja została opłacona?", text: <>{l.topic || "Bez tematu"} · {s ? s.name : ""} · {fd(l.date)}{l.status === "cancelled" ? <><br />Odwołana lekcja – opłata za odwołanie: </> : <br />}<b>{pln(amt(l))}</b>. Możesz to później cofnąć.</>, ok: "Tak, opłacona",
         onOk: () => { run(() => api("PATCH", "/api/lessons/" + l.id, { paid: true }), "Lekcja oznaczona jako opłacona."); } });
     }}>{l.paid ? "Cofnij płatność" : "Opłacona"}</button>}
     {l.status === "cancelled" && !l.fee && fee > 0 && <button className="btn s p" onClick={() => run(() => api("PATCH", "/api/lessons/" + l.id, { fee }), "Naliczono opłatę: " + pln(fee) + ".")}>Nalicz opłatę</button>}
-    <button className="btn s" onClick={async () => {
+    {!pendingCr && <button className="btn s" onClick={async () => {
       const d = pd(l.date); d.setDate(d.getDate() + 7);
       const n = { sid: l.sid, subject: l.subject, date: ymd(d), time: l.time, min: l.min, topic: l.topic, status: "planned", paid: false, amount: l.amount, fee: 0 };
       const ok = await run(() => api("POST", "/api/lessons", n));
       if (!ok) return;
       if (overlap(lessons, n.date, n.time, n.min).length) modal(<><h2>Uwaga: nakładające się terminy</h2><p>Dodano lekcję na {fd(n.date)}, ale nakłada się ona na inną lekcję. Jeśli to pomyłka, zmień termin w edycji.</p><DoneBtn /></>);
       else modal(<><h2>Dodano lekcję</h2><p>Nowa lekcja: {fd(n.date)}, {n.time}.</p><DoneBtn /></>);
-    }}>Powtórz za tydzień</button>
+    }}>Powtórz za tydzień</button>}
     <button className="btn s" onClick={() => modal(<LessonForm l={l} />)}>Edytuj</button>
     <button className="btn s d" onClick={() => confirm({ title: "Usunąć lekcję?", text: pro ? "Lekcja trafi do kosza na 30 dni." : "Tej operacji nie można cofnąć. W planie Pro usunięte lekcje trafiają do kosza.", ok: "Usuń lekcję", danger: true,
       onOk: () => { run(() => api("DELETE", "/api/lessons/" + l.id), pro ? "Lekcja w koszu." : "Lekcja usunięta."); } })}>Usuń</button>
@@ -367,6 +373,7 @@ export function LessonSheet({ id }: { id: string }) {
     {l.hw && <p className="pre" style={{ margin: "0 0 8px" }}><b>Praca domowa:</b> {l.hw}{l.hd ? " (termin: " + fd(l.hd) + ")" : ""}</p>}
     {l.cr?.status === "pending" && <div className="nt">Uczeń prosi o odwołanie: {l.cr.reason}</div>}
     {l.cr?.status === "accepted" && l.status === "cancelled" && <p className="hint">Odwołana na prośbę ucznia: {l.cr.reason}</p>}
+    {l.cr?.status === "moved" && <p className="hint">Przeniesiona na prośbę ucznia{l.cr.note ? " z " + fd(l.cr.note) : ""}. Przyczyna: {l.cr.reason}</p>}
     <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--bd)" }}><LessonActions l={l} /></div>
     <div className="mf"><button className="btn" onClick={close}>Zamknij</button></div>
   </>;

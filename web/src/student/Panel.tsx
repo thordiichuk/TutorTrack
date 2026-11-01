@@ -64,7 +64,7 @@ export function StudentPanel() {
 
   const tags = (l: L) => {
     const st = ({ planned: ["Zaplanowana", "ac"], done: ["Przeprowadzona", "gr"], cancelled: ["Odwołana", "rd"] } as const)[l.status];
-    return <>{l.cr?.status === "pending" && <><span className="tag am">Prośba o odwołanie</span>{" "}</>}{l.cr?.status === "rejected" && l.status === "planned" && <><span className="tag rd">Odwołanie odrzucone</span>{" "}</>}<span className={"tag " + st[1]}>{st[0]}</span>{" "}{l.notes && <><span className="tag gr">Notatka</span>{" "}</>}{l.hw && (done.has(l.id) ? <span className="tag gr">Zadanie zrobione</span> : <span className="tag am">Zadanie</span>)}</>;
+    return <>{l.cr?.status === "pending" && <><span className="tag am">Prośba o odwołanie</span>{" "}</>}{l.cr?.status === "rejected" && l.status === "planned" && <><span className="tag rd">Odwołanie odrzucone</span>{" "}</>}{l.cr?.status === "moved" && l.status === "planned" && <><span className="tag ac">Przeniesiona</span>{" "}</>}<span className={"tag " + st[1]}>{st[0]}</span>{" "}{l.notes && <><span className="tag gr">Notatka</span>{" "}</>}{l.hw && (done.has(l.id) ? <span className="tag gr">Zadanie zrobione</span> : <span className="tag am">Zadanie</span>)}</>;
   };
   /** One short status for the compact plan row (most important first). */
   const shortTag = (l: L, clashing: boolean) => {
@@ -72,6 +72,7 @@ export function StudentPanel() {
     if (l.status === "cancelled") return <span className="tag rd">Odwołana</span>;
     if (l.cr?.status === "pending") return <span className="tag am">Prośba o odwołanie</span>;
     if (l.cr?.status === "rejected" && l.status === "planned") return <span className="tag rd">Odrzucono</span>;
+    if (l.cr?.status === "moved" && l.status === "planned") return <span className="tag ac">Przeniesiona</span>;
     if (l.hw && !done.has(l.id)) return <span className="tag am">Zadanie</span>;
     if (l.status === "done" && l.notes) return <span className="tag gr">Notatka</span>;
     return null;
@@ -95,6 +96,7 @@ export function StudentPanel() {
       {l.cr?.status === "pending" && <div className="nt" style={{ marginTop: 12 }}><b>Prośba o odwołanie wysłana</b> {fdt(l.cr.at)} – czeka na potwierdzenie korepetytora.<br />Przyczyna: {l.cr.reason}</div>}
       {l.cr?.status === "rejected" && l.status === "planned" && <div className="lerr" style={{ marginTop: 12 }}><b>Korepetytor odrzucił prośbę o odwołanie.</b>{l.cr.note && <><br />Komentarz: {l.cr.note}</>}<br />Twoja przyczyna: {l.cr.reason}</div>}
       {l.cr?.status === "accepted" && l.status === "cancelled" && <p className="hint" style={{ marginTop: 12 }}>Lekcja odwołana na Twoją prośbę. Przyczyna: {l.cr.reason}</p>}
+      {l.cr?.status === "moved" && <div className="nt" style={{ marginTop: 12 }}><b>Korepetytor przeniósł lekcję na Twoją prośbę</b>{l.cr.note ? <> – z {fd(l.cr.note)} na {fd(l.date)}</> : null}.<br />Przyczyna: {l.cr.reason}</div>}
       <div className="mf">
         {l.status === "planned" && l.cr?.status !== "pending" && <button className="btn d" style={{ marginRight: "auto" }} onClick={() => ov.modal(<CancelRequestForm l={l} onSent={load} />)}>Odwołaj lekcję</button>}
         {l.cr?.status === "pending" && <button className="btn d" style={{ marginRight: "auto" }} onClick={() => { ov.close(); run(() => api("DELETE", `/api/student/lessons/${l.id}/cancel-request`), "Prośba o odwołanie wycofana."); }}>Wycofaj prośbę</button>}

@@ -18,7 +18,7 @@ export type Lesson = {
   /** Student's request to cancel the lesson. */
   cr?: CancelRequest | null;
 };
-export type CancelRequest = { status: "pending" | "accepted" | "rejected"; reason: string; note: string; at: number };
+export type CancelRequest = { status: "pending" | "accepted" | "rejected" | "moved"; reason: string; note: string; at: number };
 export type TrashItem = { kind: "student" | "lesson"; id: string; name: string; lessons?: number; date?: string; time?: string; deletedAt: number };
 export type TutorData = { students: Student[]; lessons: Lesson[]; trash: TrashItem[] };
 

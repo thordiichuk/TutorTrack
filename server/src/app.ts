@@ -405,6 +405,13 @@ export async function buildApp(opts: { logger?: boolean; authRateLimit?: number 
     const r = (await q("UPDATE lessons SET status='cancelled', fee=$2, paid=false, cr_status='accepted' WHERE id=$1 RETURNING *", [l.id, Math.min(b.fee, l.amount)]))[0];
     return { lesson: mapLesson(r) };
   });
+  /* resolve the request by moving the lesson one week later; cr_note keeps the original date */
+  app.post("/api/lessons/:id/cancel-request/move", async (req) => {
+    const u = await need(req, "tutor");
+    const l = await pendingRequest(u, (req.params as any).id);
+    const r = (await q("UPDATE lessons SET date = date + 7, cr_status='moved', cr_note=$2 WHERE id=$1 RETURNING *", [l.id, l.date]))[0];
+    return { lesson: mapLesson(r) };
+  });
   app.post("/api/lessons/:id/cancel-request/reject", async (req) => {
     const u = await need(req, "tutor");
     const l = await pendingRequest(u, (req.params as any).id);
