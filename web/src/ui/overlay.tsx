@@ -28,7 +28,7 @@ export function OverlayProvider({ children }: { children: ReactNode }) {
   }, []);
   const toast = useCallback((t: string) => {
     const id = Math.random();
-    setToasts((x) => [...x, { id, t }]);
+    setToasts((x) => [...x.filter((y) => y.t !== t), { id, t }]);
     setTimeout(() => setToasts((x) => x.filter((y) => y.id !== id)), 2800);
   }, []);
   const confirm: Ctx["confirm"] = useCallback((o) => {
