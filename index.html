@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TutorTrack – dziennik korepetytora</title>
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--tx:#1b1f3b;--mu:#6b7090;--bd:#e4e6f0;--ac:#4f46e5;--ach:#4338ca;--acl:#eef0ff;--gr:#15803d;--grl:#e7f6ec;--am:#b45309;--aml:#fff4dc;--rd:#b91c1c;--rdl:#fdeaea;--sh:0 1px 2px rgba(27,31,59,.06),0 4px 14px rgba(27,31,59,.05)}
+*{box-sizing:border-box}html,body{margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--tx);line-height:1.5;font-size:15px;overflow-x:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.app{display:flex;min-height:100vh}
+.side{width:230px;background:var(--card);border-right:1px solid var(--bd);padding:20px 14px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:6px;flex-shrink:0}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;padding:4px 10px 18px}
+.logo i{width:32px;height:32px;border-radius:9px;background:var(--ac);color:#fff;display:grid;place-items:center}
+.nav{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:0;background:none;color:var(--mu);cursor:pointer;text-align:left;width:100%;transition:background .15s,color .15s}
+.nav:hover{background:var(--bg);color:var(--tx)}.nav.on{background:var(--acl);color:var(--ac);font-weight:600}
+.planchip{margin-top:auto;border:1px solid var(--bd);border-radius:12px;padding:12px;font-size:13px;color:var(--mu)}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 28px;background:rgba(255,255,255,.85);backdrop-filter:blur(8px);border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:5}
+.top h1{font-size:18px;margin:0}.top small{display:block;color:var(--mu);font-size:12px}
+.brandm{display:none}
+.content{padding:24px 28px 40px;max-width:1100px;width:100%}
+.banner{margin:0;padding:8px 28px;font-size:13px;background:var(--aml);color:var(--am);border-bottom:1px solid #f3dca8}
+.banner.info{background:var(--acl);color:var(--ach);border-color:#d9dcff}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--bd);background:var(--card);border-radius:10px;padding:8px 14px;cursor:pointer;font-weight:500;transition:transform .1s,background .15s,border-color .15s}
+.btn:hover{border-color:#c9cce0;background:#fafbff}.btn:active{transform:scale(.98)}
+.btn.p{background:var(--ac);border-color:var(--ac);color:#fff}.btn.p:hover{background:var(--ach)}
+.btn.d{color:var(--rd)}.btn.s{padding:5px 10px;font-size:13px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;box-shadow:var(--sh);padding:18px}
+.grid{display:grid;gap:16px}.g4{grid-template-columns:repeat(4,1fr)}.g2{grid-template-columns:1fr 1fr}
+.stat .l{color:var(--mu);font-size:13px}.stat .v{font-size:26px;font-weight:700;margin-top:4px}
+.v.gr{color:var(--gr)}.v.am{color:var(--am)}
+h2{font-size:16px;margin:0 0 12px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px}
+.bar .sp{flex:1}
+input,select,textarea{border:1px solid var(--bd);border-radius:10px;padding:8px 10px;background:#fff;width:100%;min-width:0}
+.bar input,.bar select{width:auto;flex:1;min-width:130px}
+.row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 0;border-bottom:1px solid var(--bd)}
+.row:last-child{border-bottom:0}.row .m{flex:1;min-width:180px}.row .m b{display:block}.row .m span{color:var(--mu);font-size:13px}
+.acts{display:flex;gap:6px;flex-wrap:wrap}
+.tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 9px;border-radius:99px;background:var(--bg);color:var(--mu);white-space:nowrap}
+.tag.gr{background:var(--grl);color:var(--gr)}.tag.am{background:var(--aml);color:var(--am)}.tag.ac{background:var(--acl);color:var(--ac)}.tag.rd{background:var(--rdl);color:var(--rd)}
+.amt{font-weight:600;min-width:80px;text-align:right}
+.empty{text-align:center;color:var(--mu);padding:28px 10px}.empty svg{opacity:.5;margin-bottom:6px}
+.scards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+.av{width:38px;height:38px;border-radius:50%;background:var(--acl);color:var(--ac);display:grid;place-items:center;font-weight:700;flex-shrink:0}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--bd);font-size:14px}th{color:var(--mu);font-weight:500;font-size:13px}
+td.n,th.n{text-align:right}.tw{overflow-x:auto}
+.plans{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.plan.cur{border-color:var(--ac);box-shadow:0 0 0 2px var(--acl),var(--sh)}
+.plan .pr{font-size:30px;font-weight:700}.plan ul{padding-left:18px;color:var(--mu);margin:12px 0}
+.ov{position:fixed;inset:0;background:rgba(27,31,59,.45);display:grid;place-items:center;padding:16px;z-index:50;animation:fi .15s}
+.modal{background:#fff;border-radius:16px;width:100%;max-width:520px;max-height:92vh;overflow:auto;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:up .18s}
+.modal.w{max-width:680px}
+@keyframes fi{from{opacity:0}}@keyframes up{from{transform:translateY(10px);opacity:0}}
+.f{margin-bottom:12px}.f label{display:block;font-size:13px;font-weight:600;margin-bottom:4px}.f .er{color:var(--rd);font-size:12px;margin-top:3px}
+.f input.bad,.f select.bad{border-color:var(--rd)}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.mf{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;flex-wrap:wrap}
+.hint{font-size:13px;color:var(--mu)}
+.demo{background:var(--aml);color:var(--am);border-radius:10px;padding:10px 12px;font-weight:600;font-size:14px;margin:10px 0}
+#toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;z-index:99;align-items:center;pointer-events:none}
+.t{background:var(--tx);color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;animation:up .2s;box-shadow:0 6px 20px rgba(0,0,0,.2)}
+.tabs{display:none}
+@media(max-width:860px){
+.side{display:none}.brandm{display:flex;align-items:center;gap:8px;font-weight:700}
+.top{padding:12px 16px}.top h1{font-size:16px}.content{padding:16px 16px 100px}.banner{padding:8px 16px}
+.g4{grid-template-columns:1fr 1fr}.g2,.plans{grid-template-columns:1fr}
+.tabs{display:flex;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--bd);z-index:6;padding-bottom:env(safe-area-inset-bottom)}
+.tabs button{border:0;background:none;color:var(--mu);display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer}
+.tabs button.on{color:var(--ac);font-weight:600}
+#toast{bottom:90px}
+}
+@media(max-width:480px){.g4{grid-template-columns:1fr}.f2{grid-template-columns:1fr}.top .btn span{display:none}.stat .v{font-size:22px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+[hidden]{display:none!important}
+a.nav,a.logo,.brandm,a.btn{text-decoration:none;color:inherit}a.btn.p{color:#fff}
+.lo,.mo,.mt{display:none}
+.ph{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.93);backdrop-filter:blur(8px);border-bottom:1px solid var(--bd)}
+.pi{max-width:1080px;margin:0 auto;padding:0 20px}
+.phi{display:flex;align-items:center;gap:16px;height:60px}.phi .logo{padding:0}
+.pn{display:flex;gap:4px;margin-left:12px}
+.lk{border:0;background:none;padding:8px 10px;border-radius:8px;color:var(--mu);cursor:pointer}.lk:hover{color:var(--tx)}.lk.on{color:var(--mu)}
+.de{display:flex;gap:8px;margin-left:auto}
+.hero{display:grid;grid-template-columns:1.05fr 1fr;gap:40px;align-items:center;padding:56px 0}
+.hero h1{font-size:clamp(28px,5vw,44px);line-height:1.15;margin:0 0 16px}.hero p{color:var(--mu);font-size:17px;margin:0 0 20px}
+.btns{display:flex;gap:10px;flex-wrap:wrap}.btns .btn{padding:11px 18px}
+.mk{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:10px;margin-bottom:8px}.mk .card{padding:10px;box-shadow:none}.mk .v{font-size:18px!important}
+.sec{padding:52px 0;scroll-margin-top:70px}.sec>h2{font-size:26px;margin:0 0 6px}.sec>.hint{margin:0 0 22px;font-size:15px}
+.g3{grid-template-columns:repeat(3,1fr)}
+.ico{width:40px;height:40px;border-radius:11px;background:var(--acl);color:var(--ac);display:grid;place-items:center;margin-bottom:10px}
+.card h3{margin:0 0 4px;font-size:16px}.card p{margin:0;color:var(--mu)}
+.rv{opacity:0;transform:translateY(12px);transition:opacity .5s,transform .5s}.rv.in{opacity:1;transform:none}
+details{border:1px solid var(--bd);border-radius:12px;padding:12px 16px;background:#fff;margin-bottom:10px}summary{cursor:pointer;font-weight:600}details p{margin:8px 0 0;color:var(--mu)}
+.cta{background:var(--ac);color:#fff;border-radius:18px;padding:36px 24px;text-align:center}.cta h2{margin:0 0 8px;font-size:24px}.cta p{margin:0 0 16px;opacity:.9}.cta .btn{background:#fff;color:var(--ach);border-color:#fff}
+.pf{border-top:1px solid var(--bd);margin-top:52px;padding:22px 0 30px;display:flex;gap:16px;flex-wrap:wrap;color:var(--mu);font-size:14px}.pf a{color:var(--mu)}.pf span{margin-right:auto}
+.au{max-width:440px;margin:36px auto;padding:0 16px}.au h1{font-size:24px;margin:0 0 6px}
+.chk{display:flex;gap:8px;align-items:flex-start;margin-bottom:4px}.chk input{width:auto;margin-top:4px}
+.lerr{background:var(--rdl);color:var(--rd);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:14px}.lerr:empty{display:none}
+.nt{background:var(--acl);color:var(--ach);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:14px}
+.pbar{height:8px;background:var(--bd);border-radius:9px;overflow:hidden;margin:10px 0 18px}.pbar i{display:block;height:100%;background:var(--ac);transition:width .3s}
+button:disabled{cursor:not-allowed;opacity:.6}
+@media(max-width:860px){.hero{grid-template-columns:1fr;padding:32px 0}.g3{grid-template-columns:1fr}.lo{display:inline-flex}#usr{display:none}.de{display:none}.mt{display:inline-flex;margin-left:auto}
+.pn{display:none;position:absolute;left:0;right:0;top:60px;background:#fff;border-bottom:1px solid var(--bd);flex-direction:column;padding:10px 20px;margin:0}.pn.open{display:flex}.mo{display:flex;gap:8px;flex-wrap:wrap;padding-top:8px}}
+.dm{margin-top:14px;border:1px solid var(--bd);border-radius:12px;background:var(--bg);padding:12px;min-height:150px;font-size:13px;overflow:hidden}
+.dm .fl{background:#fff;border:1px solid var(--bd);border-radius:8px;padding:6px 8px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap}
+.ty{display:inline-block;overflow:hidden;white-space:nowrap;vertical-align:bottom;max-width:100%;animation:typ 14s steps(13,end) infinite;border-right:2px solid var(--ac)}
+.pa{animation:pa 14s infinite}.pb{animation:pb 14s infinite}.pc{animation:pc 14s infinite}
+@keyframes typ{0%{width:0}30%,100%{width:13ch}}
+@keyframes pa{0%,8%{opacity:0;transform:translateY(8px)}18%,92%{opacity:1;transform:none}100%{opacity:0}}
+@keyframes pb{0%,33%{opacity:0;transform:translateY(8px)}43%,92%{opacity:1;transform:none}100%{opacity:0}}
+@keyframes pc{0%,58%{opacity:0;transform:translateY(8px)}68%,92%{opacity:1;transform:none}100%{opacity:0}}
+.st{animation:st 14s infinite backwards}
+@keyframes st{0%{opacity:0;transform:translateY(8px)}9%,85%{opacity:1;transform:none}100%{opacity:0}}
+.pw{list-style:none;padding:0;margin:-6px 0 12px;font-size:13px;color:var(--mu)}.pw li{display:flex;align-items:center;gap:8px}.pw .dt{width:8px;height:8px;border-radius:50%;background:var(--bd)}.pw li.ok{color:var(--gr)}.pw li.ok .dt{background:var(--gr)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.ch{text-align:center;font-size:12px;color:var(--mu);padding:4px 0}.cd{min-height:42px;border:1px solid var(--bd);border-radius:8px;background:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:2px;transition:border-color .15s}.cd:hover{border-color:#c9cce0}.cd.busy{background:var(--acl);border-color:#d9dcff;font-weight:600}.cd i{font-style:normal;font-size:11px;color:var(--ac)}.cd.td span{text-decoration:underline}.cd.sel{background:var(--ac);border-color:var(--ac);color:#fff}.cd.sel i{color:#fff}
+.cfs{border:1px solid var(--bd);border-radius:12px;padding:10px 12px;margin:0 0 12px;background:var(--bg)}.cfs legend{font-weight:600;padding:0 6px;font-size:13px}
+body[data-th=dark]{--bg:#12131a;--card:#1b1d2a;--tx:#ecedf5;--mu:#a0a3be;--bd:#2d3048;--ac:#8b85ff;--ach:#7a73f5;--acl:#262852;--gr:#4ade80;--grl:#12301f;--am:#fbbf24;--aml:#33280f;--rd:#f87171;--rdl:#3a1717;--sh:none}
+body[data-th=pink]{--bg:#fff6fa;--ac:#db2777;--ach:#be185d;--acl:#fde7f1;--bd:#f3dbe6}
+body[data-th=green]{--bg:#f2faf5;--ac:#15803d;--ach:#166534;--acl:#dcf5e5;--bd:#d6eadc}
+body[data-th] .modal,body[data-th] input,body[data-th] select,body[data-th] textarea,body[data-th] .tabs,body[data-th] .dm .fl,body[data-th] .cd,body[data-th] details,body[data-th] .top{background:var(--card)}
+body[data-th] .cd.busy{background:var(--acl)}body[data-th] .cd.sel{background:var(--ac)}body[data-th=dark] .btn:hover{background:var(--bg)}
+.thms{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.thm{border:2px solid var(--bd);border-radius:12px;background:var(--card);padding:10px;cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:8px;transition:border-color .15s}.thm:hover{border-color:#c9cce0}.thm.on{border-color:var(--ac)}
+.sw{display:flex;gap:4px}.sw i{width:22px;height:22px;border-radius:6px;border:1px solid rgba(0,0,0,.12)}
+body.demo .app,body.demo .tabs,body.demo .ov,body.demo #toast{filter:grayscale(1)}
+.banner.demo-b{background:#000;color:#fff;border:0;font-weight:600}
+body.demo{--bg:#fff;--aml:#fff;--acl:#f3f3f3;--grl:#f3f3f3;--rdl:#f3f3f3}
+body.demo .banner:not(.demo-b){background:#fff;color:#000;border-bottom:1px solid #000}
+body.demo .card{border-color:#cfcfcf}
+.bl{display:grid;grid-template-columns:1fr auto;gap:2px 10px;margin-bottom:8px;font-size:13px}.bl .bb{grid-column:1/-1;height:6px;border-radius:4px;background:var(--bd);overflow:hidden}.bl .bb i{display:block;height:100%;background:var(--ac)}
+.pt{display:none}
+.utabs{display:flex;gap:6px;overflow-x:auto;padding:16px 0 6px;margin-bottom:10px;scrollbar-width:none}.utabs::-webkit-scrollbar{display:none}.utabs .btn{flex:0 0 auto}
+.uday{padding:10px 0;border-bottom:1px solid var(--bd)}.uday:last-child{border-bottom:0}.uday h3{margin:0 0 2px;font-size:15px}.uday .row{padding:8px 0}
+.code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:24px;font-weight:700;letter-spacing:2px;background:var(--acl);color:var(--ach);border-radius:12px;padding:12px 14px;margin:0 0 8px;word-break:break-all}
+.pre{white-space:pre-wrap}
+.aud{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--bd);border-radius:99px;background:var(--card);margin-bottom:18px;max-width:100%}.aud a{padding:6px 14px;border-radius:99px;color:var(--mu);text-decoration:none;font-size:14px;font-weight:600;white-space:nowrap;transition:background .15s,color .15s}.aud a:hover{color:var(--tx)}.aud a[aria-current]{background:var(--ac);color:#fff}
+@media print{body.printing .app,body.printing .tabs,body.printing #pub,body.printing #toast{display:none!important}body.printing .ov{position:static;background:none;padding:0;display:block}body.printing .modal{box-shadow:none;max-height:none;max-width:none;padding:0}body.printing .modal textarea,body.printing .modal .mf,body.printing .modal .hint{display:none}body.printing .pt{display:block;white-space:pre-wrap;font-size:14px;color:#000}}
+@media(max-width:860px){.tabs{overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:none;mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 14px),transparent)}.tabs::-webkit-scrollbar{display:none}.tabs button{flex:0 0 auto;min-width:68px;padding:8px 8px;font-size:10.5px;white-space:nowrap;scroll-snap-align:start}}
+</style>
+</head>
+<body>
+<div id="pub" hidden></div>
+<div class="app" id="appw" hidden>
+<aside class="side" aria-label="Menu główne">
+<div class="logo"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/></svg></i>TutorTrack</div>
+<div id="nav"></div>
+<div class="planchip" id="chip"></div>
+</aside>
+<div class="main">
+<header class="top"><div style="display:flex;align-items:center;gap:12px;min-width:0"><a class="brandm" href="#/" aria-label="TutorTrack"><span class="logo" style="padding:0"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/></svg></i></span></a><div><h1 id="ttl"></h1><small id="sub"></small></div></div><div style="display:flex;align-items:center;gap:10px"><span class="hint" id="usr"></span><button class="btn s lo" data-a="logout">Wyloguj</button><button class="btn p" id="mainAct"></button></div></header>
+<div id="banners"></div>
+<main class="content" id="view" tabindex="-1"></main>
+</div>
+</div>
+<nav class="tabs" id="tabs" aria-label="Menu"></nav>
+<div id="toast" role="status" aria-live="polite"></div>
+<script>
+"use strict";
+var KEY="tutortrack-demo-v1",FREE=3,PRO_PLN=1900;
+var IC={home:'<path d="M3 11 12 3l9 8v10H3z"/>',users:'<circle cx="9" cy="8" r="3.5"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M17 4a3.5 3.5 0 0 1 0 7M22 21c0-3-2-5-5-5.5"/>',book:'<path d="M4 4h12a4 4 0 0 1 4 4v12H8a4 4 0 0 1-4-4z"/><path d="M8 8h8M8 12h8"/>',wallet:'<rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 10h18M16 15h2"/>',star:'<path d="m12 3 2.8 5.8 6.2.9-4.5 4.4 1.1 6.2L12 17.4 6.4 20.3l1.1-6.2L3 9.7l6.2-.9z"/>',plus:'<path d="M12 5v14M5 12h14"/>',inbox:'<path d="M3 13l3-8h12l3 8v6H3z"/><path d="M3 13h5l1 3h6l1-3h5"/>'};
+function ic(n,s){return '<svg width="'+(s||18)+'" height="'+(s||18)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+IC[n]+'</svg>'}
+var VIEWS=[["dash","Pulpit","home"],["students","Uczniowie","users"],["lessons","Lekcje","book"],["billing","Rozliczenia","wallet"],["stats","Statystyki","chart"],["plan","Plan i płatności","star"],["settings","Ustawienia","set"]];
+var S=null,persist=true,view="dash",ui={q:"",sf:"active",lf:{st:"",mo:"",ls:"",ps:""},month:ym(new Date()),bm:ym(new Date()),open:{}};
+function pad(n){return String(n).padStart(2,"0")}
+function ymd(d){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())}
+function ym(d){return d.getFullYear()+"-"+pad(d.getMonth()+1)}
+function addDays(n){var d=new Date();d.setDate(d.getDate()+n);return ymd(d)}
+function pd(s){var p=s.split("-");return new Date(+p[0],+p[1]-1,+p[2])}
+var WDSHORT=["niedz.","pon.","wt.","śr.","czw.","pt.","sob."],MSHORT=["sty","lut","mar","kwi","maj","cze","lip","sie","wrz","paź","lis","gru"],MLONG=["styczeń","luty","marzec","kwiecień","maj","czerwiec","lipiec","sierpień","wrzesień","październik","listopad","grudzień"];
+function fd(s){var d=pd(s);return WDSHORT[d.getDay()]+", "+d.getDate()+" "+MSHORT[d.getMonth()]+" "+d.getFullYear()}
+function fm(m){var p=m.split("-");return MLONG[+p[1]-1]+" "+p[0]}
+function pln(g){return (g/100).toLocaleString("pl-PL",{style:"currency",currency:"PLN"})}
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function uid(){return "x"+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function toG(v){v=String(v).trim().replace(/\s/g,"").replace(",",".");if(v===""||!/^-?\d+(\.\d+)?$/.test(v))return NaN;return Math.round(parseFloat(v)*100)}
+function gStr(g){return (g/100).toFixed(2).replace(".",",")}
+function calc(rate,min){return Math.round(rate*min/60)}
+function seed(){
+ var a={id:"s1",name:"Anna Kowalska",subject:"Matematyka",email:"",phone:"",rate:12000,note:"Przygotowanie do matury rozszerzonej.",active:true};
+ var b={id:"s2",name:"Jan Nowak",subject:"Angielski",email:"jan.demo@example.com",phone:"",rate:9000,note:"Poziom B1, cel: egzamin FCE.",active:true};
+ var c={id:"s3",name:"Maria Wiśniewska",subject:"Fizyka",email:"",phone:"500 000 000",rate:10000,note:"",active:true};
+ function L(i,s,d,t,m,top,n,st,p){var st0=s;return{id:"l"+i,sid:st0.id,date:addDays(d),time:t,min:m,topic:top,notes:n,status:st,paid:p,amount:calc(st0.rate,m)}}
+ return{plan:"free",students:[a,b,c],lessons:[
+ L(1,a,-34,"16:00",60,"Funkcje kwadratowe","Powtórzyć wzory Viète’a.","done",true),
+ L(2,b,-27,"18:00",45,"Present Perfect","","done",true),
+ L(3,c,-20,"17:00",90,"Kinematyka","Zadania z ruchu jednostajnie przyspieszonego.","done",false),
+ L(4,a,-9,"16:00",60,"Trygonometria","Dobrze poszło, brakuje ćwiczeń z wykresów.","done",true),
+ L(5,b,-6,"18:00",60,"Czasy przeszłe","Odwołane przez ucznia.","cancelled",false),
+ L(6,c,-3,"17:00",60,"Dynamika","Zasady Newtona – utrwalić.","done",false),
+ L(7,a,-1,"16:00",60,"Ciągi","","done",false),
+ L(8,b,1,"18:00",60,"Conditionals","","planned",false),
+ L(9,a,2,"16:00",90,"Prawdopodobieństwo","","planned",false),
+ L(10,c,4,"17:00",60,"Praca i energia","","planned",false)]}
+}
+function load(){
+ try{var r=localStorage.getItem(KEY);if(r){S=JSON.parse(r);return}}catch(e){persist=false}
+ S={plan:"free",students:[],lessons:[]};save()
+}
+function save(){if(!persist||sg()==="g")return;try{localStorage.setItem(KEY,JSON.stringify(S));queueSync()}catch(e){persist=false;banners()}}
+function stu(id){return S.students.filter(function(s){return s.id===id})[0]}
+function activeN(){return S.students.filter(function(s){return s.active}).length}
+function limited(){return S.plan==="free"&&activeN()>=FREE}
+function toast(t){var e=document.createElement("div");e.className="t";e.textContent=t;document.getElementById("toast").appendChild(e);setTimeout(function(){e.remove()},2800)}
+function banners(){
+ var h="";
+ if(!persist)h+='<p class="banner">Przeglądarka blokuje zapis dla pliku lokalnego – dane działają tylko w pamięci i znikną po zamknięciu lub odświeżeniu strony.</p>';
+ if(sg()==="g")h+='<p class="banner demo-b">TRYB DEMO – dane przykładowe, nic nie jest zapisywane. <button class="lk" data-a="logout" style="color:#fff;text-decoration:underline">Wyjdź z dema</button></p>';
+ h+='<p class="banner info">Lokalny prototyp demonstracyjny – nie wpisuj prawdziwych danych osobowych.</p>';
+ document.getElementById("banners").innerHTML=h
+}
+function lessonTags(l,nd){
+ var st={planned:["Zaplanowana","ac"],done:["Przeprowadzona","gr"],cancelled:["Odwołana","rd"]}[l.status];
+ var h=(l.status!=="cancelled"&&overlap(l.date,l.time,l.min,l.id).length?'<span class="tag rd">Uwaga: termin nakłada się na inną lekcję</span> ':"")+(nd?"":l.status==="planned"&&l.date===ymd(new Date())?'<span class="tag ac">Dziś</span> ':l.status==="planned"&&l.date===addDays(1)?'<span class="tag">Jutro</span> ':"")+'<span class="tag '+st[1]+'">'+st[0]+'</span> ';
+ if(l.status!=="cancelled"||l.fee>0)h+=l.paid?'<span class="tag gr">Opłacona</span>':'<span class="tag am">Nieopłacona</span>';
+ return h
+}
+function monthDone(m){return S.lessons.filter(function(l){return billable(l)&&l.date.slice(0,7)===m})}
+function sum(a,f){return a.reduce(function(t,l){return t+(f(l)?amt(l):0)},0)}
+function sortL(a,dir){return a.slice().sort(function(x,y){var k=(x.date+x.time).localeCompare(y.date+y.time);return dir*k})}
+function lrow(l,full,nd){
+ var s=stu(l.sid),h='<div class="row"'+(l.status!=="cancelled"&&overlap(l.date,l.time,l.min,l.id).length?' style="background:var(--rdl);border-left:4px solid var(--rd);padding-left:10px;border-radius:8px"':"")+'><div class="m"><b>'+(nd?"":fd(l.date)+", ")+esc(l.time)+'</b><span style="display:block;color:var(--tx)">'+esc(s?s.name:"?")+((l.subject||(s?subjList(s)[0]:""))?' · '+esc(l.subject||subjList(s)[0]):"")+'</span><span style="display:block;color:var(--tx)">'+l.min+' min · '+(l.status==="cancelled"?(l.fee>0?pln(l.fee)+" (opłata)":"bez opłaty"):pln(l.amount))+'</span><span style="display:block">Temat: '+esc(l.topic||"Bez tematu")+'</span>';
+ if(l.prep)h+='<span style="display:block">Przed zajęciami: '+esc(l.prep)+'</span>';if(l.notes)h+='<span style="display:block">Po zajęciach: '+esc(l.notes)+'</span>';if(l.hw)h+='<span style="display:block">Praca domowa: '+esc(l.hw)+(l.hd?' (termin: '+fd(l.hd)+')':'')+'</span>';
+ h+='</div><div>'+lessonTags(l,nd)+'</div>';
+ if(full){h+='<div class="acts">';
+  if(l.status==="planned")h+='<button class="btn s" data-a="done" data-id="'+l.id+'">Przeprowadzona</button><button class="btn s" data-a="cancelL" data-id="'+l.id+'">Odwołana</button>';
+  if(l.status!=="cancelled"||l.fee>0)h+='<button class="btn s" data-a="pay" data-id="'+l.id+'">'+(l.paid?"Cofnij płatność":"Opłacona")+'</button>';
+  if(l.status==="cancelled"&&!l.fee&&cancelFee(l)>0)h+='<button class="btn s p" data-a="chargeL" data-id="'+l.id+'">Nalicz opłatę</button>';h+='<button class="btn s" data-a="dup" data-id="'+l.id+'">Powtórz za tydzień</button><button class="btn s" data-a="editL" data-id="'+l.id+'">Edytuj</button><button class="btn s d" data-a="delL" data-id="'+l.id+'">Usuń</button></div>'}
+ return h+'</div>'
+}
+function empty(icon,t,sub){return '<div class="empty">'+ic(icon,36)+'<div><b>'+t+'</b></div><div>'+sub+'</div></div>'}
+function monthInput(id,v){return '<input type="month" id="'+id+'" value="'+v+'" aria-label="Miesiąc">'}
+
+function vDash(){
+ var m=ui.month,done=monthDone(m),now=ymd(new Date())+" "+new Date().toTimeString().slice(0,5);
+ var up=sortL(S.lessons.filter(function(l){return l.status==="planned"&&(l.date+" "+l.time)>=now}),1).slice(0,5);
+ var un=sortL(S.lessons.filter(function(l){return billable(l)&&!l.paid&&l.date.slice(0,7)===m}),1).slice(0,5);
+ var h=setupBar()+'<div class="bar"><div><h2 style="font-size:22px;margin:0">Cześć, '+esc(((P()||{}).name||"korepetytorze").split(" ")[0])+'!</h2><span class="hint">Oto Twoje podsumowanie za '+fm(m)+'.</span></div><span class="sp"></span>'+monthInput("dm",m)+'<button class="btn" data-a="addS">'+ic("plus",16)+' Dodaj ucznia</button><button class="btn p" data-a="addL">'+ic("plus",16)+' Dodaj lekcję</button></div>';
+ h+='<div class="grid g4"><div class="card stat"><div class="l">Aktywni uczniowie</div><div class="v">'+activeN()+'</div></div><div class="card stat"><div class="l">Przeprowadzone lekcje</div><div class="v">'+done.filter(function(l){return l.status==="done"}).length+'</div></div><div class="card stat"><div class="l">Opłacone lekcje</div><div class="v gr">'+pln(sum(done,function(l){return l.paid}))+'</div></div><div class="card stat"><div class="l">Do zapłaty</div><div class="v am">'+pln(sum(done,function(l){return !l.paid}))+'</div></div></div>';
+ h+=goalCard(m)+lateCard()+'<div class="grid g2" style="margin-top:16px"><div class="card"><h2>Najbliższe lekcje</h2>'+(up.length?up.map(function(l){return lrow(l,false)}).join(""):empty("inbox","Brak zaplanowanych lekcji","Dodaj lekcję, aby zobaczyć ją tutaj."))+'</div>';
+ h+='<div class="card"><h2>Nieopłacone lekcje – '+fm(m)+'</h2>'+(un.length?un.map(function(l){return lrow(l,false)}).join(""):empty("wallet","Wszystko opłacone","W wybranym miesiącu nie ma zaległości."))+'</div></div>';
+ return h
+}
+function vStudents(){
+ var q=ui.q.toLowerCase(),list=S.students.filter(function(s){
+  if(ui.sf==="active"&&!s.active)return false;if(ui.sf==="arch"&&s.active)return false;
+  if(ui.subj&&subjList(s).map(function(x){return x.toLowerCase()}).indexOf(ui.subj.toLowerCase())<0)return false;return !q||(s.name+" "+s.subject).toLowerCase().indexOf(q)>-1});
+ var h='<div class="bar"><input type="search" id="sq" placeholder="Szukaj: imię, nazwisko, przedmiot" value="'+esc(ui.q)+'" aria-label="Szukaj ucznia"><select id="sf" aria-label="Status ucznia"><option value="active"'+(ui.sf==="active"?" selected":"")+'>Aktywni</option><option value="arch"'+(ui.sf==="arch"?" selected":"")+'>Zarchiwizowani</option><option value="all"'+(ui.sf==="all"?" selected":"")+'>Wszyscy</option></select></div>'+subjChips();
+ if(!list.length)return h+'<div class="card">'+empty("users","Brak uczniów","Zmień filtry lub dodaj pierwszego ucznia.")+'</div>';
+ h+='<div class="scards">'+list.map(function(s){
+  var ls=S.lessons.filter(function(l){return l.sid===s.id&&l.status==="done"}),due=sum(S.lessons.filter(function(l){return l.sid===s.id&&billable(l)}),function(l){return !l.paid});
+  return '<div class="card"><div style="display:flex;gap:12px;align-items:center"><div class="av">'+esc(s.name.charAt(0).toUpperCase())+'</div><div style="min-width:0"><b>'+esc(s.name)+'</b><div class="hint">'+esc(s.subject)+' · '+pln(s.rate)+'/60 min</div></div></div><div style="margin:12px 0;display:flex;gap:6px;flex-wrap:wrap"><span class="tag '+(s.active?"gr":"")+'">'+(s.active?"Aktywny":"Zarchiwizowany")+'</span><span class="tag">'+ls.length+' lekcji</span>'+(s.share?'<span class="tag ac">Panel ucznia</span>':'')+(due?'<span class="tag am">Do zapłaty: '+pln(due)+'</span>':"")+'</div>'+nextL(s.id)+'<div class="acts"><button class="btn s" data-a="viewS" data-id="'+s.id+'">Szczegóły</button><button class="btn s" data-a="editS" data-id="'+s.id+'">Edytuj</button><button class="btn s" data-a="share" data-id="'+s.id+'">'+(s.share?"Kod ucznia":"Udostępnij uczniowi")+'</button><button class="btn s" data-a="arch" data-id="'+s.id+'">'+(s.active?"Archiwizuj":"Przywróć")+'</button>'+(s.active?"":'<button class="btn s d" data-a="delS" data-id="'+s.id+'">Usuń</button>')+'</div></div>'}).join("")+'</div>';
+ return h
+}
+function vLessonsList(){
+ var f=ui.lf,list=sortL(S.lessons.filter(function(l){
+  return (!f.st||l.sid===f.st)&&(!f.mo||l.date.slice(0,7)===f.mo)&&(!f.ls||l.status===f.ls)&&(!f.ps||((l.status!=="cancelled"||l.fee>0)&&(f.ps==="paid")===l.paid))&&(!f.q||(l.topic+" "+l.notes).toLowerCase().indexOf(f.q.toLowerCase())>-1)}),f.o==="asc"?1:-1);
+ function opt(v,t,c){return '<option value="'+v+'"'+(c===v?" selected":"")+'>'+t+'</option>'}
+ var h='<div class="bar"><input type="search" id="lfq" placeholder="Szukaj w temacie i notatkach" value="'+esc(f.q||"")+'" aria-label="Szukaj w lekcjach"><select id="lfs" aria-label="Uczeń"><option value="">Wszyscy uczniowie</option>'+S.students.map(function(s){return opt(s.id,esc(s.name),f.st)}).join("")+'</select><input type="month" id="lfm" value="'+f.mo+'" aria-label="Miesiąc"><select id="lfl" aria-label="Status lekcji">'+opt("","Każdy status lekcji",f.ls)+opt("planned","Zaplanowana",f.ls)+opt("done","Przeprowadzona",f.ls)+opt("cancelled","Odwołana",f.ls)+'</select><select id="lfp" aria-label="Status płatności">'+opt("","Każda płatność",f.ps)+opt("unpaid","Nieopłacona",f.ps)+opt("paid","Opłacona",f.ps)+'</select><select id="lfo" aria-label="Sortowanie według daty">'+opt("desc","Data: od najnowszych",f.o||"desc")+opt("asc","Data: od najstarszych",f.o||"desc")+'</select><button class="btn s" data-a="clr">Wyczyść filtry</button></div>';
+ return h+(list.length?dayGroups(list,f.o==="asc"?1:-1):'<div class="card">'+empty("book","Brak lekcji","Żadna lekcja nie pasuje do filtrów.")+'</div>')
+}
+function vBilling(){
+ var m=ui.bm,done=monthDone(m),tot=sum(done,function(){return true}),paid=sum(done,function(l){return l.paid});
+ var h='<div class="bar"><h2 style="margin:0">Podsumowanie miesiąca</h2><span class="sp"></span>'+monthInput("bmi",m)+'<button class="btn s" data-a="csv">Eksportuj CSV</button><button class="btn s" data-a="csvY">Eksport roku <span class="tag ac">Pro</span></button><button class="btn s" data-a="sumAll">Podsumowania wszystkich <span class="tag ac">Pro</span></button></div>';
+ h+='<div class="grid g4" style="grid-template-columns:repeat(3,1fr)"><div class="card stat"><div class="l">Należności</div><div class="v">'+pln(tot)+'</div></div><div class="card stat"><div class="l">Opłacone</div><div class="v gr">'+pln(paid)+'</div></div><div class="card stat"><div class="l">Pozostało do zapłaty</div><div class="v am">'+pln(tot-paid)+'</div></div></div>';
+ h+=cancelHint()+'<p class="hint">Podsumowania dotyczą dat lekcji, a nie dat otrzymania przelewów. To prosty dziennik rozliczeń – nie system księgowy ani narzędzie do faktur.</p>';
+ var ids=[];done.forEach(function(l){if(ids.indexOf(l.sid)<0)ids.push(l.sid)});
+ if(!ids.length)return h+'<div class="card">'+empty("wallet","Brak przeprowadzonych lekcji","W tym miesiącu nie ma lekcji do rozliczenia.")+'</div>';
+ h+='<div class="grid">'+ids.map(function(id){
+  var s=stu(id),ls=done.filter(function(l){return l.sid===id}),t=sum(ls,function(){return true}),p=sum(ls,function(l){return l.paid}),un=ls.filter(function(l){return !l.paid}),o=ui.open[id],due=t-p;
+  var c='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><b>'+esc(s?s.name:"?")+'</b><span class="tag">'+ls.length+' lekcji</span></div><div style="display:flex;gap:18px;flex-wrap:wrap;margin:12px 0;font-size:13px;color:var(--mu)"><span>Należność<br><b style="font-size:15px;color:var(--tx)">'+pln(t)+'</b></span><span>Opłacone<br><b style="font-size:15px;color:var(--gr)">'+pln(p)+'</b></span><span>Do zapłaty<br><b style="font-size:15px;color:'+(due?"var(--am)":"var(--tx)")+'">'+pln(due)+'</b></span></div><div class="acts">'+(un.length?'<button class="btn s" data-a="tog" data-id="'+id+'" aria-expanded="'+!!o+'">'+(o?"Zwiń":"Nieopłacone ("+un.length+")")+'</button>':'<span class="tag gr">Rozliczone</span>')+'<button class="btn s" data-a="msg" data-id="'+id+'">Podsumowanie</button></div>';
+  if(o&&un.length)c+='<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)"><button class="btn s p" data-a="payall" data-id="'+id+'">Oznacz wszystkie jako opłacone</button>'+un.map(function(l){return '<div class="row"><div class="m"><b>'+esc(l.topic||"Bez tematu")+'</b><span>'+fd(l.date)+' · '+l.min+' min</span></div><div class="amt">'+pln(amt(l))+'</div><button class="btn s" data-a="pay" data-id="'+l.id+'">Oznacz jako opłaconą</button></div>'}).join("")+'</div>';
+  return c+'</div>'
+ }).join("")+'</div>'+chartCard();
+ return h
+}
+function vPlan(){
+ var pro=S.plan==="pro",n=activeN(),h="";
+ if(!pro&&n>FREE)h+='<div class="card" style="border-color:#f3dca8;background:var(--aml);margin-bottom:16px"><b>Masz '+n+' aktywnych uczniów, a limit Free to '+FREE+'.</b><div>Wszystkie dane są zachowane i widoczne. Dodawanie i przywracanie uczniów jest zablokowane, dopóki nie zarchiwizujesz części uczniów lub nie włączysz Pro.</div></div>';
+ h+='<div class="plans"><div class="card plan'+(pro?"":" cur")+'"><h2>Free '+(pro?"":'<span class="tag ac">Twój plan</span>')+'</h2><div class="pr">0 zł</div><ul><li>Do '+FREE+' aktywnych uczniów</li><li>Lekcje, notatki i rozliczenia</li><li>Archiwum bez limitu</li><li>Przypomnienie o niepotwierdzonych lekcjach, szybkie odwoływanie i powtarzanie lekcji</li><li>Opłata za odwołanie, kopie danych, eksport CSV i zbiorcze oznaczanie płatności</li><li>Panel ucznia: udostępnianie lekcji, notatek i prac domowych</li></ul>'+(pro?'<button class="btn" data-a="free">Wróć do Free</button>':"")+'</div>';
+ h+='<div class="card plan'+(pro?" cur":"")+'"><h2>Pro '+(pro?'<span class="tag ac">Twój plan</span>':"")+'</h2><div class="pr">19 zł <span class="hint" style="font-size:14px;font-weight:400">/ miesiąc</span></div><ul><li>Bez limitu aktywnych uczniów</li><li>Wszystko z planu Free</li><li>Rozszerzone statystyki: przychód według przedmiotu i ucznia, odwołania, obłożenie</li><li>Wykres przychodu z 6 miesięcy i eksport roku</li><li>Podsumowania dla wszystkich uczniów naraz i wydruk PDF</li><li>Cel miesięczny z paskiem postępu</li><li>Szablony notatek</li><li>Kosz z przywracaniem przez 30 dni</li><li>Motywy kolorystyczne</li></ul>'+(pro?'<span class="hint">Pro aktywne w trybie demonstracyjnym.</span>':'<button class="btn p" data-a="tryPro">Przetestuj Pro</button>')+'</div></div>';
+ h+='<p class="hint">Tryb demonstracyjny – żadna płatność nie zostanie pobrana. Prototyp nie zbiera danych karty.</p><p class="hint" style="margin-top:12px">Kopia danych zawiera dane uczniów – przechowuj ją bezpiecznie.</p><div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-a="exp">Eksportuj kopię danych</button><button class="btn" data-a="imp">Importuj kopię danych</button><button class="btn d" data-a="reset">Przywróć dane demonstracyjne</button></div>';
+ return h
+}
+var TITLES={dash:["Pulpit","Dodaj lekcję","addL"],students:["Uczniowie","Dodaj ucznia","addS"],lessons:["Lekcje","Dodaj lekcję","addL"],billing:["Rozliczenia","Dodaj lekcję","addL"],plan:["Plan i płatności","Przetestuj Pro","tryPro"],welcome:["Powitanie","Przejdź do pulpitu","goDash"],settings:["Ustawienia","Pulpit","goDash"],stats:["Statystyki","Dodaj lekcję","addL"]};
+function render(){
+ var t=TITLES[view],pp=P(),g=sg()==="g",th=!g&&S.plan==="pro"&&S.set&&S.set.theme&&S.set.theme!=="light"?S.set.theme:"";document.body.classList.toggle("demo",g);if(th)document.body.dataset.th=th;else document.body.removeAttribute("data-th");document.getElementById("usr").textContent=pp&&(pp.brand||pp.name)||"";if(view==="billing"&&pp&&pp.onb&&!pp.onb.b){pp.onb.b=true;savePr()}
+ document.getElementById("ttl").textContent=t[0];document.getElementById("sub").textContent="";
+ var b=document.getElementById("mainAct");b.innerHTML=ic("plus",16)+"<span>"+(view==="plan"&&S.plan==="pro"?"Pro aktywne":t[1])+"</span>";b.dataset.a=view==="plan"&&S.plan==="pro"?"free":t[2];
+ if(view==="plan"&&S.plan==="pro"){b.innerHTML="<span>Wróć do Free</span>"}b.hidden=view==="settings";
+ var nav=VIEWS.map(function(v){return '<button class="nav'+(v[0]===view?" on":"")+'" data-go="'+v[0]+'"'+(v[0]===view?' aria-current="page"':"")+'>'+ic(v[2])+v[1]+'</button>'}).join("");
+ document.getElementById("nav").innerHTML=nav+'<button class="nav" data-a="logout">'+ic("out")+'Wyloguj się</button>';
+ document.getElementById("tabs").innerHTML=VIEWS.map(function(v){return '<button class="'+(v[0]===view?"on":"")+'" data-go="'+v[0]+'">'+ic(v[2],22)+(v[0]==="plan"?"Plan":v[1])+'</button>'}).join("");
+ document.getElementById("chip").innerHTML="Plan: <b>"+(S.plan==="pro"?"Pro":"Free")+"</b><br>Aktywni uczniowie: "+activeN()+(S.plan==="pro"?"":" / "+FREE);
+ var fn={stats:vStats,settings:vSettings,welcome:vWelcome,dash:vDash,students:vStudents,lessons:vLessons,billing:vBilling,plan:vPlan}[view];
+ var v=document.getElementById("view"),fid=document.activeElement&&document.activeElement.id,pos=document.activeElement&&document.activeElement.selectionStart;
+ v.innerHTML=fn();
+ if(fid&&(fid==="sq"||fid==="lfq")){var e=document.getElementById(fid);if(e){e.focus();try{e.setSelectionRange(pos,pos)}catch(x){}}}
+ banners()
+}
+/* Modal */
+var lastFocus=null;
+function modal(html,wide){
+ closeModal(true);lastFocus=document.activeElement;
+ var o=document.createElement("div");o.className="ov";o.id="ov";
+ o.innerHTML='<div class="modal'+(wide?" w":"")+'" role="dialog" aria-modal="true" tabindex="-1">'+html+'</div>';
+ document.body.appendChild(o);
+ o.addEventListener("mousedown",function(e){if(e.target===o)closeModal()});
+ var m=o.firstChild,f=m.querySelector("input,select,textarea,button");(f||m).focus()
+}
+function closeModal(quiet){var o=document.getElementById("ov");if(o)o.remove();if(!quiet&&lastFocus&&lastFocus.focus)try{lastFocus.focus()}catch(e){}}
+document.addEventListener("keydown",function(e){
+ var o=document.getElementById("ov");if(!o)return;
+ if(e.key==="Escape"){closeModal();return}
+ if(e.key==="Tab"){var f=[].slice.call(o.querySelectorAll("a[href],button:not([disabled]),input,select,textarea")).filter(function(x){return x.offsetParent});
+  if(!f.length)return;var a=f[0],z=f[f.length-1];
+  if(e.shiftKey&&document.activeElement===a){e.preventDefault();z.focus()}else if(!e.shiftKey&&document.activeElement===z){e.preventDefault();a.focus()}}
+});
+function confirmBox(title,text,btn,fn,danger){
+ modal('<h2>'+title+'</h2><p>'+text+'</p><div class="mf"><button class="btn" data-m="close">Anuluj</button><button class="btn '+(danger?"p":"p")+'" id="cok"'+(danger?' style="background:var(--rd);border-color:var(--rd)"':"")+'>'+btn+'</button></div>');
+ document.getElementById("cok").onclick=function(){closeModal();fn()}
+}
+function field(id,label,val,type,extra){return '<div class="f"><label for="'+id+'">'+label+'</label><input id="'+id+'" type="'+(type||"text")+'" value="'+esc(val)+'" aria-describedby="e_'+id+'" '+(extra||"")+'><div class="er" id="e_'+id+'" role="alert"></div></div>'}
+function err(id,msg){var e=document.getElementById("e_"+id),i=document.getElementById(id);if(e)e.textContent=msg||"";if(i){i.classList.toggle("bad",!!msg);i.setAttribute("aria-invalid",msg?"true":"false")}return !!msg}
+function upsell(){modal('<h2>Limit planu Free został osiągnięty</h2><p>Plan Free pozwala mieć do '+FREE+' aktywnych uczniów. Zarchiwizuj jednego z uczniów lub przetestuj Pro, aby dodawać bez limitu.</p><div class="mf"><button class="btn" data-m="close">Zamknij</button><button class="btn p" data-go="plan" data-m="close">Zobacz plan Pro</button></div>')}
+/* Students */
+function studentForm(id){
+ var s=id?stu(id):{name:"",subject:"",email:"",phone:"",rate:(S.set&&S.set.rate)||10000,note:""};
+ if(!id&&limited()){upsell();return}
+ modal('<h2>'+(id?"Edytuj ucznia":"Dodaj ucznia")+'</h2>'+field("sn","Imię i nazwisko *",s.name,"text",'autocomplete="off"')+'<div class="f2">'+field("ss","Przedmioty * (kilka po przecinku)",s.subject)+field("sr","Stawka za 60 min (zł) *",gStr(s.rate),"text",'inputmode="decimal"')+'</div><div id="srb"></div><div class="f2">'+field("se","E-mail (opcjonalnie)",s.email,"email")+field("sp","Telefon (opcjonalnie)",s.phone,"tel")+'</div>'+'<fieldset class="cfs"><legend>Odwołane lekcje</legend><div class="f"><label for="scm">Opłata za odwołanie</label><select id="scm"><option value="off">Brak opłaty</option><option value="percent">Procent ceny lekcji</option><option value="fixed">Stała kwota</option></select></div><div id="scw">'+field("scp","Procent ceny lekcji (%)",s.cancelPct||0,"number",'min="0" max="100" step="5"')+'</div><div id="scf">'+field("scx","Stała kwota (zł)",gStr(s.cancelFixed||0),"text",'inputmode="decimal"')+'</div></fieldset><div class="f"><label for="sno">Notatka</label><textarea id="sno" rows="3">'+esc(s.note)+'</textarea></div><div class="mf"><button class="btn" data-m="close">Anuluj</button><button class="btn p" id="ssv">Zapisz ucznia</button></div>');
+ var warnedSub="",rates=Object.assign({},s.rates||{});
+ function collect(){document.querySelectorAll("#srb input").forEach(function(i){var t=i.value.trim(),g=toG(t);if(!t)delete rates[i.dataset.sub];else if(!isNaN(g)&&g>=0)rates[i.dataset.sub]=g})}
+ function rb(){collect();var l=subjList({subject:v("ss")}),seen={},h2="";l.forEach(function(x){var k=x.toLowerCase();if(seen[k])return;seen[k]=1;h2+='<div class="f"><label>Stawka: '+esc(x)+' (zł / 60 min)</label><input data-sub="'+esc(x)+'" value="'+(rates[x]!=null?gStr(rates[x]):"")+'" placeholder="'+esc(v("sr"))+'" inputmode="decimal"></div>'});document.getElementById("srb").innerHTML=l.length>1?'<div class="hint" style="margin-bottom:6px">Osobne stawki dla przedmiotów (puste pole = stawka podstawowa):</div>'+h2:""}
+ document.getElementById("ss").addEventListener("input",rb);rb();
+ document.getElementById("scm").value=s.cancelMode||(s.cancelPct>0?"percent":"off");
+ function tg(){var m=document.getElementById("scm").value;document.getElementById("scw").hidden=m!=="percent";document.getElementById("scf").hidden=m!=="fixed"}document.getElementById("scm").addEventListener("change",tg);tg();
+ document.getElementById("ssv").onclick=function(){
+  var n=v("sn").trim(),sub=v("ss").trim(),r=toG(v("sr")),em=v("se").trim(),bad=false;
+  bad=err("sn",n?"":"Podaj imię i nazwisko.")|bad;var sl=sub.split(",").map(function(x){return x.trim().toLowerCase()}).filter(Boolean),dup=sl.filter(function(x,i){return sl.indexOf(x)!==i})[0];bad=err("ss",!sub?"Podaj przedmiot.":dup?"Przedmiot „"+dup+"” powtarza się na liście.":"")|bad;
+  var known={},origL=subjList({subject:sub});S.students.forEach(function(o2){if(o2.id!==id)subjList(o2).forEach(function(x){known[x.toLowerCase()]=x})});
+  var cn=origL.map(function(x){return known[x.toLowerCase()]||x}),near=null;
+  origL.forEach(function(x){if(near||known[x.toLowerCase()]||x.length<4)return;Object.keys(known).forEach(function(k){if(!near&&lev(x.toLowerCase(),k)<=1)near=[x,known[k]]})});
+  if(!bad&&near&&warnedSub!==sub){warnedSub=sub;err("ss","Przedmiot „"+near[0]+"” jest podobny do istniejącego „"+near[1]+"”. Popraw pisownię lub zapisz ponownie, jeśli to inny przedmiot.");document.getElementById("ss").focus();return}
+  if(!bad){origL.forEach(function(x,i){if(cn[i]!==x&&rates[x]!=null){rates[cn[i]]=rates[x];delete rates[x]}});sub=cn.join(", ")}
+  bad=err("sr",isNaN(r)||r<0?"Podaj poprawną, nieujemną stawkę.":"")|bad;
+  bad=err("se",em&&!/^\S+@\S+\.\S+$/.test(em)?"Niepoprawny adres e-mail.":"")|bad;var cm=v("scm"),cp=Number(v("scp")),cx=toG(v("scx"));bad=err("scp",cm==="percent"&&!(cp>=0&&cp<=100)?"Podaj liczbę od 0 do 100.":"")|bad;bad=err("scx",cm==="fixed"&&(isNaN(cx)||cx<0)?"Podaj poprawną, nieujemną kwotę.":"")|bad;
+  collect();var br=[].some.call(document.querySelectorAll("#srb input"),function(i){var t=i.value.trim();if(!t)return false;var g=toG(t);return isNaN(g)||g<0});if(br){toast("Popraw stawki przedmiotów – podaj kwoty nieujemne.");return}var rr={};subjList({subject:sub}).forEach(function(x){if(rates[x]!=null)rr[x]=rates[x]});if(bad)return;
+  if(id){var o=stu(id);o.name=n;o.subject=sub;o.rate=r;o.email=em;o.phone=v("sp").trim();o.note=v("sno").trim();o.cancelPct=cp;o.cancelMode=cm;o.cancelFixed=isNaN(cx)?0:cx;o.rates=rr}
+  else{if(limited()){closeModal();upsell();return}S.students.push({id:uid(),name:n,subject:sub,rate:r,email:em,phone:v("sp").trim(),note:v("sno").trim(),cancelPct:cp,cancelMode:cm,cancelFixed:isNaN(cx)?0:cx,rates:rr,active:true})}
+  if(id)applyFees(id);save();closeModal();render();toast(id?"Zapisano zmiany ucznia.":"Dodano ucznia.");if(ob){ob=0;go("welcome")}}
+}
+function v(id){return document.getElementById(id).value}
+function studentDetail(id){
+ var s=stu(id),ls=sortL(S.lessons.filter(function(l){return l.sid===id}),-1),dn=ls.filter(function(l){return l.status==="done"});
+ var h='<h2>'+esc(s.name)+' <span class="tag '+(s.active?"gr":"")+'">'+(s.active?"Aktywny":"Zarchiwizowany")+'</span></h2><div class="hint">'+esc(s.subject)+' · '+pln(s.rate)+' / 60 min</div>';
+ h+='<p>E-mail: '+(s.email?esc(s.email):"brak")+'<br>Telefon: '+(s.phone?esc(s.phone):"brak")+(s.note?'<br>Notatka: '+esc(s.note):"")+'</p>';
+ h+='<div class="grid g2" style="margin-bottom:12px"><div class="card stat"><div class="l">Przeprowadzone lekcje</div><div class="v">'+dn.length+'</div></div><div class="card stat"><div class="l">Do zapłaty</div><div class="v am">'+pln(sum(ls.filter(billable),function(l){return !l.paid}))+'</div></div></div>';
+ h+='<h2>Historia lekcji</h2>'+(ls.length?ls.map(function(l){return lrow(l,false)}).join(""):empty("book","Brak lekcji","Dodaj pierwszą lekcję dla tego ucznia."));
+ h+='<div class="mf"><button class="btn" data-m="close">Zamknij</button><button class="btn p" data-a="addL" data-id="'+id+'">Dodaj lekcję</button></div>';
+ modal(h,true)
+}
+function toggleArch(id){
+ var s=stu(id);
+ if(s.active){confirmBox("Zarchiwizować ucznia?","Historia lekcji i rozliczenia zostaną zachowane. Ucznia możesz przywrócić w każdej chwili.","Archiwizuj",function(){s.active=false;save();render();toast("Uczeń zarchiwizowany.")})}
+ else{if(limited()){upsell();return}s.active=true;save();render();toast("Uczeń przywrócony.")}
+}
+/* Lessons */
+function overlap(d,t,m,skip){
+ var a=+t.slice(0,2)*60+ +t.slice(3,5),b=a+m;
+ return S.lessons.filter(function(l){if(l.id===skip||l.status==="cancelled"||l.date!==d)return false;var x=+l.time.slice(0,2)*60+ +l.time.slice(3,5);return a<x+l.min&&x<b})
+}
+function lessonForm(id,pre){
+ var l=id?S.lessons.filter(function(x){return x.id===id})[0]:null,act=S.students.filter(function(s){return s.active||(l&&s.id===l.sid)});
+ if(!act.length){toast("Najpierw dodaj ucznia.");studentForm();return}
+ var d=l||{sid:pre||act[0].id,date:ymd(new Date()),time:(S.set&&S.set.time)||"16:00",min:(S.set&&S.set.dur)||60,topic:"",notes:"",status:"planned",paid:false,amount:0},manual=!!l;
+ if(!l)d.amount=calc(rateFor(stu(d.sid),subjList(stu(d.sid))[0]),d.min);
+ if(LD){d=Object.assign({},d,LD);manual=true;LD=null}
+ function o(val,t,c){return '<option value="'+val+'"'+(val===c?" selected":"")+'>'+t+'</option>'}
+ modal('<h2>'+(id?"Edytuj lekcję":"Dodaj lekcję")+'</h2><div class="f"><label for="lst">Uczeń *</label><select id="lst">'+act.map(function(s){return o(s.id,esc(s.name)+(s.active?"":" (zarchiwizowany)"),d.sid)}).join("")+'</select></div><div class="f"><label for="lsu">Przedmiot</label><select id="lsu">'+subjOpts(d.sid,d.subject)+'</select></div><div class="f2">'+field("ld","Data *",d.date,"date")+field("lt","Godzina *",d.time,"time")+'</div><div class="f2">'+field("lm","Czas trwania (min) *",d.min,"number",'min="1" step="5"')+field("la","Kwota (zł) *",gStr(d.amount),"text",'inputmode="decimal"')+'</div><div class="hint" style="margin:-6px 0 10px">Kwota liczy się automatycznie ze stawki ucznia. Możesz ją zmienić ręcznie.</div>'+field("lto","Temat lekcji",d.topic)+'<div class="f"><label for="lpn">Notatka przed zajęciami</label>'+tplSel("lpn")+'<textarea id="lpn" rows="2" placeholder="Plan lekcji, materiały, zadania do omówienia">'+esc(d.prep||"")+'</textarea></div><div class="f"><label for="lno">Notatka po zajęciach</label>'+tplSel("lno")+'<textarea id="lno" rows="3">'+esc(d.notes)+'</textarea></div><div class="f2"><div class="f"><label for="lhw">Praca domowa</label><textarea id="lhw" rows="2" placeholder="Np. zad. 3–7, str. 52">'+esc(d.hw||"")+'</textarea></div>'+field("lhd","Termin pracy domowej",d.hd||"","date")+'</div><p class="hint" style="margin:-6px 0 10px">Notatka po zajęciach i praca domowa są widoczne w panelu ucznia, jeśli udostępnisz mu dostęp. Notatka przed zajęciami zostaje prywatna.</p><div class="f2"><div class="f"><label for="lss">Status lekcji</label><select id="lss">'+o("planned","Zaplanowana",d.status)+o("done","Przeprowadzona",d.status)+o("cancelled","Odwołana",d.status)+'</select></div><div class="f"><label for="lps">Status płatności</label><select id="lps">'+o("0","Nieopłacona",d.paid?"1":"0")+o("1","Opłacona",d.paid?"1":"0")+'</select></div></div><div id="lfw"'+(d.status==="cancelled"?"":' hidden')+'>'+field("lfe","Opłata za odwołanie (zł)",gStr(d.fee>0?d.fee:cancelFee(d)),"text",'inputmode="decimal"')+'</div><p class="hint">Odwołana lekcja jest płatna tylko wtedy, gdy w danych ucznia ustawiono opłatę za odwołanie.</p><div class="mf"><button class="btn" data-m="close">Anuluj</button><button class="btn p" id="lsv">Zapisz lekcję</button></div>');
+ function auto(){if(manual)return;var r=toG(v("lm"));var s=stu(v("lst"));if(s&&!isNaN(r))document.getElementById("la").value=gStr(calc(rateFor(s,v("lsu")),+v("lm")))}
+ document.getElementById("lst").onchange=function(){manual=false;document.getElementById("lsu").innerHTML=subjOpts(v("lst"),"");auto()};
+ document.getElementById("lm").oninput=auto;
+ document.getElementById("la").oninput=function(){manual=true};
+ var fm2=false;document.getElementById("lsu").onchange=function(){manual=false;auto()};document.getElementById("lfe").oninput=function(){fm2=true};document.getElementById("lss").onchange=function(){var c=this.value==="cancelled";document.getElementById("lfw").hidden=!c;if(c&&!fm2){var a=toG(v("la"));document.getElementById("lfe").value=gStr(cancelFee({sid:v("lst"),amount:isNaN(a)?0:a}))}};
+ document.getElementById("lsv").onclick=function(){
+  var m=Number(v("lm")),amt=toG(v("la")),bad=false;
+  bad=err("ld",v("ld")?"":"Wybierz datę.")|bad;bad=err("lt",v("lt")?"":"Wybierz godzinę.")|bad;
+  bad=err("lm",!(m>0)||Math.round(m)!==m?"Czas trwania musi być dodatnią liczbą minut.":"")|bad;
+  bad=err("la",isNaN(amt)||amt<0?"Podaj poprawną, nieujemną kwotę.":"")|bad;
+  if(bad)return;
+  var rec={sid:v("lst"),subject:v("lsu"),prep:v("lpn").trim(),date:v("ld"),time:v("lt"),min:m,topic:v("lto").trim(),notes:v("lno").trim(),hw:v("lhw").trim(),hd:v("lhw").trim()?v("lhd"):"",status:v("lss"),paid:v("lps")==="1",amount:amt};
+  var fe=toG(v("lfe"));if(rec.status==="cancelled"&&(isNaN(fe)||fe<0)){err("lfe","Podaj poprawną, nieujemną kwotę.");return}rec.fee=rec.status==="cancelled"?fe:0;if(rec.status==="cancelled"&&!rec.fee)rec.paid=false;
+  function commit(){
+   if(l)Object.assign(l,rec);else{rec.id=uid();S.lessons.push(rec)}
+   save();closeModal();render();toast(l?"Zapisano zmiany lekcji.":"Dodano lekcję.");if(ob){ob=0;go("welcome")}}
+  var ov=rec.status==="cancelled"?[]:overlap(rec.date,rec.time,m,l&&l.id);
+  if(ov.length){var x=ov[0],s=stu(x.sid);
+   modal('<h2>Nakładające się terminy</h2><p>W tym czasie masz już lekcję: <b>'+esc(s?s.name:"")+'</b>, '+fd(x.date)+', '+esc(x.time)+' ('+x.min+' min). Czy na pewno zapisać obie?</p><div class="mf"><button class="btn" id="ovb">Wróć do edycji</button><button class="btn p" id="ovk">Zapisz mimo to</button></div>');
+   document.getElementById("ovk").onclick=commit;document.getElementById("ovb").onclick=function(){LD=rec;lessonForm(l?l.id:null)}}
+  else commit()}
+}
+function dayGroups(list,dir){var m={},ds=[];list.forEach(function(l){if(!m[l.date]){m[l.date]=[];ds.push(l.date)}m[l.date].push(l)});ds.sort(function(a,b){return dir*a.localeCompare(b)});return ds.map(function(d){return '<div class="card" style="margin-bottom:14px"><h3 style="margin:0 0 4px;font-size:16px">'+fd(d)+(d===ymd(new Date())?' <span class="tag ac">Dziś</span>':'')+'</h3>'+m[d].sort(function(a,b){return a.time.localeCompare(b.time)}).map(function(l){return lrow(l,true,true)}).join("")+'</div>'}).join("")}
+function lget(id){return S.lessons.filter(function(x){return x.id===id})[0]}
+/* Pro simulation */
+function proSim(){
+ modal('<h2>Przetestuj Pro</h2><div class="demo">Tryb demonstracyjny - żadna płatność nie zostanie pobrana</div><p>Pro kosztuje 19 zł miesięcznie i znosi limit aktywnych uczniów. Ten ekran tylko symuluje zakup – nie ma tu pól na dane karty.</p><div class="mf"><button class="btn" id="pc">Anuluj zakup</button><button class="btn p" id="po">Zasymuluj udany zakup</button></div>');
+ document.getElementById("pc").onclick=function(){closeModal();toast("Zakup anulowany. Zostajesz na planie Free.")};
+ document.getElementById("po").onclick=function(){S.plan="pro";save();closeModal();render();toast("Pro odblokowane (symulacja).")}
+}
+/* Events */
+document.addEventListener("click",function(e){
+ var g=e.target.closest("[data-go]");
+ if(g){if(g.dataset.m)closeModal(true);go(g.dataset.go);return}
+ if(e.target.closest("[data-m=close]")){closeModal();return}
+ var b=e.target.closest("[data-a]");if(!b)return;
+ var a=b.dataset.a,id=b.dataset.id;
+ if(a==="addS")studentForm();
+ else if(a==="editS")studentForm(id);
+ else if(a==="viewS")studentDetail(id);
+ else if(a==="arch")toggleArch(id);
+ else if(a==="addL")lessonForm(null,id);
+ else if(a==="editL")lessonForm(id);
+ else if(a==="done"){var l=lget(id),sd=stu(l.sid);
+  modal('<h2>Oznaczyć lekcję jako przeprowadzoną?</h2><p class="hint">'+esc(l.topic||"Bez tematu")+' · '+esc(sd?sd.name:"")+' · '+fd(l.date)+', '+esc(l.time)+'</p><div class="f"><label for="dn">Notatka podsumowująca (opcjonalnie)</label><textarea id="dn" rows="4" placeholder="Co omówiliście? Co warto powtórzyć na następnej lekcji?">'+esc(l.notes)+'</textarea></div><div class="f2"><div class="f"><label for="dhw">Praca domowa (opcjonalnie)</label><textarea id="dhw" rows="2" placeholder="Np. zad. 3–7, str. 52">'+esc(l.hw||"")+'</textarea></div>'+field("dhd","Termin pracy domowej",l.hd||"","date")+'</div><p class="hint">Po potwierdzeniu lekcja trafi do rozliczeń jako przeprowadzona.</p><div class="mf"><button class="btn" data-m="close">Anuluj</button><button class="btn p" id="dok">Potwierdź</button></div>');
+  document.getElementById("dok").onclick=function(){var n=document.getElementById("dn").value.trim();l.status="done";if(n)l.notes=n;l.hw=document.getElementById("dhw").value.trim();l.hd=l.hw?document.getElementById("dhd").value:"";save();closeModal();render();toast(n?"Lekcja przeprowadzona, notatka zapisana.":"Lekcja oznaczona jako przeprowadzona.")}}
+ else if(a==="pay"){var l2=lget(id);
+  if(l2.paid){l2.paid=false;save();render();toast("Cofnięto oznaczenie płatności.")}
+  else{var sp=stu(l2.sid);confirmBox("Czy na pewno lekcja została opłacona?",esc(l2.topic||"Bez tematu")+" · "+esc(sp?sp.name:"")+" · "+fd(l2.date)+(l2.status==="cancelled"?"<br>Odwołana lekcja – opłata za odwołanie: ":"<br>")+"<b>"+pln(amt(l2))+"</b>. Możesz to później cofnąć.","Tak, opłacona",function(){l2.paid=true;save();render();toast("Lekcja oznaczona jako opłacona.")})}}
+ else if(a==="delL"){var pro0=S.plan==="pro";confirmBox("Usunąć lekcję?",pro0?"Lekcja trafi do kosza na 30 dni.":"Tej operacji nie można cofnąć. W planie Pro usunięte lekcje trafiają do kosza.","Usuń lekcję",function(){var x0=lget(id);if(pro0&&x0)(S.trash=S.trash||[]).push({t:"lesson",d:x0,at:Date.now()});S.lessons=S.lessons.filter(function(x){return x.id!==id});save();render();toast(pro0?"Lekcja w koszu.":"Lekcja usunięta.")},true)}
+ else if(a==="tog"){ui.open[id]=!ui.open[id];render()}
+ else if(a==="clr"){ui.lf={st:"",mo:"",ls:"",ps:""};render()}
+ else if(a==="cset"){var c=S.cancel||{mode:"off",fixed:0};function so(x,t){return '<option value="'+x+'"'+(c.mode===x?" selected":"")+'>'+t+'</option>'}
+  modal('<h2>Opłata za odwołaną lekcję</h2><div class="f"><label for="cm">Sposób naliczania</label><select id="cm">'+so("off","Brak opłaty")+so("fixed","Stała kwota")+so("percent","Procent ceny lekcji (ustawiany przy uczniu)")+'</select></div>'+field("cf","Stała kwota (zł)",gStr(c.fixed||0),"text",'inputmode="decimal"')+'<div class="chk"><input type="checkbox" id="cap" checked><label for="cap">Zastosuj do odwołanych lekcji bez naliczonej opłaty</label></div><p class="hint">Opłata jest zapisywana przy lekcji w chwili odwołania – późniejsza zmiana ustawień nie zmienia historii. Przy opłacie procentowej wartość ustawiasz w danych ucznia.</p><div class="mf"><button class="btn" data-m="close">Anuluj</button><button class="btn p" id="csv2">Zapisz</button></div>');
+  document.getElementById("csv2").onclick=function(){var m=v("cm"),f=toG(v("cf"));if(err("cf",m==="fixed"&&(isNaN(f)||f<0)?"Podaj poprawną, nieujemną kwotę.":""))return;S.cancel={mode:m,fixed:isNaN(f)?0:f};if(document.getElementById("cap").checked)S.lessons.forEach(function(l){if(l.status==="cancelled"&&!l.fee&&!l.paid)l.fee=cancelFee(l)});save();closeModal();render();toast("Zapisano ustawienia opłaty.")}}
+ else if(a==="tryPro")proSim();
+ else if(a==="free")confirmBox("Wrócić do planu Free?","Wszystkie dane zostaną zachowane. Jeśli masz więcej niż "+FREE+" aktywnych uczniów, dodawanie i przywracanie uczniów zostanie zablokowane.","Wróć do Free",function(){S.plan="free";save();render();toast("Plan zmieniony na Free.")});
+ else if(a==="reset")confirmBox("Przywrócić dane demonstracyjne?","Wszystkie Twoje zmiany zostaną zastąpione przykładowymi danymi.","Przywróć dane",function(){S=seed();save();ui.open={};if(sg()!=="g"){PR=null;savePr()}ss(null);toast("Przywrócono dane demonstracyjne i wyczyszczono profil.");location.hash="#/";route()},true);
+});
+document.addEventListener("change",function(e){
+ var t=e.target.id;
+ if(t==="dm"&&e.target.value){ui.month=e.target.value;render()}
+ else if(t==="bmi"&&e.target.value){ui.bm=e.target.value;render()}
+ else if(t==="sf"){ui.sf=e.target.value;render()}
+ else if(t==="lfs"){ui.lf.st=e.target.value;render()}
+ else if(t==="lfm"){ui.lf.mo=e.target.value;render()}
+ else if(t==="lfl"){ui.lf.ls=e.target.value;render()}
+ else if(t==="lfp"){ui.lf.ps=e.target.value;render()}
+ else if(t==="lfo"){ui.lf.o=e.target.value;render()}
+ else if(t==="srg"){ui.sr=e.target.value;render()}
+});
+document.addEventListener("input",function(e){if(e.target.id==="sq"){ui.q=e.target.value;render()}});
+document.getElementById("mainAct").addEventListener("click",function(){
+ 
+});
+
+/* ===== Strona publiczna, konto, powitanie ===== */
+var ob=0,PK="tutortrack-profile-v1",PR=null,memS=null,ignore=false,noticeFlag=false,curPage="",pendingSc=null;
+var LOGO='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/></svg>';
+IC.check='<path d="m5 12 5 5 9-10"/>';IC.menu='<path d="M4 6h16M4 12h16M4 18h16"/>';IC.note='<path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h5"/>';IC.alert='<circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/>';IC.out='<path d="M10 4H5v16h5M15 8l4 4-4 4M19 12H9"/>';IC.cal='<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>';
+function $(i){return document.getElementById(i)}
+function sg(){try{return sessionStorage.getItem("tt-s")}catch(e){return memS}}
+function ss(x){memS=x;try{if(x)sessionStorage.setItem("tt-s",x);else sessionStorage.removeItem("tt-s")}catch(e){}}
+function loadPr(){try{PR=JSON.parse(localStorage.getItem(PK))}catch(e){PR=null}}
+function savePr(){if(!persist)return;try{if(PR)localStorage.setItem(PK,JSON.stringify(PR));else localStorage.removeItem(PK)}catch(e){persist=false}}
+var GP={name:"Gość",brand:"",skipped:true,onb:{b:true}};
+function P(){return sg()==="g"?GP:PR}
+function logged(){return !!(sg()||(PR&&PR.logged))}
+function hs(x){var h=5381,i;x="tt$"+x;for(i=0;i<x.length;i++)h=((h<<5)+h+x.charCodeAt(i))|0;return h.toString(36)}
+function subjList(s){return String(s.subject||"").split(",").map(function(x){return x.trim()}).filter(Boolean)}
+function subjOpts(sid,cur){var s=stu(sid),l=s?subjList(s):[];if(cur&&l.indexOf(cur)<0)l.push(cur);return l.map(function(x){return '<option'+(x===cur?" selected":"")+'>'+esc(x)+'</option>'}).join("")}
+function go(x){var t="#/aplikacja/"+x;ignore=location.hash!==t;location.hash=t;route()}
+window.addEventListener("hashchange",function(){if(ignore){ignore=false;return}route()});
+function route(){ob=0;
+ var p=location.hash.replace(/^#\/?/,"").split("/");closeModal(true);
+ if(p[0]==="uczen"&&p[1]==="panel"){stuPanel();return}
+ if(p[0]==="aplikacja"){
+  if(!logged()){noticeFlag=true;pub("logowanie");return}
+  view=p[1]&&TITLES[p[1]]?p[1]:"dash";$("pub").hidden=true;$("appw").hidden=false;$("tabs").hidden=false;render();window.scrollTo(0,0)
+ }else pub(p[0])
+}
+function pubHead(){
+ var l=logged(),su=curPage==="uczen",lk=(su?[["korzysci","Korzyści"],["jak","Jak to działa"],["pytania-u","Pytania"]]:[["funkcje","Funkcje"],["kroki","Pierwsze kroki"],["cennik","Cennik"]]).map(function(x){return '<button class="lk" data-sc="'+x[0]+'">'+x[1]+'</button>'}).join("");
+ var cta=su?'<a class="btn" href="#/">Jestem korepetytorem</a><a class="btn p" href="#/uczen/panel">Panel ucznia</a>':l?'<a class="btn p" href="#/aplikacja/dash">Przejdź do panelu</a>':'<a class="btn" href="#/logowanie">Zaloguj się</a><a class="btn p" href="#/rejestracja">Zacznij bezpłatnie</a>';
+ return '<header class="ph"><div class="pi phi"><a class="logo" href="#/" aria-label="TutorTrack"><i>'+LOGO+'</i></a><nav class="pn" id="pn" aria-label="Nawigacja główna">'+lk+'<span class="mo">'+cta+'</span></nav><div class="de">'+cta+'</div><button class="btn s mt" id="mt" aria-expanded="false" aria-controls="pn" aria-label="Menu">'+ic("menu")+'</button></div></header>'
+}
+function pubFoot(){return '<footer class="pi pf"><span>© '+new Date().getFullYear()+' TutorTrack</span><a href="#/regulamin">Regulamin</a><a href="#/prywatnosc">Polityka prywatności</a></footer>'}
+function card3(i,t,d){return '<div class="card rv"><div class="ico">'+ic(i,20)+'</div><h3>'+t+'</h3><p>'+d+'</p></div>'}
+function vHome(){
+ var h='<div class="pi"><section class="hero"><div>'+audSw(0)+'<h1>Dziennik korepetytora, który porządkuje uczniów, lekcje i rozliczenia</h1><p>Notatki w kilku miejscach i niepewność, kto ma zapłacić i ile? TutorTrack trzyma wszystko w jednym miejscu.</p><div class="btns"><a class="btn p" href="#/rejestracja">Zacznij bezpłatnie</a><button class="btn" data-a="demo">Zobacz demo</button></div><p class="hint" style="margin-top:12px">Bez karty. Plan darmowy do '+FREE+' aktywnych uczniów.</p></div>';
+ h+='<div class="card" role="img" aria-label="Przykładowy podgląd panelu TutorTrack"><div class="hint" style="margin-bottom:8px">Przykładowy podgląd panelu</div><div class="mk"><div class="card stat"><div class="l">Lekcje</div><div class="v">3</div></div><div class="card stat"><div class="l">Opłacone</div><div class="v gr">'+pln(22000)+'</div></div><div class="card stat"><div class="l">Do zapłaty</div><div class="v am">'+pln(9000)+'</div></div></div>';
+ [["Matematyka","Anna K.",12000,1],["Angielski","Jan N.",9000,0],["Fizyka","Maria W.",10000,1]].forEach(function(r){h+='<div class="row"><div class="m"><b>'+r[0]+'</b><span>'+r[1]+'</span></div><span class="tag '+(r[3]?"gr":"am")+'">'+(r[3]?"Opłacona":"Nieopłacona")+'</span><div class="amt">'+pln(r[2])+'</div></div>'});
+ h+='</div></section>';
+ h+='<section class="sec"><h2>Problem, który rozwiązujemy</h2><p class="hint">Z tym najczęściej mierzą się korepetytorzy.</p><div class="grid g3">'+card3("note","Rozproszone notatki","Uwagi po lekcjach lądują w telefonie, zeszycie i mailach.")+card3("wallet","Brak kontroli nad płatnościami","Trudno szybko sprawdzić, która lekcja jest opłacona.")+card3("alert","Niepewna kwota do zapłaty","Ręczne liczenie godzin i stawek kończy się pomyłkami.")+'</div></section>';
+ h+='<section class="sec" id="funkcje"><h2>Funkcje</h2><p class="hint">Tylko to, co naprawdę jest w produkcie.</p><div class="grid g3">'+card3("users","Uczniowie","Dane kontaktowe, stawka, notatki, kilka przedmiotów u jednego ucznia, archiwizacja oraz gotowe miesięczne podsumowanie lekcji i kwot do wysłania uczniowi lub rodzicowi.")+card3("book","Lekcje","Terminy, czas trwania, temat, notatka po zajęciach, praca domowa i status płatności.")+card3("wallet","Rozliczenia","Suma należności, opłacone lekcje, kwota do zapłaty i podsumowanie według uczniów.")+card3("home","Pulpit","Liczba uczniów, lekcje w miesiącu, opłacone kwoty i zaległości.")+card3("star","Plan i płatności","Darmowy start i plan Pro bez limitu uczniów.")+card3("note","Panel ucznia","Udostępnij uczniowi kodem dostępu plan lekcji, notatki po zajęciach i prace domowe. Dane aktualizują się automatycznie.")+'</div>';
+ var CK='<h2>Kalkulator lekcji</h2><p class="hint" style="margin:0 0 12px">Sprawdź, jak TutorTrack liczy kwotę lekcji.</p><div class="card rv" style="max-width:560px"><p class="hint" style="margin-bottom:12px">Tak TutorTrack liczy kwotę lekcji: stawka × czas ÷ 60.</p><div class="f2"><div class="f"><label for="ck_r">Stawka za 60 min (zł)</label><input id="ck_r" inputmode="decimal" value="100"></div><div class="f"><label for="ck_m">Czas (min)</label><input id="ck_m" type="number" min="1" step="5" value="45"></div></div><b style="font-size:22px" id="ck_o" aria-live="polite">'+pln(7500)+'</b></div>';h+='</section>';
+ h+='<section class="sec" id="kroki"><h2>Pierwsze kroki</h2><p class="hint">Pierwszy użyteczny stan osiągniesz w kilka minut.</p><div class="grid g3">'+[["1. Dodaj ucznia","Imię, przedmiot i stawka za 60 minut."],["2. Dodaj pierwszą lekcję","Kwota policzy się sama."],["3. Sprawdź rozliczenie miesiąca","Zobacz, kto i ile ma zapłacić."]].map(function(x,i){return '<div class="card rv"><h3>'+x[0]+'</h3><p>'+x[1]+'</p>'+demo(i)+'</div>'}).join("")+'</div></section>';
+ h+='<section class="sec" id="cennik"><h2>Cennik</h2><p class="hint">Prosty plan, bez niespodzianek.</p><div class="plans"><div class="card plan"><h2>Free</h2><div class="pr">0 zł</div><ul><li>Do '+FREE+' aktywnych uczniów</li><li>Wszystkie podstawowe funkcje</li></ul><a class="btn" href="#/rejestracja">Zacznij bezpłatnie</a></div><div class="card plan cur"><h2>Pro <span class="tag ac">Polecany</span></h2><div class="pr">'+pln(PRO_PLN).replace(",00","")+' <span class="hint" style="font-size:14px;font-weight:400">/ miesiąc</span></div><ul><li>Bez limitu aktywnych uczniów</li><li>Wszystko z planu Free</li><li>Rozszerzone statystyki: przychód według przedmiotu i ucznia, odwołania, obłożenie</li><li>Wykres przychodu z 6 miesięcy i eksport roku</li><li>Podsumowania dla wszystkich uczniów naraz i wydruk PDF</li><li>Cel miesięczny z paskiem postępu</li><li>Szablony notatek</li><li>Kosz z przywracaniem przez 30 dni</li><li>Motywy kolorystyczne</li></ul><a class="btn p" href="#/rejestracja">Zacznij i przetestuj Pro</a></div></div><p class="hint">W prototypie płatność jest symulowana. Prawdziwe płatności obsłuży operator płatności w wersji docelowej.</p></section>';
+ h+='<section class="sec">'+CK+'</section>';
+ var q=[["Czy dane uczniów są bezpieczne?","Dziennik zostaje w Twojej przeglądarce. Jeśli udostępnisz uczniowi panel ucznia, jego lekcje, notatki po zajęciach i prace domowe trafiają do bazy danych w postaci zaszyfrowanej kodem dostępu. W prototypie nie wpisuj prawdziwych danych osobowych."],["Czy mogę wrócić do Free?","Tak. Dane zostają, ale nie można dodawać ani przywracać uczniów, dopóki aktywnych jest więcej niż "+FREE+"."],["Czy stracę historię po anulowaniu Pro?","Nie. Historia lekcji i rozliczeń zostaje zachowana."],["Czy muszę podać dane karty?","Nie. Rejestracja jest bezpłatna, a w prototypie zakup Pro to tylko symulacja."],["Czy to zastępuje księgowość?","Nie. To dziennik rozliczeń, a nie system księgowy i nie narzędzie do faktur."]];
+ h+='<section class="sec"><h2>Pytania</h2>'+q.map(function(x){return '<details><summary>'+x[0]+'</summary><p>'+x[1]+'</p></details>'}).join("")+'</section>';
+ h+='<section class="cta rv"><h2>Zacznij porządkować lekcje</h2><p>Załóż konto w minutę. Prototyp działa lokalnie – nie wpisuj prawdziwych danych osobowych.</p><a class="btn" href="#/rejestracja">Zacznij bezpłatnie</a></section></div>';
+ return h
+}
+function shortcut(){var p=PR||GP;return '<div class="card"><h2>Jesteś zalogowany</h2><p>Zalogowano jako '+esc(p.name)+'.</p><a class="btn p" href="#/aplikacja/dash">Przejdź do panelu</a></div>'}
+function vReg(){
+ if(logged()&&sg()!=="g")return '<div class="au">'+shortcut()+'</div>';
+ return '<div class="au"><h1>Utwórz konto</h1><p class="hint">To symulacja – dane nie są nigdzie przesyłane. Nie wpisuj prawdziwych danych osobowych.</p><form id="rf" novalidate>'+field("rn","Imię lub imię i nazwisko *","","text",'autocomplete="name"')+field("re","Adres e-mail *","","email",'autocomplete="email"')+field("rp","Hasło * (min. 8 znaków)","","password",'autocomplete="new-password"')+'<ul class="pw" id="pwr" aria-live="polite"><li data-r="len"><span class="dt"></span>Co najmniej 8 znaków</li><li data-r="let"><span class="dt"></span>Litera</li><li data-r="num"><span class="dt"></span>Cyfra</li></ul>'+field("rq","Powtórz hasło *","","password",'autocomplete="new-password"')+'<div class="hint" id="pwm" aria-live="polite" style="margin:-6px 0 8px"></div><div class="chk"><input type="checkbox" id="spw"><label for="spw">Pokaż hasło</label></div>'+field("rb","Nazwa lub marka korepetytora (opcjonalnie)","")+'<div class="chk"><input type="checkbox" id="rt" aria-describedby="e_rt"><label for="rt">Akceptuję <a href="#/regulamin" target="_blank" rel="noopener">regulamin</a> *</label></div><div class="er" id="e_rt" role="alert" style="margin-bottom:12px"></div><button class="btn p" type="submit" style="width:100%;justify-content:center">Utwórz konto</button></form><p class="hint" style="text-align:center">Masz już konto? <a href="#/logowanie">Zaloguj się</a></p></div>'
+}
+function vLog(){
+ if(logged()&&sg()!=="g")return '<div class="au">'+shortcut()+'</div>';
+ var n=noticeFlag?'<div class="nt" role="alert">Aby wejść do panelu, zaloguj się.</div>':"";noticeFlag=false;
+ return '<div class="au"><h1>Zaloguj się</h1><p class="hint">To symulacja – dane nie są nigdzie przesyłane.</p>'+n+'<form id="lf" novalidate><div class="lerr" id="lerr" role="alert"></div>'+field("le","Adres e-mail","","email",'autocomplete="email"')+field("lp","Hasło","","password",'autocomplete="current-password"')+'<div class="chk"><input type="checkbox" id="lr"><label for="lr">Zapamiętaj mnie na tym urządzeniu</label></div><button class="btn p" type="submit" style="width:100%;justify-content:center;margin-top:10px">Zaloguj się</button></form><p style="text-align:center"><button class="lk" data-a="forgot" type="button">Nie pamiętasz hasła?</button></p><p class="hint" style="text-align:center">Nie masz konta? <a href="#/rejestracja">Zarejestruj się</a></p></div>'
+}
+function vInfoOld(p){
+ var t=p==="regulamin"?"Regulamin (wersja demonstracyjna)":"Polityka prywatności (wersja demonstracyjna)";
+ var b=p==="regulamin"?"To lokalny prototyp, a nie usługa produkcyjna. TutorTrack jest dziennikiem rozliczeń – nie systemem księgowym ani narzędziem do wystawiania faktur. Docelowy regulamin zostanie opublikowany przed uruchomieniem usługi.":"Prototyp zapisuje dane wyłącznie w Twojej przeglądarce i nigdzie ich nie wysyła. Hasło nie jest zapisywane w jawnej postaci. Nie wpisuj prawdziwych danych osobowych. Docelowa polityka zostanie opublikowana przed uruchomieniem usługi.";
+ return '<div class="au" style="max-width:640px"><h1>'+t+'</h1><p>'+b+'</p><a class="btn" href="#/">Wróć na stronę główną</a></div>'
+}
+function pub(p){document.body.classList.remove("demo");document.body.removeAttribute("data-th");
+ var ok={rejestracja:vReg,logowanie:vLog,regulamin:vInfo,prywatnosc:vInfo,uczen:vStudentHome},f=ok[p]||vHome;curPage=ok[p]?p:"";
+ $("appw").hidden=true;$("tabs").hidden=true;$("pub").hidden=false;
+ $("pub").innerHTML=pubHead()+f(curPage)+pubFoot();
+ document.title=curPage==="uczen"?"TutorTrack – dla ucznia":"TutorTrack – dziennik korepetytora";window.scrollTo(0,0);
+ var r=$("rf"),l=$("lf");if(r)r.onsubmit=regSubmit;if(l)l.onsubmit=logSubmit;
+ var fi=$(r?"rn":l?"le":"x");if(fi)fi.focus();
+ if(!curPage||curPage==="uczen"){spy();if(pendingSc){var t=$(pendingSc);pendingSc=null;if(t)setTimeout(function(){t.scrollIntoView()},30)}}
+ var els=document.querySelectorAll(".rv");
+ if(window.IntersectionObserver){var o=new IntersectionObserver(function(en){en.forEach(function(x){if(x.isIntersecting){x.target.classList.add("in");o.unobserve(x.target)}})},{threshold:.1});els.forEach(function(e){o.observe(e)})}else els.forEach(function(e){e.classList.add("in")})
+}
+function spy(){if(!window.IntersectionObserver)return;var io=new IntersectionObserver(function(en){en.forEach(function(x){if(x.isIntersecting)document.querySelectorAll(".lk").forEach(function(b){var on=b.dataset.sc===x.target.id;b.classList.toggle("on",on);if(on)b.setAttribute("aria-current","true");else b.removeAttribute("aria-current")})})},{rootMargin:"-40% 0px -55% 0px"});document.querySelectorAll(".lk[data-sc]").forEach(function(b){var e=$(b.dataset.sc);if(e)io.observe(e)})}
+function regSubmit(e){
+ e.preventDefault();
+ var n=v("rn").trim(),em=v("re").trim().toLowerCase(),pw=v("rp"),pw2=v("rq"),first=null;
+ var R=[["rn",!n,"Podaj imię lub imię i nazwisko."],["re",!/^\S+@\S+\.\S+$/.test(em),"Podaj poprawny adres e-mail."],["rp",pw.length<8||!/\p{L}/u.test(pw)||!/\d/.test(pw),pw.length<8?"Hasło musi mieć co najmniej 8 znaków.":"Hasło musi zawierać literę i cyfrę."],["rq",pw!==pw2||!pw2,pw2?"Hasła muszą być identyczne.":"Powtórz hasło."],["rt",!$("rt").checked,"Zaakceptuj regulamin, aby kontynuować."]];
+ R.forEach(function(r){err(r[0],r[1]?r[2]:"");if(r[1]&&!first)first=r[0]});
+ if(first){$(first).focus();return}
+ if(PR&&PR.email===em){err("re","Konto z tym adresem już istnieje – zaloguj się.");$("re").focus();return}
+ var mk=function(){PR={name:n,email:em,brand:v("rb").trim(),pw:hs(em+pw),logged:true,skipped:false,onb:{b:false}};savePr();ss(null);S={plan:"free",students:[],lessons:[]};save();toast("Konto utworzone (symulacja).");go("welcome")};
+ if(PR)confirmBox("Zastąpić istniejące konto?","W tej przeglądarce jest już konto "+esc(PR.email)+". Nowa rejestracja je zastąpi i usunie zapisane w tej przeglądarce dane uczniów i lekcji.","Zastąp konto",mk);else mk()
+}
+function logSubmit(e){
+ e.preventDefault();
+ var em=v("le").trim().toLowerCase(),pw=v("lp"),bad=0;
+ bad|=err("le",em?"":"Podaj adres e-mail.");bad|=err("lp",pw?"":"Podaj hasło.");
+ if(bad){$(em?"lp":"le").focus();return}
+ if(!PR||PR.email!==em||PR.pw!==hs(em+pw)){$("lerr").textContent="Nieprawidłowy e-mail lub hasło. W prototypie konto istnieje tylko po rejestracji w tej przeglądarce.";$("lp").focus();return}
+ if($("lr").checked){PR.logged=true;ss(null)}else{PR.logged=false;ss("1")}
+ savePr();load();go("dash")
+}
+function vWelcome(){
+ var p=P(),a=S.students.length>0,b=S.lessons.length>0,c=!!p.onb.b,n=a+b+c,nm=esc((p.name||"").split(" ")[0]);
+ function cd(i,t,d,done,dis,act,btn){return '<div class="card" style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap"><div class="av" style="'+(done?"background:var(--grl);color:var(--gr)":"")+'">'+(done?ic("check"):i)+'</div><div style="flex:1;min-width:200px"><b>'+t+'</b><div class="hint">'+d+'</div></div><button class="btn s'+(done?"":" p")+'" data-a="'+act+'"'+(dis?" disabled":"")+'>'+btn+'</button></div>'}
+ var h='<h2 style="font-size:22px;margin:0 0 4px">Cześć, '+nm+' - dobrze Cię widzieć</h2><p class="hint" style="margin:0">Trzy kroki dzielą Cię od działającego dziennika.</p><div class="pbar" role="progressbar" aria-valuemin="0" aria-valuemax="3" aria-valuenow="'+n+'" aria-label="Postęp wdrożenia"><i style="width:'+Math.round(n/3*100)+'%"></i></div><p><b>'+n+' z 3 kroków</b></p><div class="grid">';
+ h+=cd(1,"Dodaj pierwszego ucznia",a?"Masz już uczniów: "+S.students.length+".":"Imię, przedmiot i stawka za 60 minut.",a,false,"w1",a?"Dodaj kolejnego":"Dodaj ucznia");
+ h+=cd(2,"Dodaj pierwszą lekcję",!S.students.length?"Najpierw dodaj ucznia – lekcja musi być przypisana do ucznia.":b?"Masz już lekcje: "+S.lessons.length+".":"Kwota policzy się ze stawki ucznia.",b,!S.students.length,"w2",b?"Dodaj kolejną":"Dodaj lekcję");
+ h+=cd(3,"Sprawdź rozliczenia miesiąca",c?"Rozliczenia zostały już sprawdzone.":(!S.lessons.length?"Najpierw dodaj lekcję – rozliczenia pojawią się po pierwszej przeprowadzonej lekcji.":"Zobacz należności i kwoty do zapłaty."),c,!S.lessons.length,"w3","Otwórz rozliczenia")+'</div>';
+ if(n===3)h+='<div class="card" style="margin-top:16px;border-color:#b9e3c8;background:var(--grl)"><b>Wszystko gotowe!</b><div class="hint" style="margin-bottom:10px">Masz uczniów, lekcje i sprawdzone rozliczenia.</div><button class="btn p" data-a="hideW">Przejdź do pulpitu</button></div>';
+ else h+='<p style="margin-top:16px"><button class="btn" data-a="goDash">Pomiń powitanie i przejdź do pulpitu</button></p>';
+ return h
+}
+document.addEventListener("click",function(e){
+ var s=e.target.closest("[data-sc]");
+ if(s){var pn=$("pn");if(pn)pn.classList.remove("open");var t=$(s.dataset.sc);if(t&&(curPage===""||curPage==="uczen"))t.scrollIntoView({behavior:"smooth"});else{pendingSc=s.dataset.sc;location.hash="#/"}return}
+ var m=e.target.closest("#mt");if(m){var o=$("pn").classList.toggle("open");m.setAttribute("aria-expanded",o);return}
+ var b=e.target.closest("[data-a]");if(!b)return;var a=b.dataset.a;
+ if(a==="logout"){var wg=sg()==="g";confirmBox(wg?"Wyjść z trybu demo?":"Wylogować się?",wg?"Dane przykładowe nie są zapisywane.":"Twoje dane zostaną w tej przeglądarce. Wrócisz do nich po ponownym zalogowaniu.",wg?"Wyjdź":"Wyloguj się",function(){ss(null);if(wg)load();if(PR){PR.logged=false;savePr()}toast("Wylogowano.");location.hash="#/"})}
+ else if(a==="demo"){ss("g");S=seed();go("dash")}
+ else if(a==="goDash")go("dash");
+ else if(a==="hideW"){var p=P();p.skipped=true;savePr();go("dash")}
+ else if(a==="w1"){go("students");ob=1;studentForm()}
+ else if(a==="w2"){go("lessons");ob=1;lessonForm()}
+ else if(a==="w3")go("billing")
+});
+document.addEventListener("keydown",function(e){var n=$("pn");if(e.key==="Escape"&&n&&n.classList.contains("open")){n.classList.remove("open");var m=$("mt");m.setAttribute("aria-expanded","false");m.focus()}});
+
+/* ===== Dopracowanie i dodatki ===== */
+function setupBar(){var p=P();if(!p||p.skipped||!p.onb)return "";var n=(S.students.length>0)+(S.lessons.length>0)+(p.onb.b?1:0);if(n>=3)return "";return '<div class="nt" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">Dokończ konfigurację: '+n+' z 3 kroków. <a href="#/aplikacja/welcome">Wróć do powitania</a></div>'}
+function vInfo(p){
+ var T={regulamin:["Regulamin (wersja demonstracyjna)",[["Czym jest TutorTrack","Dziennik korepetytora do prowadzenia uczniów, lekcji i rozliczeń. Nie jest systemem księgowym ani narzędziem do wystawiania faktur."],["Prototyp","Ta wersja działa lokalnie w przeglądarce. Płatność za plan Pro jest symulowana i nic nie jest pobierane."],["Twoje dane","Odpowiadasz za dane wpisywane do dziennika. W prototypie nie wpisuj prawdziwych danych osobowych."],["Plany","Free: do "+FREE+" aktywnych uczniów. Pro: "+pln(PRO_PLN).replace(",00","")+" miesięcznie, bez limitu. Po powrocie do Free dane zostają, a dodawanie i przywracanie uczniów jest ograniczone."],["Zmiany","Docelowy regulamin zostanie opublikowany przed uruchomieniem usługi."]]],
+ prywatnosc:["Polityka prywatności (wersja demonstracyjna)",[["Jakie dane","Profil (imię, e-mail, nazwa marki), uczniowie i lekcje wpisane przez Ciebie."],["Gdzie są zapisane","Dziennik jest zapisany w pamięci przeglądarki na tym urządzeniu. Gdy udostępnisz uczniowi panel ucznia, jego lekcje, notatki po zajęciach i prace domowe są wysyłane do bazy danych aplikacji w postaci zaszyfrowanej kodem dostępu – odczyta je tylko osoba znająca kod. Grafik ucznia i odhaczone zadania zostają w przeglądarce ucznia."],["Hasło","Nie jest zapisywane jawnie. Prototyp trzyma tylko prosty skrót, który nie jest zabezpieczeniem produkcyjnym."],["Usuwanie danych","Przycisk „Przywróć dane demonstracyjne” w widoku Plan i płatności czyści profil i dane."],["Kopie zapasowe","Wyeksportowany plik zawiera dane uczniów – przechowuj go bezpiecznie."]]]}[p];
+ return '<div class="au" style="max-width:640px"><h1>'+T[0]+'</h1>'+T[1].map(function(x){return '<h3 style="margin:16px 0 4px">'+x[0]+'</h3><p style="margin:0;color:var(--mu)">'+x[1]+'</p>'}).join("")+'<p><a class="btn" href="#/">Wróć na stronę główną</a></p></div>'
+}
+function dl(n,t,m){try{var b=new Blob([t],{type:m}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=n;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(a.href)},500);if(window.top!==window.self){modal('<h2>Zapis pliku</h2><p class="hint">Jeśli pobieranie nie ruszyło, skopiuj zawartość i zapisz ją jako '+esc(n)+'.</p><textarea rows="8" readonly>'+esc(t)+'</textarea><div class="mf"><button class="btn" data-m="close">Zamknij</button></div>');return}toast("Plik zapisany.")}catch(e){toast("Przeglądarka zablokowała pobieranie.")}}
+function cq(x){x=String(x==null?"":x);if(/^[=+\-@]/.test(x))x="'"+x;return '"'+x.replace(/"/g,'""')+'"'}
+function summaryText(id){
+ var s=stu(id),m=ui.bm,ls=sortL(S.lessons.filter(function(l){return l.sid===id&&(l.status==="done"||l.status==="cancelled")&&l.date.slice(0,7)===m}),1),L=["Podsumowanie lekcji – "+fm(m)].concat(P()&&P().brand?["Korepetytor: "+P().brand]:[],["Uczeń: "+s.name,""]);
+ ls.forEach(function(l){L.push("• "+(function(d){return d.getDate()+" "+MSHORT[d.getMonth()]})(pd(l.date))+", "+l.time+" – "+(l.status==="cancelled"?"odwołana lekcja":(l.topic||"lekcja"))+" ("+l.min+" min): "+(l.status==="cancelled"&&!l.fee?"bez opłaty":pln(amt(l)))+(l.paid?" (opłacona)":""))});
+ var t=sum(ls,function(){return true}),pd2=sum(ls,function(l){return l.paid});
+ L.push("","Razem: "+pln(t),"Opłacone: "+pln(pd2),"Do zapłaty: "+pln(t-pd2));return L.join("\n")
+}
+function okData(o){return o&&Array.isArray(o.students)&&Array.isArray(o.lessons)&&o.students.every(function(x){return x&&typeof x.id==="string"&&typeof x.name==="string"&&typeof x.rate==="number"})&&o.lessons.every(function(x){return x&&typeof x.sid==="string"&&/^\d{4}-\d\d-\d\d$/.test(x.date)&&/^\d\d:\d\d$/.test(x.time)&&typeof x.amount==="number"&&typeof x.min==="number"&&["planned","done","cancelled"].indexOf(x.status)>-1})}
+document.addEventListener("input",function(e){var t=e.target.id;
+ if(t==="lfq"){ui.lf.q=e.target.value;render()}
+ else if(t==="ck_r"||t==="ck_m"){var r=toG(v("ck_r")),m=Number(v("ck_m"));$("ck_o").textContent=!isNaN(r)&&r>=0&&m>0?pln(calc(r,m)):"—"}});
+document.addEventListener("click",function(e){
+ var b=e.target.closest("[data-a]");if(!b)return;var a=b.dataset.a,id=b.dataset.id;
+ if(a==="msg"){modal('<h2>Podsumowanie dla ucznia</h2><p class="hint">Skopiuj i wyślij uczniowi lub rodzicowi.</p><textarea id="sm" rows="11" readonly>'+esc(summaryText(id))+'</textarea><div class="pt">'+esc(summaryText(id))+'</div><div class="mf"><button class="btn" data-m="close">Zamknij</button><button class="btn" data-a="prn">Drukuj / PDF <span class="tag ac">Pro</span></button><button class="btn p" id="smc">Kopiuj</button></div>');
+  $("smc").onclick=function(){var t=$("sm");t.select();try{navigator.clipboard.writeText(t.value).then(function(){toast("Skopiowano.")},function(){document.execCommand("copy");toast("Skopiowano.")})}catch(x){document.execCommand("copy");toast("Skopiowano.")}}}
+ else if(a==="csv"){var rows=[["Uczeń","Data","Godzina","Minuty","Temat","Kwota (PLN)","Płatność"].map(cq).join(";")];
+  sortL(monthDone(ui.bm),1).forEach(function(l){var s=stu(l.sid);rows.push([s?s.name:"",l.date,l.time,l.min,l.topic,gStr(amt(l)),l.paid?"opłacona":"nieopłacona"].map(cq).join(";"))});
+  dl("rozliczenie-"+ui.bm+".csv","\ufeff"+rows.join("\r\n"),"text/csv")}
+ else if(a==="exp")dl("tutortrack-kopia-"+ymd(new Date())+".json",JSON.stringify(S,null,1),"application/json");
+ else if(a==="imp"){var f=document.createElement("input");f.type="file";f.accept=".json,application/json";
+  f.onchange=function(){if(!f.files[0])return;var r=new FileReader();r.onload=function(){var o=null;try{o=JSON.parse(r.result)}catch(x){}
+   if(!okData(o)){toast("Nieprawidłowy plik kopii danych.");return}
+   confirmBox("Zaimportować dane?","Obecne dane uczniów i lekcji zostaną zastąpione ("+o.students.length+" uczniów, "+o.lessons.length+" lekcji).","Importuj",function(){S={plan:o.plan==="pro"?"pro":"free",students:o.students,lessons:o.lessons};save();render();toast("Dane zaimportowane.")},true)};r.readAsText(f.files[0])};f.click()}
+ else if(a==="forgot"){modal('<h2>Ustaw nowe hasło</h2><p class="hint">Symulacja: prototyp nie wysyła e-maila. Podaj adres konta i ustaw nowe hasło lokalnie.</p>'+field("fe","Adres e-mail","","email")+field("fp","Nowe hasło (min. 8 znaków)","","password")+'<div class="mf"><button class="btn" data-m="close">Anuluj</button><button class="btn p" id="fsv">Zapisz hasło</button></div>');
+  $("fsv").onclick=function(){var em=v("fe").trim().toLowerCase(),pw=v("fp"),bad=0;bad|=err("fe",!PR||PR.email!==em?"Nie znaleziono konta o tym adresie w tej przeglądarce.":"");bad|=err("fp",pw.length<8?"Hasło musi mieć co najmniej 8 znaków.":"");if(bad)return;PR.pw=hs(em+pw);savePr();closeModal();toast("Hasło zmienione. Zaloguj się.")}}
+});
+function demo(i){
+ var L='<span style="color:var(--mu)">';
+ if(i===0)return '<div class="dm" aria-hidden="true"><div class="fl">'+L+'Imię i nazwisko</span><b><span class="ty">Anna Kowalska</span></b></div><div class="fl">'+L+'Przedmiot, stawka</span><b>Matematyka · 120 zł</b></div><div class="fl pb" style="border-color:#d9dcff;background:var(--acl)"><span><b>Anna Kowalska</b> · Matematyka</span><span class="tag gr">Aktywny</span></div></div>';
+ if(i===1)return '<div class="dm" aria-hidden="true"><div class="fl pa"><span><b>16:00</b> · 60 min · '+pln(12000)+'</span><span class="tag ac">Zaplanowana</span></div><div class="fl pb"><span><b>17:30</b> · 45 min · '+pln(9000)+'</span><span class="tag ac">Zaplanowana</span></div><div class="fl pc"><span><b>18:30</b> · 60 min · '+pln(10000)+'</span><span class="tag gr">Opłacona</span></div></div>';
+ return '<div class="dm" role="img" aria-label="Przykładowy podgląd rozliczenia"><div class="hint" style="margin-bottom:6px">Przykładowy podgląd rozliczenia · '+fm(ym(new Date()))+'</div><div class="mk" style="margin-bottom:6px"><div class="card stat st" style="animation-delay:0s"><div class="l">Należności</div><div class="v">'+pln(42000)+'</div></div><div class="card stat st" style="animation-delay:1s"><div class="l">Opłacone</div><div class="v gr">'+pln(24000)+'</div></div><div class="card stat st" style="animation-delay:2s"><div class="l">Do zapłaty</div><div class="v am">'+pln(18000)+'</div></div></div><div class="fl st" style="animation-delay:3.2s"><span><b>Anna K.</b> · 2 lekcje · '+pln(24000)+'</span><span class="tag gr">Rozliczone</span></div><div class="fl st" style="animation-delay:4.4s"><span><b>Jan N.</b> · 2 lekcje · '+pln(18000)+'</span><span class="tag am">Do zapłaty</span></div></div>';
+}
+function audSw(s){return '<nav class="aud" aria-label="Wersja strony"><a href="#/"'+(s?'':' aria-current="page"')+'>Dla korepetytora</a><a href="#/uczen"'+(s?' aria-current="page"':'')+'>Dla ucznia</a></nav>'}
+function vStudentHome(){
+ var W=[["pon.","16:00","Matematyka","Ewa M.","note"],["śr.","18:00","Angielski","Tomasz L.","hw"],["czw.","17:00","Fizyka","Piotr Z.",""],["sob.","10:00","Matematyka","Ewa M.",""]];
+ var h='<div class="pi"><section class="hero"><div>'+audSw(1)+'<h1>Wszystkie korepetycje w jednym planie</h1><p>Własny grafik, lekcje u wszystkich korepetytorów, notatki po zajęciach i prace domowe – w jednym miejscu.</p><div class="btns"><a class="btn p" href="#/uczen/panel">Otwórz panel ucznia</a><button class="btn" data-sc="jak">Zobacz, jak to działa</button></div><p class="hint" style="margin-top:12px">Wszystkie funkcje dla ucznia są bezpłatne. Wystarczy kod od korepetytora i konto claude.ai.</p></div>';
+ h+='<div class="card" role="img" aria-label="Przykładowy podgląd planu ucznia"><div class="hint" style="margin-bottom:8px">Przykładowy plan ucznia · ten tydzień</div><div class="mk"><div class="card stat"><div class="l">Lekcje w miesiącu</div><div class="v">9</div></div><div class="card stat"><div class="l">Godziny</div><div class="v">8,5 h</div></div><div class="card stat"><div class="l">Zadania</div><div class="v am">2</div></div></div>';
+ W.forEach(function(r){h+='<div class="row"><div class="m"><b>'+r[0]+' '+r[1]+' · '+r[2]+'</b><span>Korepetytor: '+r[3]+'</span></div>'+(r[4]==="note"?'<span class="tag gr">Nowa notatka</span>':r[4]==="hw"?'<span class="tag am">Zadanie do czw.</span>':'<span class="tag ac">Zaplanowana</span>')+'</div>'});
+ h+='</div></section>';
+ h+='<section class="sec" id="korzysci"><h2>Korzyści dla ucznia</h2><p class="hint">Mniej chaosu, więcej czasu na naukę.</p><div class="grid g3">'+card3("cal","Własny grafik","Układaj swój tydzień: korepetycje, szkoła i inne zajęcia w jednym kalendarzu. Od razu widzisz wolne terminy.")+card3("book","Plan wszystkich korepetycji","Lekcje u różnych korepetytorów i z różnych przedmiotów w jednym planie – bez szukania terminów w kilku komunikatorach.")+card3("chart","Podsumowanie miesiąca","Co miesiąc widzisz, ile było lekcji, z jakich przedmiotów, ile godzin nauki i jakie tematy zostały omówione.")+card3("note","Notatki od korepetytora","Po lekcji korepetytor przesyła podsumowanie: co omówiliście i co warto powtórzyć przed kolejnymi zajęciami.")+card3("check","Praca domowa","Zadania od korepetytora trafiają na Twoją listę razem z terminem. Odhaczasz je, gdy są gotowe.")+'</div></section>';
+ h+='<section class="sec" id="jak"><h2>Jak to działa</h2><p class="hint">Trzy kroki do uporządkowanej nauki.</p><div class="grid g3">'+[["1. Ułóż swój grafik","Dodaj szkołę i stałe zajęcia, żeby widzieć wolne terminy."],["2. Wpisz kod od korepetytora","Lekcje, notatki i zadania same trafiają do Twojego planu."],["3. Notatka i praca domowa po lekcji","Korepetytor przesyła podsumowanie i zadanie z terminem."]].map(function(x,i){return '<div class="card rv"><h3>'+x[0]+'</h3><p>'+x[1]+'</p>'+studentDemo(i)+'</div>'}).join("")+'</div></section>';
+ var q=[["Czy panel ucznia jest płatny?","Nie. Wszystkie funkcje dla ucznia są bezpłatne."],["Jak połączyć się z korepetytorem?","Korepetytor tworzy w TutorTrack kod dostępu. Wpisujesz go w panelu ucznia (zakładka Korepetytorzy) – lekcje, notatki i prace domowe pojawiają się automatycznie i aktualizują po każdej zmianie."],["Czy mogę mieć kilku korepetytorów?","Tak. Możesz dodać kilka kodów, a lekcje u korepetytorów spoza TutorTrack wpisać do własnego grafiku."],["Kto widzi moje lekcje i notatki?","Dane od korepetytora są zaszyfrowane kodem dostępu – odczyta je tylko ktoś, kto zna kod. Twój grafik i odhaczone zadania są zapisane tylko w Twojej przeglądarce."],["Czego potrzebuję?","Konta claude.ai i kodu od korepetytora. Bez kodu możesz korzystać z własnego grafiku."]];
+ h+='<section class="sec" id="pytania-u"><h2>Pytania</h2>'+q.map(function(x){return '<details><summary>'+x[0]+'</summary><p>'+x[1]+'</p></details>'}).join("")+'</section>';
+ h+='<section class="cta rv"><h2>Uczysz się z korepetytorem?</h2><p>Poproś korepetytora o kod dostępu – plan, notatki i prace domowe będą w jednym miejscu.</p><a class="btn" href="#/uczen/panel">Otwórz panel ucznia</a></section></div>';
+ return h
+}
+function studentDemo(i){
+ function fl(c,a,b,dl){return '<div class="fl '+c+'"'+(dl!=null?' style="animation-delay:'+dl+'s"':"")+'><span>'+a+'</span>'+b+'</div>'}
+ if(i===0)return '<div class="dm" aria-hidden="true">'+fl("pa","<b>pon. 8:00–14:30</b> · Szkoła",'<span class="tag">Moje zajęcia</span>')+fl("pb","<b>wt. 15:00</b> · Basen",'<span class="tag">Moje zajęcia</span>')+fl("pc","<b>czw. 18:00</b> · wolne",'<span class="tag gr">Wolny termin</span>')+'</div>';
+ if(i===1)return '<div class="dm" aria-hidden="true">'+fl("pa","<b>pon. 16:00</b> · Matematyka · Ewa M.",'<span class="tag ac">Korepetycje</span>')+fl("pb","<b>śr. 18:00</b> · Angielski · Tomasz L.",'<span class="tag ac">Korepetycje</span>')+fl("pc","<b>czw. 17:00</b> · Fizyka · Piotr Z.",'<span class="tag ac">Korepetycje</span>')+'</div>';
+ return '<div class="dm" aria-hidden="true">'+fl("st","<b>Notatka po lekcji</b> · Matematyka",'<span class="tag gr">Nowa</span>',0)+fl("st","Omówione: funkcje kwadratowe","",1.2)+fl("st","<b>Praca domowa:</b> zad. 3–7, str. 52",'<span class="tag am">do czw.</span>',2.4)+fl("st","✓ Zadanie zrobione",'<span class="tag gr">Gotowe</span>',3.6)+'</div>';
+}
+function lateCard(){if(S.set&&S.set.late===false)return "";
+ var n=ymd(new Date())+" "+new Date().toTimeString().slice(0,5),a=sortL(S.lessons.filter(function(l){return l.status==="planned"&&(l.date+" "+l.time)<n}),1);
+ if(!a.length)return "";
+ return '<div class="card" style="margin-top:16px;border-color:#f3dca8"><h2>Do potwierdzenia ('+a.length+')</h2><p class="hint" style="margin:-6px 0 6px">Te lekcje miały już się odbyć. Oznacz je jako przeprowadzone lub odwołane.</p>'+a.map(function(l){return lrow(l,true)}).join("")+'</div>'
+}
+function subjChips(){var m={};S.students.forEach(function(s){subjList(s).forEach(function(x){var k=x.toLowerCase();if(!m[k])m[k]=x})});if(ui.subj&&!m[ui.subj.toLowerCase()])ui.subj="";var a=Object.keys(m).map(function(k){return m[k]}).sort(function(x,y){return x.localeCompare(y,"pl")});if(!a.length)return "";return '<div class="bar" role="group" aria-label="Filtr po przedmiotach"><span class="hint">Przedmiot:</span><button class="btn s'+(!ui.subj?" p":"")+'" data-a="subj" data-s="" aria-pressed="'+!ui.subj+'">Wszystkie</button>'+a.map(function(x){return '<button class="btn s'+(ui.subj===x?" p":"")+'" data-a="subj" data-s="'+esc(x)+'" aria-pressed="'+(ui.subj===x)+'">'+esc(x)+'</button>'}).join("")+'</div>'}
+document.addEventListener("click",function(e){var b=e.target.closest('[data-a="subj"]');if(b){ui.subj=b.dataset.s;render()}});
+function nextL(id){var n=sortL(S.lessons.filter(function(l){return l.sid===id&&l.status==="planned"&&l.date>=ymd(new Date())}),1)[0];return '<div class="hint" style="margin-bottom:10px">'+(n?"Następna lekcja: "+fd(n.date)+", "+esc(n.time):"Brak zaplanowanych lekcji")+'</div>'}
+function proUp(f){modal('<h2>Funkcja planu Pro</h2><p>'+esc(f)+' jest dostępna w planie Pro ('+pln(PRO_PLN).replace(",00","")+' miesięcznie). W prototypie możesz włączyć Pro w trybie demonstracyjnym – żadna płatność nie zostanie pobrana.</p><div class="mf"><button class="btn" data-m="close">Zamknij</button><button class="btn p" data-go="plan" data-m="close">Zobacz plan Pro</button></div>')}
+function chartCard(){
+ if(S.plan!=="pro")return '<div class="card" style="margin-top:16px"><h2>Przychód z 6 miesięcy <span class="tag ac">Pro</span></h2><p class="hint">Zobacz opłacone i zaległe kwoty miesiąc po miesiącu.</p><button class="btn p s" data-a="proUp" data-f="Wykres przychodu">Odblokuj w Pro</button></div>';
+ var q=ui.bm.split("-"),M=[],mx=1,i;
+ for(i=5;i>=0;i--){var d=new Date(+q[0],+q[1]-1-i,1),k=ym(d),ls=S.lessons.filter(function(l){return billable(l)&&l.date.slice(0,7)===k}),pp=sum(ls,function(l){return l.paid}),du=sum(ls,function(l){return !l.paid});M.push({l:MSHORT[d.getMonth()],p:pp,d:du});mx=Math.max(mx,pp+du)}
+ return '<div class="card" style="margin-top:16px"><h2>Przychód z 6 miesięcy</h2><div style="display:flex;gap:8px;align-items:flex-end">'+M.map(function(x){return '<div style="flex:1;min-width:0;text-align:center;font-size:12px"><div style="height:110px;display:flex;flex-direction:column;justify-content:flex-end"><div style="background:var(--am);height:'+Math.round(x.d/mx*110)+'px;border-radius:4px 4px 0 0"></div><div style="background:var(--gr);height:'+Math.round(x.p/mx*110)+'px"></div></div>'+x.l+'<br><b>'+pln(x.p+x.d).replace(",00","")+'</b></div>'}).join("")+'</div><p class="hint">Zielony: opłacone, bursztynowy: zaległe. Dane według dat lekcji.</p></div>'
+}
+function csvRows(list){var rows=[["Uczeń","Data","Godzina","Minuty","Temat","Kwota (PLN)","Płatność"].map(cq).join(";")];sortL(list,1).forEach(function(l){var st=stu(l.sid);rows.push([st?st.name:"",l.date,l.time,l.min,l.topic,gStr(amt(l)),l.paid?"opłacona":"nieopłacona"].map(cq).join(";"))});return "\ufeff"+rows.join("\r\n")}
+document.addEventListener("click",function(e){
+ var b=e.target.closest("[data-a]");if(!b)return;var a=b.dataset.a,id=b.dataset.id;
+ if(a==="proUp")proUp(b.dataset.f||"Ta funkcja");
+ else if(a==="payall"){
+  var L=S.lessons.filter(function(l){return l.sid===id&&billable(l)&&!l.paid&&l.date.slice(0,7)===ui.bm});if(!L.length)return;
+  confirmBox("Oznaczyć wszystkie jako opłacone?",L.length+" lekcji na łączną kwotę <b>"+pln(sum(L,function(){return true}))+"</b> ("+fm(ui.bm)+"). Każdą możesz później cofnąć.","Tak, opłacone",function(){L.forEach(function(l){l.paid=true});save();render();toast("Oznaczono jako opłacone: "+L.length+".")})}
+ else if(a==="csvY"){if(S.plan!=="pro"){proUp("Eksport roku do CSV");return}var y=ui.bm.slice(0,4);dl("rozliczenie-"+y+".csv",csvRows(S.lessons.filter(function(l){return billable(l)&&l.date.slice(0,4)===y})),"text/csv")}
+ else if(a==="cancelL"){var cl=lget(id),fee=cancelFee(cl);confirmBox("Odwołać lekcję?",esc(cl.topic||"Bez tematu")+" · "+fd(cl.date)+"<br>"+(fee>0?"Zostanie naliczona opłata: <b>"+pln(fee)+"</b>.":"Odwołana lekcja nie jest płatna."),"Odwołaj lekcję",function(){cl.status="cancelled";cl.fee=fee;cl.paid=false;save();render();toast("Lekcja odwołana.")})}
+ else if(a==="dup"){var o=lget(id),d=pd(o.date);d.setDate(d.getDate()+7);var n={id:uid(),sid:o.sid,subject:o.subject,date:ymd(d),time:o.time,min:o.min,topic:o.topic,notes:"",status:"planned",paid:false,amount:o.amount,fee:0};S.lessons.push(n);save();render();if(overlap(n.date,n.time,n.min,n.id).length)modal('<h2>Uwaga: nakładające się terminy</h2><p>Dodano lekcję na '+fd(n.date)+', ale nakłada się ona na inną lekcję. Jeśli to pomyłka, zmień termin w edycji.</p><div class="mf"><button class="btn p" data-m="close">Rozumiem</button></div>');else toast("Dodano lekcję na "+fd(n.date)+".")}
+});
+document.addEventListener("click",function(e){var b=e.target.closest('[data-a="chargeL"]');if(!b)return;var l=lget(b.dataset.id),f=cancelFee(l);if(!(f>0)){toast("Przy obecnych ustawieniach opłata wynosi 0 zł. Sprawdź stałą kwotę lub procent ucznia.");return}l.fee=f;save();render();toast("Naliczono opłatę: "+pln(f)+".")});
+document.addEventListener("input",function(e){var t=e.target.id;if(t!=="rp"&&t!=="rq")return;var p=v("rp"),q=v("rq"),ul=$("pwr");if(!ul)return;var ok={len:p.length>=8,let:/\p{L}/u.test(p),num:/\d/.test(p)};ul.querySelectorAll("li").forEach(function(li){li.classList.toggle("ok",!!ok[li.dataset.r])});var m=$("pwm");m.textContent=!q?"":q===p?"Hasła są takie same.":"Hasła nie są jeszcze takie same.";m.style.color=q&&q===p?"var(--gr)":"var(--mu)"});
+document.addEventListener("change",function(e){if(e.target.id==="spw"){var ty=e.target.checked?"text":"password";$("rp").type=ty;$("rq").type=ty}});
+function cancelSummary(){var c=S.cancel||{mode:"off",fixed:0};return c.mode==="fixed"?"Stała kwota: "+pln(c.fixed||0)+" za każdą odwołaną lekcję.":c.mode==="percent"?"Procent ceny lekcji, ustawiany osobno dla każdego ucznia.":"Opłata jest wyłączona – odwołane lekcje nie są płatne."}
+function cancelHintOld(){var n=S.lessons.filter(function(l){return l.status==="cancelled"&&!l.fee&&l.date.slice(0,7)===ui.bm}).length;if(!n)return "";var c=S.cancel||{mode:"off"};return '<div class="nt" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">Odwołane lekcje bez naliczonej opłaty w tym miesiącu: '+n+'. '+(c.mode==="off"?"Opłata za odwołanie jest wyłączona.":"Użyj „Nalicz opłatę” przy lekcji w widoku Lekcje, jeśli ma być naliczona.")+' <button class="btn s" data-go="plan">Ustawienia opłaty</button></div>'}
+function migFeeOld(){var c=0;S.lessons.forEach(function(l){if(l.status==="cancelled"&&l.fee==null){l.fee=cancelFee(l);c++}});if(c)save()}
+IC.set='<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>';
+function vSettings(){
+ var g=sg()==="g",pr=S.plan==="pro",c=S.set||{},th=pr?(c.theme||"light"):"light",p=P()||{},dis=g?" disabled":"";
+ var T=[["light","Jasny",["#f6f7fb","#4f46e5","#ffffff"]],["dark","Ciemny",["#12131a","#8b85ff","#1b1d2a"]],["pink","Różowy",["#fff6fa","#db2777","#ffffff"]],["green","Zielony",["#f2faf5","#15803d","#ffffff"]]];
+ var h='<div class="grid" style="gap:16px"><div class="card"><h2>Wygląd</h2><p class="hint" style="margin:-6px 0 12px">'+(g?"W trybie demo wygląd jest czarno-biały.":"Motywy kolorystyczne są dostępne w planie Pro.")+'</p><div class="thms">'+T.map(function(x){var lock=x[0]!=="light"&&!pr&&!g;return '<button class="thm'+(th===x[0]?" on":"")+'" data-a="theme" data-t="'+x[0]+'" aria-pressed="'+(th===x[0])+'"><span class="sw">'+x[2].map(function(k){return '<i style="background:'+k+'"></i>'}).join("")+'</span><b>'+x[1]+(lock?' <span class="tag ac">Pro</span>':"")+'</b></button>'}).join("")+'</div></div>';
+ h+='<div class="card"><h2>Profil</h2>'+field("pfn","Imię lub imię i nazwisko",p.name||"")+field("pfb","Nazwa lub marka korepetytora",p.brand||"")+'<p class="hint" style="margin:4px 0 16px">E-mail: '+esc(p.email||"brak")+'</p><button class="btn p" data-a="pset"'+dis+'>Zapisz profil</button></div>';
+ h+='<div class="card"><h2>Domyślne wartości</h2><div class="f2"><div class="f"><label for="sd">Domyślny czas lekcji (min)</label><input id="sd" type="number" min="5" step="5" data-set="dur" value="'+(c.dur||60)+'"></div><div class="f"><label for="st">Godzina nowej lekcji</label><input id="st" type="time" data-set="time" value="'+(c.time||"16:00")+'"></div></div><div class="f2"><div class="f"><label for="sr2">Stawka nowego ucznia (zł / 60 min)</label><input id="sr2" inputmode="decimal" data-set="rate" value="'+gStr(c.rate||10000)+'"></div><div class="f"><label for="sw">Początek tygodnia w kalendarzu</label><select id="sw" data-set="wk"><option value="mon"'+(c.wk==="sun"?"":" selected")+'>Poniedziałek</option><option value="sun"'+(c.wk==="sun"?" selected":"")+'>Niedziela</option></select></div></div><div class="chk" style="margin-top:8px"><input type="checkbox" id="sl" data-set="late"'+(c.late===false?"":" checked")+'><label for="sl">Pokazuj na pulpicie lekcje do potwierdzenia</label></div></div>';
+ h+='<div class="card"><h2>Konto i bezpieczeństwo</h2><p class="hint" style="margin:-6px 0 12px">Hasło jest przechowywane tylko jako skrót w tej przeglądarce.</p><button class="btn" data-a="pw"'+dis+'>Zmień hasło</button></div>';
+ h+=settingsPro();
+ h+='<div class="card"><h2>Dane</h2><p class="hint" style="margin:-6px 0 12px">Kopia danych zawiera dane uczniów – przechowuj ją bezpiecznie.</p><div class="acts"><button class="btn" data-a="exp">Eksportuj kopię danych</button><button class="btn" data-a="imp"'+dis+'>Importuj kopię danych</button><button class="btn d" data-a="delacc"'+dis+'>Usuń konto i dane</button></div></div></div>';
+ return h
+}
+document.addEventListener("click",function(e){var b=e.target.closest("[data-a]");if(!b)return;var a=b.dataset.a;
+ if(a==="theme"){var t=b.dataset.t;if(sg()==="g"){toast("W trybie demo wygląd jest czarno-biały.");return}if(t!=="light"&&S.plan!=="pro"){proUp("Motywy kolorystyczne");return}S.set=S.set||{};S.set.theme=t;save();render();toast("Zmieniono motyw.")}
+ else if(a==="pset"){var nm=document.getElementById("pfn").value.trim();if(err("pfn",nm?"":"Podaj imię."))return;PR.name=nm;PR.brand=document.getElementById("pfb").value.trim();savePr();render();toast("Profil zapisany.")}
+ else if(a==="pw"){modal('<h2>Zmień hasło</h2>'+field("pc","Obecne hasło","","password",'autocomplete="current-password"')+field("pn1","Nowe hasło (min. 8 znaków, litera i cyfra)","","password",'autocomplete="new-password"')+field("pn2","Powtórz nowe hasło","","password",'autocomplete="new-password"')+'<div class="mf"><button class="btn" data-m="close">Anuluj</button><button class="btn p" id="pws">Zapisz hasło</button></div>');
+  document.getElementById("pws").onclick=function(){var c=v("pc"),n1=v("pn1"),n2=v("pn2"),bad=0;bad|=err("pc",PR&&PR.pw===hs(PR.email+c)?"":"Obecne hasło jest nieprawidłowe.");bad|=err("pn1",n1.length<8||!/\p{L}/u.test(n1)||!/\d/.test(n1)?"Hasło musi mieć co najmniej 8 znaków oraz literę i cyfrę.":"");bad|=err("pn2",n1!==n2?"Hasła muszą być identyczne.":"");if(bad)return;PR.pw=hs(PR.email+n1);savePr();closeModal();toast("Hasło zmienione.")}}
+ else if(a==="delacc")confirmBox("Usunąć konto i wszystkie dane?","Zostaną trwale usunięte profil, uczniowie i lekcje zapisane w tej przeglądarce. Tej operacji nie można cofnąć.","Usuń konto",function(){PR=null;savePr();S={plan:"free",students:[],lessons:[]};save();ss(null);toast("Konto usunięte.");location.hash="#/"},true)});
+document.addEventListener("change",function(e){var el=e.target,k=el.dataset&&el.dataset.set;if(!k)return;var val;
+ if(k==="dur"){val=Number(el.value);if(!(val>0)||Math.round(val)!==val){toast("Podaj dodatnią liczbę minut.");render();return}}
+ else if(k==="rate"){val=toG(el.value);if(isNaN(val)||val<0){toast("Podaj poprawną, nieujemną stawkę.");render();return}}
+ else if(k==="goal"){if(S.plan!=="pro"){proUp("Cel miesięczny");render();return}val=el.value.trim()===""?0:toG(el.value);if(isNaN(val)||val<0){toast("Podaj poprawną, nieujemną kwotę.");render();return}}
+ else if(k==="time"){if(!el.value){render();return}val=el.value}
+ else if(k==="late")val=el.checked;else val=el.value;
+ S.set=S.set||{};S.set[k]=val;save();toast("Zapisano ustawienie.");render()});
+IC.chart='<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>';
+var TPL=[["Plan lekcji","Plan lekcji:\n1. \n2. \n3. "],["Zadanie domowe","Zadanie domowe: "],["Podsumowanie lekcji","Omówione: \nTrudności: \nNa następną lekcję: "],["Do powtórzenia","Do powtórzenia: "]];
+function getTpls(){return TPL.concat(((S.set&&S.set.tpl)||[]).map(function(x){return [x.n,x.t]}))}
+function tplSel(id){if(S.plan!=="pro")return "";return '<select data-tpl="'+id+'" aria-label="Wstaw szablon" style="margin-bottom:6px"><option value="">Wstaw szablon…</option>'+getTpls().map(function(x,i){return '<option value="'+i+'">'+esc(x[0])+'</option>'}).join("")+'</select>'}
+function goalCard(m){var g=(S.set&&S.set.goal)||0;if(S.plan!=="pro"||!g)return "";var tot=sum(monthDone(m),function(){return true}),pc=Math.min(100,Math.round(tot/g*100));return '<div class="card" style="margin-top:16px"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b>Cel miesięczny</b><span>'+pln(tot)+' z '+pln(g)+' ('+Math.round(tot/g*100)+'%)</span></div><div class="pbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+pc+'" aria-label="Postęp celu miesięcznego" style="margin:8px 0 0"><i style="width:'+pc+'%"></i></div></div>'}
+function purgeTrash(){if(!S.trash)return;var n=S.trash.length;S.trash=S.trash.filter(function(x){return Date.now()-x.at<2592e6});if(S.trash.length!==n)save()}
+function barList(o,ff){var e=Object.keys(o).map(function(k){return [k,o[k]]}).sort(function(a,b){return b[1]-a[1]}).slice(0,8),mx=e.length?e[0][1]:1;if(!e.length)return '<p class="hint">Brak danych w wybranym okresie.</p>';return e.map(function(x){return '<div class="bl"><span>'+esc(x[0])+'</span><b>'+ff(x[1])+'</b><div class="bb"><i style="width:'+Math.round(x[1]/mx*100)+'%"></i></div></div>'}).join("")}
+function vStats(){
+ if(S.plan!=="pro")return '<div class="card"><h2 style="margin-bottom:8px">Rozszerzone statystyki <span class="tag ac">Pro</span></h2><p class="hint" style="margin:0 0 16px">Przychód według przedmiotu i ucznia, średnia kwota za lekcję, odsetek odwołań oraz najbardziej obłożone dni i godziny – liczone z Twoich danych.</p><button class="btn p s" data-a="proUp" data-f="Rozszerzone statystyki">Odblokuj w Pro</button></div>';
+ var R=ui.sr||"6",nw=new Date(),from=R==="all"?"":ym(new Date(nw.getFullYear(),nw.getMonth()-(+R-1),1)),L=S.lessons.filter(function(l){return !from||l.date.slice(0,7)>=from}),bil=L.filter(billable),dn=L.filter(function(l){return l.status==="done"}),cn=L.filter(function(l){return l.status==="cancelled"}),rev=sum(bil,function(){return true}),bs={},bt={},wd={},hr={},WD=["Poniedziałek","Wtorek","Środa","Czwartek","Piątek","Sobota","Niedziela"];
+ bil.forEach(function(l){var s=stu(l.sid),k=l.subject||(s?subjList(s)[0]:"")||"—";bs[k]=(bs[k]||0)+amt(l);var nm=s?s.name:"?";bt[nm]=(bt[nm]||0)+amt(l)});
+ L.forEach(function(l){if(l.status==="cancelled")return;var d=WD[(pd(l.date).getDay()+6)%7];wd[d]=(wd[d]||0)+1;var h=l.time.slice(0,2)+":00";hr[h]=(hr[h]||0)+1});
+ function o(v,t){return '<option value="'+v+'"'+(R===v?" selected":"")+'>'+t+'</option>'}
+ var h='<div class="bar"><h2 style="margin:0">Statystyki</h2><span class="sp"></span><select id="srg" aria-label="Zakres">'+o("3","Ostatnie 3 miesiące")+o("6","Ostatnie 6 miesięcy")+o("12","Ostatnie 12 miesięcy")+o("all","Cały okres")+'</select></div>';
+ h+='<div class="grid g4"><div class="card stat"><div class="l">Przychód łącznie</div><div class="v">'+pln(rev)+'</div></div><div class="card stat"><div class="l">Średnio na lekcję</div><div class="v">'+(dn.length?pln(Math.round(rev/dn.length)):"—")+'</div></div><div class="card stat"><div class="l">Odsetek odwołań</div><div class="v am">'+(dn.length+cn.length?Math.round(cn.length/(dn.length+cn.length)*100)+"%":"—")+'</div></div><div class="card stat"><div class="l">Lekcje przeprowadzone</div><div class="v">'+dn.length+'</div></div></div>';
+ var cnt=function(v){return String(v)};
+ h+='<div class="grid g2" style="margin-top:16px"><div class="card"><h2>Przychód według przedmiotu</h2>'+barList(bs,pln)+'</div><div class="card"><h2>Przychód według ucznia</h2>'+barList(bt,pln)+'</div><div class="card"><h2>Dni tygodnia</h2>'+barList(wd,cnt)+'</div><div class="card"><h2>Godziny rozpoczęcia</h2>'+barList(hr,cnt)+'</div></div><p class="hint">Przychód według dat lekcji, razem z opłatami za odwołanie. Obłożenie liczone z lekcji zaplanowanych i przeprowadzonych (liczba lekcji).</p>';
+ return h
+}
+function settingsPro(){
+ var pr=S.plan==="pro",c=S.set||{},dis=pr?"":" disabled",tag=pr?"":' <span class="tag ac">Pro</span>',h="",up=function(f){return pr?"":'<button class="btn p s" data-a="proUp" data-f="'+f+'">Odblokuj w Pro</button>'};
+ h+='<div class="card"><h2>Cel miesięczny'+tag+'</h2><p class="hint" style="margin:-6px 0 12px">Pasek postępu na pulpicie pokazuje, ile z celu osiągnąłeś w wybranym miesiącu. Zostaw puste, aby wyłączyć.</p><div class="f"><label for="sg">Cel (zł)</label><input id="sg" inputmode="decimal" data-set="goal" value="'+(c.goal?gStr(c.goal):"")+'"'+dis+'></div>'+up("Cel miesięczny")+'</div>';
+ h+='<div class="card"><h2>Szablony notatek'+tag+'</h2><p class="hint" style="margin:-6px 0 12px">Wstawiasz je w formularzu lekcji. Dostępne są 4 gotowe szablony i Twoje własne.</p>'+(c.tpl||[]).map(function(x,i){return '<div class="row"><div class="m"><b>'+esc(x.n)+'</b><span>'+esc(x.t)+'</span></div><button class="btn s d" data-a="tdel" data-i="'+i+'"'+dis+'>Usuń</button></div>'}).join("")+'<div class="f" style="margin-top:12px"><label for="tn">Nazwa szablonu</label><input id="tn"'+dis+'></div><div class="f"><label for="tt">Treść</label><textarea id="tt" rows="3"'+dis+'></textarea></div>'+(pr?'<button class="btn" data-a="tadd">Dodaj szablon</button>':up("Szablony notatek"))+'</div>';
+ h+='<div class="card"><h2>Kosz'+tag+'</h2>';
+ if(!pr)h+='<p class="hint">W planie Pro usunięte lekcje i uczniowie trafiają do kosza na 30 dni i można je przywrócić.</p>'+up("Kosz z przywracaniem");
+ else{var T=S.trash||[];h+='<p class="hint" style="margin:-6px 0 12px">Usunięte lekcje i uczniowie trafiają tu na 30 dni.</p>'+(T.length?T.map(function(x,i){var d=Math.max(0,30-Math.floor((Date.now()-x.at)/864e5)),nm=x.t==="student"?"Uczeń: "+x.d.name+" ("+(x.ls||[]).length+" lekcji)":"Lekcja: "+((stu(x.d.sid)||{}).name||"usunięty uczeń")+" · "+fd(x.d.date)+", "+x.d.time;return '<div class="row"><div class="m"><b>'+esc(nm)+'</b><span>Pozostało dni: '+d+'</span></div><div class="acts"><button class="btn s" data-a="trr" data-i="'+i+'">Przywróć</button><button class="btn s d" data-a="trd" data-i="'+i+'">Usuń na stałe</button></div></div>'}).join("")+'<div style="margin-top:12px"><button class="btn d" data-a="tre">Opróżnij kosz</button></div>':'<p class="hint">Kosz jest pusty.</p>')}
+ return h+'</div>'
+}
+function copyEl(t){t.select();try{navigator.clipboard.writeText(t.value).then(function(){toast("Skopiowano.")},function(){document.execCommand("copy");toast("Skopiowano.")})}catch(x){document.execCommand("copy");toast("Skopiowano.")}}
+document.addEventListener("change",function(e){var s=e.target;if(!s.dataset||!s.dataset.tpl||s.value==="")return;var ta=document.getElementById(s.dataset.tpl),t=getTpls()[+s.value];if(ta&&t)ta.value=(ta.value?ta.value+"\n":"")+t[1];s.value=""});
+document.addEventListener("click",function(e){var b=e.target.closest("[data-a]");if(!b)return;var a=b.dataset.a,id=b.dataset.id,i=+b.dataset.i;
+ if(a==="delS"){var st=stu(id),n=S.lessons.filter(function(l){return l.sid===id}).length,pro=S.plan==="pro";confirmBox("Usunąć ucznia?",esc(st.name)+" i jego lekcje ("+n+") "+(pro?"trafią do kosza na 30 dni.":"zostaną trwale usunięte. W planie Pro można je przywrócić z kosza."),"Usuń ucznia",function(){if(pro)(S.trash=S.trash||[]).push({t:"student",d:st,ls:S.lessons.filter(function(l){return l.sid===id}),at:Date.now()});S.lessons=S.lessons.filter(function(l){return l.sid!==id});S.students=S.students.filter(function(x){return x.id!==id});save();render();toast(pro?"Uczeń w koszu.":"Uczeń usunięty.")},true)}
+ else if(a==="trr"){var it=(S.trash||[])[i];if(!it)return;if(it.t==="student"){if(it.d.active&&limited()){upsell();return}S.students.push(it.d);(it.ls||[]).forEach(function(l){S.lessons.push(l)})}else{if(!stu(it.d.sid)){toast("Najpierw przywróć ucznia tej lekcji.");return}S.lessons.push(it.d)}S.trash.splice(i,1);save();render();toast("Przywrócono.")}
+ else if(a==="trd")confirmBox("Usunąć na stałe?","Tej operacji nie można cofnąć.","Usuń na stałe",function(){S.trash.splice(i,1);save();render()},true);
+ else if(a==="tre")confirmBox("Opróżnić kosz?","Wszystkie elementy zostaną trwale usunięte.","Opróżnij",function(){S.trash=[];save();render();toast("Kosz opróżniony.")},true);
+ else if(a==="tadd"){var tn=document.getElementById("tn").value.trim(),tt=document.getElementById("tt").value.trim();if(!tn||!tt){toast("Podaj nazwę i treść szablonu.");return}S.set=S.set||{};(S.set.tpl=S.set.tpl||[]).push({n:tn,t:tt});save();render();toast("Dodano szablon.")}
+ else if(a==="tdel"){S.set.tpl.splice(i,1);save();render()}
+ else if(a==="cpy")copyEl(document.getElementById(b.dataset.t));
+ else if(a==="sumAll"){if(S.plan!=="pro"){proUp("Podsumowania dla wszystkich uczniów");return}
+  var ids=[];S.lessons.forEach(function(l){if((l.status==="done"||l.status==="cancelled")&&l.date.slice(0,7)===ui.bm&&ids.indexOf(l.sid)<0&&stu(l.sid))ids.push(l.sid)});
+  if(!ids.length){toast("Brak lekcji do podsumowania w tym miesiącu.");return}
+  modal('<h2>Podsumowania – '+esc(fm(ui.bm))+'</h2><p class="hint">Gotowe wiadomości dla każdego ucznia.</p>'+ids.map(function(sid,k){return '<div class="f"><label for="sa'+k+'">'+esc(stu(sid).name)+'</label><textarea id="sa'+k+'" rows="7" readonly>'+esc(summaryText(sid))+'</textarea><button class="btn s" data-a="cpy" data-t="sa'+k+'" style="margin-top:6px">Kopiuj</button></div>'}).join("")+'<div class="mf"><button class="btn p" data-m="close">Zamknij</button></div>',true)}
+ else if(a==="prn"){if(S.plan!=="pro"){proUp("Wydruk i PDF podsumowania");return}document.body.classList.add("printing");try{window.print()}catch(x){toast("Drukowanie jest zablokowane w tym oknie.")}document.body.classList.remove("printing")}
+});
+var LD=null;
+function lev(a,b){var m=[],i,j;for(i=0;i<=a.length;i++)m[i]=[i];for(j=1;j<=b.length;j++)m[0][j]=j;for(i=1;i<=a.length;i++)for(j=1;j<=b.length;j++)m[i][j]=Math.min(m[i-1][j]+1,m[i][j-1]+1,m[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return m[a.length][b.length]}
+function rateFor(s,sub){return s&&s.rates&&sub&&s.rates[sub]!=null?s.rates[sub]:(s?s.rate:0)}
+function applyFees(sid){S.lessons.forEach(function(l){if(l.sid===sid&&l.status==="cancelled"&&!l.paid&&!l.fee){var f=cancelFee(l);if(f>0)l.fee=f}})}
+function cancelFee(r){var st=stu(r.sid);if(!st)return 0;var m=st.cancelMode||(st.cancelPct>0?"percent":"off");if(m==="percent")return Math.round(r.amount*(st.cancelPct||0)/100);if(m==="fixed")return Math.min(st.cancelFixed||0,r.amount);return 0}
+function migFee(){var c=0,once=!S.fm2;S.lessons.forEach(function(l){if(l.status==="cancelled"&&(l.fee==null||(once&&!l.fee&&!l.paid))){var f=cancelFee(l);if(f!==l.fee){l.fee=f;c++}}});if(once){S.fm2=1;c++}if(c)save()}
+function cancelHint(){var n=S.lessons.filter(function(l){return l.status==="cancelled"&&!l.fee&&l.date.slice(0,7)===ui.bm}).length;if(!n)return "";return '<div class="nt">Odwołane lekcje bez naliczonej opłaty w tym miesiącu: '+n+'. Opłatę za odwołanie ustawisz w danych ucznia (Uczniowie → Edytuj).</div>'}
+function te(l){var a=+l.time.slice(0,2)*60+ +l.time.slice(3,5)+l.min;return pad(Math.floor(a/60)%24)+":"+pad(a%60)}
+function vLessons(){return '<div class="bar"><button class="btn s'+(ui.lv==="cal"?"":" p")+'" data-a="lv" data-v="list" aria-pressed="'+(ui.lv!=="cal")+'">Lista</button><button class="btn s'+(ui.lv==="cal"?" p":"")+'" data-a="lv" data-v="cal" aria-pressed="'+(ui.lv==="cal")+'">Kalendarz</button></div>'+(ui.lv==="cal"?vCal():vLessonsList())}
+function vCal(){
+ var m=ui.cm||ym(new Date()),p=m.split("-"),y=+p[0],mo=+p[1]-1,dim=new Date(y,mo+1,0).getDate(),off=(new Date(y,mo,1).getDay()+((S.set&&S.set.wk==="sun")?0:6))%7,by={},td=ymd(new Date()),i,d;
+ S.lessons.forEach(function(l){if(l.status!=="cancelled"&&l.date.slice(0,7)===m)(by[l.date]=by[l.date]||[]).push(l)});
+ var h='<div class="card"><div class="bar" style="justify-content:center;margin-bottom:8px"><button class="btn s" data-a="cm" data-d="-1" aria-label="Poprzedni miesiąc">‹</button><b style="min-width:150px;text-align:center;text-transform:capitalize">'+fm(m)+'</b><button class="btn s" data-a="cm" data-d="1" aria-label="Następny miesiąc">›</button></div><div class="cal">';
+ ((S.set&&S.set.wk==="sun")?["Nd","Pn","Wt","Śr","Cz","Pt","So"]:["Pn","Wt","Śr","Cz","Pt","So","Nd"]).forEach(function(x){h+='<div class="ch">'+x+'</div>'});
+ for(i=0;i<off;i++)h+='<div></div>';
+ for(d=1;d<=dim;d++){var ds=m+"-"+pad(d),n=(by[ds]||[]).length;h+='<button class="cd'+(n?" busy":"")+(ds===td?" td":"")+(ui.cd===ds?" sel":"")+'" data-a="cday" data-d="'+ds+'" aria-pressed="'+(ui.cd===ds)+'" aria-label="'+d+(n?", lekcji: "+n:", wolne")+'"><span>'+d+'</span>'+(n?'<i>'+n+'</i>':"")+'</button>'}
+ h+='</div><p class="hint" style="margin:10px 0 0">Zaznaczone dni mają lekcje. Kliknij dzień, aby zobaczyć uczniów i godziny.</p>';
+ if(ui.cd&&ui.cd.slice(0,7)===m){var L=(by[ui.cd]||[]).slice().sort(function(a,b){return a.time.localeCompare(b.time)});
+  h+='<h3 style="margin:16px 0 4px">'+fd(ui.cd)+'</h3>'+(L.length?L.map(function(l){var s=stu(l.sid);return '<div class="row"><div class="m"><b>'+esc(l.time)+'–'+te(l)+'</b><span style="display:block;color:var(--tx)">'+esc(s?s.name:"?")+((l.subject||(s?subjList(s)[0]:""))?" · "+esc(l.subject||subjList(s)[0]):"")+'</span>'+(l.topic?'<span style="display:block">Temat: '+esc(l.topic)+'</span>':"")+'</div><div>'+lessonTags(l)+'</div></div>'}).join(""):'<div class="empty">Dzień wolny – brak lekcji.</div>')}
+ return h+'</div>'
+}
+document.addEventListener("click",function(e){var b=e.target.closest("[data-a]");if(!b)return;var a=b.dataset.a;
+ if(a==="lv"){ui.lv=b.dataset.v;render()}
+ else if(a==="cm"){var q=(ui.cm||ym(new Date())).split("-"),dd=new Date(+q[0],+q[1]-1+ +b.dataset.d,1);ui.cm=ym(dd);ui.cd="";render()}
+ else if(a==="cday"){ui.cd=ui.cd===b.dataset.d?"":b.dataset.d;render()}});
+/* ===== Baza danych: udostępnianie uczniom (szyfrowane kodem dostępu) ===== */
+var APPURL="https://claude.ai/artifact/TGfY4RMaMMiYRtFE3b8SaD";
+var B32="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+function normCode(x){return String(x||"").toUpperCase().replace(/[^A-Z0-9]/g,"")}
+function okCode(x){var n=normCode(x);return n.length===16&&n.split("").every(function(c){return B32.indexOf(c)>-1})}
+function fmtCode(x){return normCode(x).replace(/(.{4})(?=.)/g,"$1-")}
+function newCode(){var a=new Uint8Array(16),s="",i;crypto.getRandomValues(a);for(i=0;i<16;i++)s+=B32[a[i]&31];return fmtCode(s)}
+function u8(t){return new TextEncoder().encode(t)}
+function hex(b){return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,"0")}).join("")}
+function b64(b){var a=new Uint8Array(b),s="",i;for(i=0;i<a.length;i+=32768)s+=String.fromCharCode.apply(null,a.subarray(i,i+32768));return btoa(s)}
+function ub64(t){var b=atob(t),a=new Uint8Array(b.length),i;for(i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return a}
+async function codeId(c){return hex(await crypto.subtle.digest("SHA-256",u8("tt-id|"+normCode(c)))).slice(0,32)}
+async function codeKey(c){var h=await crypto.subtle.digest("SHA-256",u8("tt-key|"+normCode(c)));return crypto.subtle.importKey("raw",h,"AES-GCM",false,["encrypt","decrypt"])}
+async function encFor(c,obj){var k=await codeKey(c),iv=crypto.getRandomValues(new Uint8Array(12));var ct=await crypto.subtle.encrypt({name:"AES-GCM",iv:iv},k,u8(JSON.stringify(obj)));return {v:1,iv:b64(iv),ct:b64(ct)}}
+async function decFor(c,d){var k=await codeKey(c);var p=await crypto.subtle.decrypt({name:"AES-GCM",iv:ub64(d.iv)},k,ub64(d.ct));return JSON.parse(new TextDecoder().decode(p))}
+function fdt(ts){var d=new Date(ts);return fd(ymd(d))+", "+pad(d.getHours())+":"+pad(d.getMinutes())}
+
+var DBX={db:null,w:null,st:"init"};
+async function dbInit(){
+ if(!(window.claude&&window.claude.use)){DBX.st="off";onDbReady();return}
+ try{var r=await Promise.all([window.claude.use("db"),window.claude.use("user")]);DBX.db=r[0];DBX.st=r[0]?"ok":"off";
+  if(r[1]){try{DBX.w=await r[1].can("data.write")}catch(e){DBX.w=null}}}catch(e){DBX.st="off"}
+ onDbReady()}
+function onDbReady(){if(curPage==="panel"){uSubAll();uRender()}queueSync();refreshShareUI()}
+
+/* Synchronizacja dziennika -> baza (tylko uczniowie z kodem) */
+var SK="tutortrack-sync-v1",SY=null,syT=null,syBusy=false,syAgain=false,syErr="";
+function syLoad(){try{SY=JSON.parse(localStorage.getItem(SK))}catch(e){SY=null}SY=SY||{};SY.h=SY.h||{};SY.at=SY.at||{}}
+function sySave(){try{localStorage.setItem(SK,JSON.stringify(SY))}catch(e){}}
+function payload(s){var n=new Date(),from=ym(new Date(n.getFullYear(),n.getMonth()-18,1)),p=P()||PR||{};
+ return {v:1,t:p.brand||p.name||"Korepetytor",s:s.name,ls:S.lessons.filter(function(l){return l.sid===s.id&&l.date.slice(0,7)>=from}).map(function(l){return {i:l.id,d:l.date,tm:l.time,m:l.min,sub:l.subject||subjList(s)[0]||"",top:l.topic||"",st:l.status,n:l.notes||"",hw:l.hw||"",hd:l.hd||"",a:l.status==="cancelled"?(l.fee||0):l.amount,p:!!l.paid}})}}
+function canSync(){return DBX.st==="ok"&&DBX.w!==false&&persist&&sg()!=="g"}
+function queueSync(){if(typeof DBX==="undefined"||!canSync())return;if(syT)clearTimeout(syT);syT=setTimeout(syncAll,1200);refreshShareUI()}
+function syncNow(){if(syT){clearTimeout(syT);syT=null}return syncAll()}
+async function syncAll(){syT=null;if(!canSync())return;if(syBusy){syAgain=true;return}
+ if(!SY)syLoad();syBusy=true;refreshShareUI();
+ try{var live={},i,s;
+  for(i=0;i<S.students.length;i++){s=S.students[i];if(!s.share||!s.share.code)continue;var did=s.share.did;live[did]=1;
+   var js=JSON.stringify(payload(s)),h=hs(js)+"."+js.length;if(SY.h[did]===h)continue;
+   var body=await encFor(s.share.code,JSON.parse(js));body.at=Date.now();
+   await DBX.db.doc("inbox/"+did).set(body);SY.h[did]=h;SY.at[did]=body.at;sySave()}
+  var old=Object.keys(SY.h);for(i=0;i<old.length;i++){if(live[old[i]])continue;await DBX.db.doc("inbox/"+old[i]).delete();delete SY.h[old[i]];delete SY.at[old[i]];sySave()}
+  syErr=""}
+ catch(e){syErr=(e&&e.code)||"error";if(e&&(e.code==="invalid_argument"||e.code==="revoked"))DBX.w=false}
+ syBusy=false;if(syAgain){syAgain=false;queueSync()}refreshShareUI()}
+function shStat(s){if(!s.share)return "";if(syBusy||syT)return "Wysyłanie danych do panelu ucznia…";if(syErr)return "Nie udało się przesłać danych. Użyj „Wyślij teraz”, aby spróbować ponownie.";var at=SY&&SY.at[s.share.did];return at?"Dane przesłane: "+fdt(at)+". Aktualizują się automatycznie po każdej zmianie.":"Dane jeszcze nie zostały przesłane."}
+function refreshShareUI(){var e=document.getElementById("shst");if(!e)return;var s=stu(e.dataset.id);if(s)e.textContent=shStat(s)}
+function shareMsg(){return sg()==="g"?"W trybie demo nie można udostępniać danych uczniom. Załóż konto, aby korzystać z panelu ucznia.":!persist?"Przeglądarka blokuje zapis danych – udostępnianie jest niedostępne.":DBX.st==="init"?"Łączenie z bazą danych… Spróbuj za chwilę.":DBX.st!=="ok"?"Udostępnianie działa, gdy TutorTrack jest otwarty na claude.ai, a Ty jesteś zalogowany.":DBX.w===false?"Udostępniać dane uczniom może tylko właściciel tej aplikacji lub osoba z uprawnieniami edycji.":""}
+function shareModal(id){var s=stu(id);if(!s)return;var m=shareMsg();
+ if(m){modal('<h2>Panel ucznia</h2><p>'+esc(m)+'</p><div class="mf"><button class="btn" data-m="close">Zamknij</button></div>');return}
+ if(!s.share){modal('<h2>Udostępnij panel ucznia</h2><p>'+esc(s.name)+' zobaczy w panelu ucznia swoje lekcje, notatki po zajęciach i prace domowe. Dane aktualizują się automatycznie po każdej zmianie w dzienniku.</p><p class="hint">Przesyłane są: terminy, przedmioty, tematy, statusy i kwoty lekcji, notatki po zajęciach oraz prace domowe. Notatki przed zajęciami i dane innych uczniów zostają prywatne. Dane są szyfrowane kodem dostępu.</p><div class="mf"><button class="btn" data-m="close">Anuluj</button><button class="btn p" data-a="shNew" data-id="'+id+'">Utwórz kod dostępu</button></div>');return}
+ var msg="Cześć! Twoje lekcje, notatki i prace domowe znajdziesz w panelu ucznia TutorTrack.\n1. Otwórz: "+APPURL+"\n2. Wybierz „Dla ucznia”, a potem „Otwórz panel ucznia”.\n3. W zakładce „Korepetytorzy” wpisz kod: "+s.share.code+"\n(Potrzebne jest konto claude.ai.)";
+ modal('<h2>Panel ucznia – '+esc(s.name)+'</h2><p class="hint" style="margin:0 0 4px">Kod dostępu</p><div class="code">'+esc(s.share.code)+'</div><p class="hint" id="shst" data-id="'+id+'" aria-live="polite">'+esc(shStat(s))+'</p><div class="f"><label for="shm">Wiadomość dla ucznia</label><textarea id="shm" rows="6" readonly>'+esc(msg)+'</textarea></div><p class="hint">Kto zna kod, widzi lekcje i notatki tego ucznia – przekaż go tylko uczniowi lub rodzicowi. Jeśli kod wycieknie, utwórz nowy.</p><div class="mf"><button class="btn d" data-a="shOff" data-id="'+id+'">Wyłącz dostęp</button><button class="btn" data-a="shRe" data-id="'+id+'">Nowy kod</button><button class="btn" data-a="shSync" data-id="'+id+'">Wyślij teraz</button><button class="btn p" data-a="cpy" data-t="shm">Kopiuj wiadomość</button></div>',true)}
+async function shCreate(id){var s=stu(id);if(!s)return;var code=newCode(),did=await codeId(code);s.share={code:code,did:did};save();render();shareModal(id);await syncNow();refreshShareUI()}
+document.addEventListener("click",function(e){var b=e.target.closest("[data-a]");if(!b)return;var a=b.dataset.a,id=b.dataset.id;
+ if(a==="share")shareModal(id);
+ else if(a==="shNew")shCreate(id);
+ else if(a==="shRe")confirmBox("Utworzyć nowy kod?","Stary kod przestanie działać – uczeń będzie musiał wpisać nowy.","Utwórz nowy kod",function(){shCreate(id)});
+ else if(a==="shOff")confirmBox("Wyłączyć dostęp ucznia?","Dane tego ucznia zostaną usunięte z panelu ucznia. Twój dziennik się nie zmieni.","Wyłącz dostęp",function(){var s=stu(id);if(s)delete s.share;save();render();syncNow();toast("Dostęp ucznia wyłączony.")},true);
+ else if(a==="shSync"){var s=stu(id);if(s&&s.share&&SY)delete SY.h[s.share.did];syncNow().then(function(){toast(syErr?"Nie udało się przesłać danych.":"Dane przesłane do panelu ucznia.")})}
+});
+
+/* ===== Panel ucznia ===== */
+var UK="tutortrack-student-v1",U=null,UD={},USt={},UAt={},uSubs={},uv={tab:"plan",wk:0,m:ym(new Date()),hf:"todo"};
+var CATS={school:"Szkoła",tutor:"Korepetycje spoza TutorTrack",extra:"Zajęcia dodatkowe",other:"Inne"};
+var WDL=["Poniedziałek","Wtorek","Środa","Czwartek","Piątek","Sobota","Niedziela"];
+function uLoad(){try{U=JSON.parse(localStorage.getItem(UK))}catch(e){U=null}U=U||{};U.codes=U.codes||[];U.ev=U.ev||[];U.done=U.done||{};U.cache=U.cache||{}}
+function uSave(){try{localStorage.setItem(UK,JSON.stringify(U))}catch(e){}}
+function uSubAll(){if(DBX.st!=="ok")return;U.codes.forEach(function(c){if(uSubs[c.did])return;USt[c.did]="loading";
+ var tm=setTimeout(function(){if(USt[c.did]==="loading"){USt[c.did]="slow";uRender()}},10000);
+ uSubs[c.did]=DBX.db.doc("inbox/"+c.did).onSnapshot(function(sn){
+  if(!sn.exists){if(!sn.metadata.fromCache){clearTimeout(tm);USt[c.did]="missing";delete UD[c.did];if(U.cache[c.did]){delete U.cache[c.did];uSave()}uRender()}return}
+  var body=sn.data();if(!sn.metadata.fromCache)clearTimeout(tm);
+  decFor(c.code,body).then(function(d){if(!d||!Array.isArray(d.ls))throw 0;UD[c.did]=d;UAt[c.did]=body.at||0;U.cache[c.did]=d;uSave();USt[c.did]="ok";uRender()},function(){clearTimeout(tm);USt[c.did]="bad";uRender()})
+ },function(){clearTimeout(tm);USt[c.did]="err";uRender()})})}
+function uUnsub(did){if(uSubs[did]){try{uSubs[did]()}catch(e){}delete uSubs[did]}delete UD[did];delete USt[did];delete UAt[did];delete U.cache[did]}
+function uData(did){return UD[did]||U.cache[did]||null}
+function uLessons(){var a=[];U.codes.forEach(function(c){var d=uData(c.did);if(!d||!Array.isArray(d.ls))return;d.ls.forEach(function(l){if(!l||typeof l.d!=="string"||typeof l.tm!=="string")return;a.push({k:c.did+":"+l.i,did:c.did,t:String(d.t||"Korepetytor"),d:l.d,tm:l.tm,m:+l.m||0,sub:String(l.sub||""),top:String(l.top||""),st:l.st,n:String(l.n||""),hw:String(l.hw||""),hd:String(l.hd||""),a:+l.a||0,p:!!l.p})})});return a}
+function uFind(k){return uLessons().filter(function(l){return l.k===k})[0]}
+function fmtH(min){return (min/60).toLocaleString("pl-PL",{maximumFractionDigits:1})+" h"}
+function stuPanel(){document.body.classList.remove("demo");document.body.removeAttribute("data-th");curPage="panel";
+ $("appw").hidden=true;$("tabs").hidden=true;$("pub").hidden=false;document.title="TutorTrack – panel ucznia";
+ if(!U)uLoad();uSubAll();uRender();window.scrollTo(0,0)}
+function uRender(){if(curPage!=="panel")return;var a=document.activeElement,keep=a&&a.id==="ucode"?a.value:null;
+ var T=[["plan","Plan"],["graf","Mój grafik"],["hw","Zadania"],["sum","Podsumowanie"],["kor","Korepetytorzy"]],nT=uLessons().filter(function(l){return l.hw&&!U.done[l.k]}).length;
+ var h='<header class="ph"><div class="pi phi"><a class="logo" href="#/uczen" aria-label="TutorTrack – strona dla ucznia"><i>'+LOGO+'</i></a><b>Panel ucznia</b><a class="btn s" href="#/uczen" style="margin-left:auto">O panelu</a></div></header><div class="pi"><nav class="utabs" aria-label="Sekcje panelu ucznia">'+T.map(function(x){return '<button class="btn s'+(uv.tab===x[0]?" p":"")+'" data-u="tab" data-t="'+x[0]+'"'+(uv.tab===x[0]?' aria-current="page"':"")+'>'+x[1]+(x[0]==="hw"&&nT?' <span class="tag am">'+nT+'</span>':"")+'</button>'}).join("")+'</nav>';
+ if(DBX.st==="off"&&U.codes.length)h+='<div class="nt">Brak połączenia z bazą danych – widzisz dane z ostatniej wizyty. Otwórz panel na claude.ai po zalogowaniu, aby pobrać aktualne.</div>';
+ h+='<main style="padding-bottom:48px">'+({plan:uPlan,graf:uGraf,hw:uHw,sum:uSum,kor:uKor}[uv.tab]||uPlan)()+'</main></div>';
+ $("pub").innerHTML=h;
+ if(keep!==null){var e=$("ucode");if(e){e.value=keep;e.focus()}}}
+function uMon(){var t=new Date();t.setHours(0,0,0,0);t.setDate(t.getDate()-((t.getDay()+6)%7)+7*uv.wk);return t}
+function uTags(l){var st={planned:["Zaplanowana","ac"],done:["Przeprowadzona","gr"],cancelled:["Odwołana","rd"]}[l.st]||["Lekcja",""];
+ return '<span class="tag '+st[1]+'">'+st[0]+'</span> '+(l.n?'<span class="tag gr">Notatka</span> ':"")+(l.hw?(U.done[l.k]?'<span class="tag gr">Zadanie zrobione</span>':'<span class="tag am">Zadanie</span>'):"")}
+function uItem(x){if(x.l){var l=x.l;return '<div class="row"><div class="m"><b>'+esc(x.s)+'–'+esc(x.e)+' · '+esc(l.sub||"Lekcja")+'</b><span>'+esc(l.t)+(l.top?' · '+esc(l.top):"")+'</span></div><div>'+uTags(l)+'</div><button class="btn s" data-u="les" data-k="'+esc(l.k)+'">Szczegóły</button></div>'}
+ var e=x.ev;return '<div class="row"><div class="m"><b>'+esc(e.s)+'–'+esc(e.e)+' · '+esc(e.t)+'</b><span>'+esc(CATS[e.c]||"Inne")+(e.r==="w"?" · co tydzień":"")+'</span></div><span class="tag">Mój grafik</span><button class="btn s" data-u="ev" data-id="'+e.id+'">Edytuj</button></div>'}
+function uPlan(){
+ if(!U.codes.length&&!U.ev.length)return '<div class="card">'+empty("cal","Twój plan jest pusty","Dodaj kod od korepetytora albo własne zajęcia, aby zobaczyć plan tygodnia.")+'<div class="acts" style="justify-content:center"><button class="btn p" data-u="tab" data-t="kor">Dodaj kod od korepetytora</button><button class="btn" data-u="ev">Dodaj własne zajęcia</button></div></div>';
+ var L=uLessons(),mon=uMon(),end=new Date(mon),td=ymd(new Date()),i;end.setDate(end.getDate()+6);
+ var h='<div class="bar"><button class="btn s" data-u="wk" data-d="-1" aria-label="Poprzedni tydzień">‹</button><b>'+mon.getDate()+' '+MSHORT[mon.getMonth()]+' – '+end.getDate()+' '+MSHORT[end.getMonth()]+' '+end.getFullYear()+'</b><button class="btn s" data-u="wk" data-d="1" aria-label="Następny tydzień">›</button>'+(uv.wk?'<button class="btn s" data-u="wk" data-d="0">Ten tydzień</button>':"")+'<span class="sp"></span><button class="btn s p" data-u="ev">'+ic("plus",14)+' Dodaj zajęcia</button></div><div class="card">';
+ for(i=0;i<7;i++){var d=new Date(mon);d.setDate(d.getDate()+i);var ds=ymd(d);
+  var it=L.filter(function(l){return l.d===ds}).map(function(l){return {s:l.tm,e:te({time:l.tm,min:l.m}),l:l}}).concat(U.ev.filter(function(e){return e.r==="w"?e.wd===i:e.d===ds}).map(function(e){return {s:e.s,e:e.e,ev:e}})).sort(function(a,b){return a.s.localeCompare(b.s)});
+  h+='<div class="uday"><h3>'+WDSHORT[d.getDay()]+' '+d.getDate()+' '+MSHORT[d.getMonth()]+(ds===td?' <span class="tag ac">Dziś</span>':"")+'</h3>'+(it.length?it.map(uItem).join(""):'<p class="hint" style="margin:0 0 4px">Wolny dzień</p>')+'</div>'}
+ return h+'</div>'}
+function uGraf(){
+ var h='<div class="bar"><h2 style="margin:0">Mój grafik</h2><span class="sp"></span><button class="btn p s" data-u="ev">'+ic("plus",14)+' Dodaj zajęcia</button></div><p class="hint" style="margin:-6px 0 14px">Szkoła, zajęcia dodatkowe i korepetycje spoza TutorTrack. Grafik jest zapisany tylko w tej przeglądarce.</p>';
+ if(!U.ev.length)return h+'<div class="card">'+empty("cal","Brak własnych zajęć","Dodaj szkołę, stałe zajęcia lub lekcje u innych korepetytorów.")+'</div>';
+ function row(e){return '<div class="row"><div class="m"><b>'+esc(e.s)+'–'+esc(e.e)+' · '+esc(e.t)+'</b><span>'+esc(CATS[e.c]||"Inne")+(e.r==="o"?" · "+fd(e.d):"")+'</span></div>'+(e.r==="o"&&e.d<ymd(new Date())?'<span class="tag">Minęło</span>':"")+'<div class="acts"><button class="btn s" data-u="ev" data-id="'+e.id+'">Edytuj</button><button class="btn s d" data-u="evdel" data-id="'+e.id+'">Usuń</button></div></div>'}
+ var W=U.ev.filter(function(e){return e.r==="w"}),O=U.ev.filter(function(e){return e.r==="o"}).sort(function(a,b){return (a.d+a.s).localeCompare(b.d+b.s)});
+ if(W.length)h+='<div class="card"><h2>Co tydzień</h2>'+WDL.map(function(n,i){var x=W.filter(function(e){return e.wd===i}).sort(function(a,b){return a.s.localeCompare(b.s)});return x.length?'<h3 style="margin:10px 0 0;font-size:15px">'+n+'</h3>'+x.map(row).join(""):""}).join("")+'</div>';
+ if(O.length)h+='<div class="card" style="margin-top:16px"><h2>Jednorazowe</h2>'+O.map(row).join("")+'</div>';
+ return h}
+function uEvForm(id){var e=id?U.ev.filter(function(x){return x.id===id})[0]:null,d=e||{t:"",c:"school",r:"w",wd:(new Date().getDay()+6)%7,d:ymd(new Date()),s:"16:00",e:"17:00"};
+ function o(v,t,c){return '<option value="'+v+'"'+(String(v)===String(c)?" selected":"")+'>'+t+'</option>'}
+ modal('<h2>'+(e?"Edytuj zajęcia":"Dodaj zajęcia")+'</h2>'+field("et","Nazwa *",d.t,"text",'placeholder="Np. Szkoła, Basen, Chemia u p. Kowalskiej"')+'<div class="f2"><div class="f"><label for="ec">Rodzaj</label><select id="ec">'+Object.keys(CATS).map(function(k){return o(k,CATS[k],d.c)}).join("")+'</select></div><div class="f"><label for="er">Powtarzanie</label><select id="er">'+o("w","Co tydzień",d.r)+o("o","Jednorazowo",d.r)+'</select></div></div><div id="ewdw" class="f"><label for="ewd">Dzień tygodnia</label><select id="ewd">'+WDL.map(function(n,i){return o(i,n,d.wd)}).join("")+'</select></div><div id="edtw">'+field("edt","Data *",d.d,"date")+'</div><div class="f2">'+field("es","Od *",d.s,"time")+field("ee","Do *",d.e,"time")+'</div><div class="mf">'+(e?'<button class="btn d" data-u="evdel" data-id="'+e.id+'" style="margin-right:auto">Usuń</button>':"")+'<button class="btn" data-m="close">Anuluj</button><button class="btn p" id="evs">Zapisz</button></div>');
+ function tg(){var w=v("er")==="w";$("ewdw").hidden=!w;$("edtw").hidden=w}$("er").onchange=tg;tg();
+ $("evs").onclick=function(){var t=v("et").trim(),r=v("er"),s=v("es"),en=v("ee"),bad=0;
+  bad|=err("et",t?"":"Podaj nazwę zajęć.");bad|=err("edt",r==="o"&&!v("edt")?"Wybierz datę.":"");bad|=err("es",s?"":"Podaj godzinę.");bad|=err("ee",!en?"Podaj godzinę.":s&&en<=s?"Koniec musi być po początku.":"");if(bad)return;
+  var rec={t:t,c:v("ec"),r:r,wd:+v("ewd"),d:r==="o"?v("edt"):"",s:s,e:en};
+  if(e)Object.assign(e,rec);else{rec.id=uid();U.ev.push(rec)}uSave();closeModal();uRender();toast(e?"Zapisano zmiany.":"Dodano zajęcia do grafiku.")}}
+function uDue(l){var td=ymd(new Date());if(U.done[l.k])return '<span class="tag gr">Zrobione</span>';if(!l.hd)return "";if(l.hd<td)return '<span class="tag rd">Po terminie · '+fd(l.hd)+'</span>';if(l.hd===td)return '<span class="tag am">Na dziś</span>';if(l.hd===addDays(1))return '<span class="tag am">Na jutro</span>';return '<span class="tag">Termin: '+fd(l.hd)+'</span>'}
+function uHw(){
+ var L=uLessons().filter(function(l){return l.hw}),f=uv.hf;
+ function fb(v2,t){return '<button class="btn s'+(f===v2?" p":"")+'" data-u="hf" data-f="'+v2+'" aria-pressed="'+(f===v2)+'">'+t+'</button>'}
+ var h='<div class="bar"><h2 style="margin:0">Prace domowe</h2><span class="sp"></span>'+fb("todo","Do zrobienia")+fb("done","Zrobione")+fb("all","Wszystkie")+'</div>';
+ var X=L.filter(function(l){return f==="all"||(f==="done")===!!U.done[l.k]}).sort(function(a,b){var x=a.hd||a.d,y=b.hd||b.d;return f==="done"?y.localeCompare(x):x.localeCompare(y)});
+ if(!X.length)return h+'<div class="card">'+empty("check",f==="todo"?"Nic do zrobienia":"Brak zadań",f==="todo"?"Wszystkie prace domowe są zrobione albo korepetytor nie przesłał jeszcze zadań.":"Tu pojawią się prace domowe od korepetytorów.")+'</div>';
+ return h+'<div class="card">'+X.map(function(l){var dn=!!U.done[l.k];return '<div class="row"><div class="m"><b class="pre">'+esc(l.hw)+'</b><span>'+esc(l.sub||"Lekcja")+' · '+esc(l.t)+' · lekcja '+fd(l.d)+'</span></div><div>'+uDue(l)+'</div><button class="btn s'+(dn?"":" p")+'" data-u="hwt" data-k="'+esc(l.k)+'">'+(dn?"Cofnij":"Zrobione")+'</button></div>'}).join("")+'</div>'}
+function uSum(){
+ var m=uv.m,L=uLessons().filter(function(l){return l.d.slice(0,7)===m}),dn=L.filter(function(l){return l.st==="done"}),cn=L.filter(function(l){return l.st==="cancelled"}),pl=L.filter(function(l){return l.st==="planned"});
+ var min=dn.reduce(function(t,l){return t+l.m},0),bil=L.filter(function(l){return l.st==="done"||(l.st==="cancelled"&&l.a>0)}),tot=bil.reduce(function(t,l){return t+l.a},0),paid=bil.reduce(function(t,l){return t+(l.p?l.a:0)},0),bs={},hw=L.filter(function(l){return l.hw});
+ dn.forEach(function(l){var k=l.sub||"—";bs[k]=(bs[k]||0)+l.m});
+ var h='<div class="bar"><h2 style="margin:0">Podsumowanie miesiąca</h2><span class="sp"></span><input type="month" id="um" value="'+m+'" aria-label="Miesiąc"></div>';
+ if(!L.length)return h+'<div class="card">'+empty("chart","Brak lekcji w tym miesiącu","Wybierz inny miesiąc albo dodaj kod od korepetytora.")+'</div>';
+ h+='<div class="grid g4"><div class="card stat"><div class="l">Przeprowadzone lekcje</div><div class="v">'+dn.length+'</div></div><div class="card stat"><div class="l">Czas nauki</div><div class="v">'+fmtH(min)+'</div></div><div class="card stat"><div class="l">Odwołane</div><div class="v am">'+cn.length+'</div></div><div class="card stat"><div class="l">Prace domowe</div><div class="v">'+hw.filter(function(l){return U.done[l.k]}).length+' / '+hw.length+'</div></div></div>';
+ if(tot>0)h+='<div class="grid g4" style="grid-template-columns:repeat(3,1fr);margin-top:16px"><div class="card stat"><div class="l">Kwota za lekcje</div><div class="v">'+pln(tot)+'</div></div><div class="card stat"><div class="l">Opłacone</div><div class="v gr">'+pln(paid)+'</div></div><div class="card stat"><div class="l">Do zapłaty</div><div class="v am">'+pln(tot-paid)+'</div></div></div>';
+ h+='<div class="grid g2" style="margin-top:16px"><div class="card"><h2>Czas nauki według przedmiotu</h2>'+barList(bs,fmtH)+'</div><div class="card"><h2>Zaplanowane</h2>'+(pl.length?pl.sort(function(a,b){return (a.d+a.tm).localeCompare(b.d+b.tm)}).map(function(l){return '<div class="row"><div class="m"><b>'+fd(l.d)+', '+esc(l.tm)+'</b><span>'+esc(l.sub||"Lekcja")+' · '+esc(l.t)+'</span></div></div>'}).join(""):'<p class="hint">Brak zaplanowanych lekcji w tym miesiącu.</p>')+'</div></div>';
+ h+='<div class="card" style="margin-top:16px"><h2>Lekcje i notatki</h2>'+dn.concat(cn).sort(function(a,b){return (a.d+a.tm).localeCompare(b.d+b.tm)}).map(function(l){return '<div class="row"><div class="m"><b>'+fd(l.d)+', '+esc(l.tm)+' · '+esc(l.sub||"Lekcja")+'</b><span>'+esc(l.t)+(l.top?' · Temat: '+esc(l.top):"")+'</span>'+(l.n?'<span class="pre" style="display:block;color:var(--tx)">'+esc(l.n)+'</span>':"")+'</div><div>'+uTags(l)+'</div></div>'}).join("")+'</div>';
+ return h}
+function uStat(did){var d=uData(did),s=USt[did];
+ if(s==="loading")return "Pobieranie danych…";if(s==="slow")return "Baza danych nie odpowiada"+(d?" – widzisz ostatnio pobrane dane.":".");if(s==="missing")return "Nie znaleziono danych dla tego kodu. Sprawdź kod lub poproś korepetytora o nowy.";if(s==="bad")return "Nie udało się odczytać danych – kod może być nieaktualny.";if(s==="err")return "Błąd połączenia z bazą danych.";
+ if(s==="ok")return "Aktualne"+(UAt[did]?" · zmiana: "+fdt(UAt[did]):"");return d?"Dane z ostatniej wizyty":"Brak połączenia z bazą danych"}
+function uKor(){
+ var h='<div class="card"><h2>Dodaj kod od korepetytora</h2><p class="hint" style="margin:-6px 0 12px">Kod dostępu (16 znaków) dostajesz od korepetytora. Lekcje, notatki i prace domowe pojawią się automatycznie.</p><div class="bar" style="margin:0"><input id="ucode" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Kod dostępu" aria-describedby="e_ucode" style="font-family:ui-monospace,Menlo,Consolas,monospace;letter-spacing:1px"><button class="btn p" data-u="addc">Dodaj kod</button></div><div class="er" id="e_ucode" role="alert" style="color:var(--rd);font-size:13px;margin-top:6px"></div></div>';
+ if(DBX.st==="off")h+='<div class="nt" style="margin-top:16px">Aby pobierać dane od korepetytora, otwórz TutorTrack na claude.ai i zaloguj się. Bez tego działa tylko Twój grafik.</div>';
+ h+='<div class="card" style="margin-top:16px"><h2>Twoi korepetytorzy</h2>'+(U.codes.length?U.codes.map(function(c){var d=uData(c.did),bad=USt[c.did]==="missing"||USt[c.did]==="bad"||USt[c.did]==="err";return '<div class="row"><div class="av">'+esc(d?String(d.t||"K").charAt(0).toUpperCase():"?")+'</div><div class="m"><b>'+esc(d?d.t:"Kod "+c.code.slice(0,4)+"-…")+'</b><span>'+(d?"Uczeń: "+esc(d.s)+" · lekcji: "+d.ls.length+" · ":"")+'<span style="color:'+(bad?"var(--rd)":"inherit")+'">'+esc(uStat(c.did))+'</span></span></div><button class="btn s d" data-u="delc" data-did="'+esc(c.did)+'">Usuń</button></div>'}).join(""):'<p class="hint">Nie dodano jeszcze żadnego kodu.</p>')+'</div>';
+ return h+'<p class="hint" style="margin-top:12px">Dane od korepetytora są zaszyfrowane kodem dostępu – odczyta je tylko osoba, która go zna. Twój grafik i odhaczone zadania są zapisane tylko w tej przeglądarce. Wszystkie funkcje dla ucznia są bezpłatne.</p>'}
+function uLes(k){var l=uFind(k);if(!l)return;var dn=!!U.done[l.k];
+ modal('<h2>'+esc(l.sub||"Lekcja")+'</h2><p class="hint" style="margin:-6px 0 10px">'+esc(l.t)+' · '+fd(l.d)+', '+esc(l.tm)+'–'+te({time:l.tm,min:l.m})+' ('+l.m+' min)</p><div style="margin-bottom:12px">'+uTags(l)+'</div>'+(l.top?'<p><b>Temat:</b> '+esc(l.top)+'</p>':"")+'<h3 style="margin:12px 0 4px;font-size:15px">Notatka po lekcji</h3><p class="pre" style="margin:0">'+(l.n?esc(l.n):'<span class="hint">Brak notatki.</span>')+'</p>'+(l.hw?'<h3 style="margin:16px 0 4px;font-size:15px">Praca domowa</h3><p class="pre" style="margin:0 0 6px">'+esc(l.hw)+'</p>'+uDue(l):"")+(l.a>0?'<p class="hint" style="margin-top:14px">Kwota: '+pln(l.a)+(l.p?" · opłacona":" · nieopłacona")+'</p>':"")+'<div class="mf"><button class="btn" data-m="close">Zamknij</button>'+(l.hw?'<button class="btn p" data-u="hwt" data-k="'+esc(l.k)+'">'+(dn?"Cofnij: niezrobione":"Oznacz zadanie jako zrobione")+'</button>':"")+'</div>')}
+async function uAddCode(){var raw=v("ucode");if(!okCode(raw)){err("ucode","Kod ma 16 znaków (litery i cyfry), np. ABCD-EFGH-JKLM-NPQR.");$("ucode").focus();return}
+ var code=fmtCode(raw),did=await codeId(code);if(U.codes.some(function(c){return c.did===did})){err("ucode","Ten kod jest już dodany.");return}
+ U.codes.push({code:code,did:did});uSave();$("ucode").value="";uSubAll();uRender();toast(DBX.st==="ok"?"Dodano kod. Pobieranie danych…":"Dodano kod. Dane pobiorą się po połączeniu z bazą.")}
+document.addEventListener("click",function(e){var b=e.target.closest("[data-u]");if(!b)return;var a=b.dataset.u;
+ if(a==="tab"){uv.tab=b.dataset.t;uRender();window.scrollTo(0,0)}
+ else if(a==="wk"){var dd=+b.dataset.d;uv.wk=dd?uv.wk+dd:0;uRender()}
+ else if(a==="ev")uEvForm(b.dataset.id);
+ else if(a==="evdel"){var id=b.dataset.id;confirmBox("Usunąć zajęcia?","Zajęcia znikną z Twojego grafiku.","Usuń",function(){U.ev=U.ev.filter(function(x){return x.id!==id});uSave();uRender();toast("Usunięto zajęcia.")},true)}
+ else if(a==="les")uLes(b.dataset.k);
+ else if(a==="hf"){uv.hf=b.dataset.f;uRender()}
+ else if(a==="hwt"){var k=b.dataset.k,inM=!!b.closest("#ov");if(U.done[k])delete U.done[k];else U.done[k]=Date.now();uSave();uRender();if(inM)uLes(k);toast(U.done[k]?"Zadanie oznaczone jako zrobione.":"Cofnięto oznaczenie.")}
+ else if(a==="addc")uAddCode();
+ else if(a==="delc"){var did=b.dataset.did;confirmBox("Usunąć kod?","Lekcje, notatki i zadania od tego korepetytora znikną z Twojego panelu. Możesz dodać kod ponownie.","Usuń kod",function(){U.codes=U.codes.filter(function(c){return c.did!==did});Object.keys(U.done).forEach(function(x){if(x.indexOf(did+":")===0)delete U.done[x]});uUnsub(did);uSave();uRender();toast("Usunięto kod.")},true)}
+});
+document.addEventListener("change",function(e){if(e.target.id==="um"&&e.target.value){uv.m=e.target.value;uRender()}});
+document.addEventListener("keydown",function(e){if(e.key==="Enter"&&e.target.id==="ucode"){e.preventDefault();uAddCode()}});
+
+function amt(l){return l.status==="cancelled"?(l.fee||0):l.amount}
+function billable(l){return l.status==="done"||(l.status==="cancelled"&&l.fee>0)}
+function cancelFeeOld(r){var c=S.cancel||{mode:"off",fixed:0};if(c.mode==="fixed")return Math.min(c.fixed||0,r.amount);if(c.mode==="percent"){var st=stu(r.sid);return Math.round(r.amount*((st&&st.cancelPct)||0)/100)}return 0}
+syLoad();uLoad();load();loadPr();if(sg()==="g")S=seed();migFee();purgeTrash();route();dbInit();
+</script>
+</body>
+</html>
