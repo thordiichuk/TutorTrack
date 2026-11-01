@@ -212,7 +212,18 @@ export function CancelRequestActions({ l }: { l: Lesson }) {
   const { modal, confirm } = useOverlay();
   const s = stu(l.sid);
   const fee = cancelFee(s, l.amount);
+  const { lessons } = useData();
   if (l.cr?.status !== "pending") return null;
+  if (l.cr.kind === "move") {
+    const d = pd(l.date); d.setDate(d.getDate() + 7); const nd = ymd(d);
+    return <>
+      <button className="btn s p" onClick={async () => {
+        const ok = await run(() => api("POST", `/api/lessons/${l.id}/cancel-request/move`), "Lekcja przeniesiona na " + fd(nd) + ".");
+        if (ok && overlap(lessons, nd, l.time, l.min, l.id).length) modal(<><h2>Uwaga: nakładające się terminy</h2><p>Lekcja została przeniesiona na {fd(nd)}, {l.time}, ale nakłada się na inną lekcję. Jeśli to pomyłka, zmień termin w edycji.</p><DoneBtn /></>);
+      }}>Przenieś na {fd(nd).replace(/ \d{4}$/, "")}</button>
+      <button className="btn s" onClick={() => modal(<RejectRequest l={l} />)}>Odrzuć prośbę</button>
+    </>;
+  }
   return <>
     <button className="btn s p" onClick={() => confirm({
       title: "Potwierdzić odwołanie lekcji?", ok: "Potwierdź odwołanie",
@@ -227,7 +238,7 @@ function RejectRequest({ l }: { l: Lesson }) {
   const { close } = useOverlay();
   const [note, setNote] = useState("");
   return <>
-    <h2>Odrzucić prośbę o odwołanie?</h2>
+    <h2>{l.cr?.kind === "move" ? "Odrzucić prośbę o przeniesienie?" : "Odrzucić prośbę o odwołanie?"}</h2>
     <p className="hint">Przyczyna podana przez ucznia: {l.cr?.reason}</p>
     <div className="f"><label htmlFor="rjn">Komentarz dla ucznia (opcjonalnie)</label><textarea id="rjn" rows={3} maxLength={500} placeholder="Np. Odwołanie jest możliwe najpóźniej 24 godziny przed lekcją." value={note} onChange={(e) => setNote(e.target.value)} /></div>
     <p className="hint">Lekcja zostanie zaplanowana bez zmian. Uczeń zobaczy Twoją decyzję i komentarz.</p>
@@ -246,11 +257,6 @@ export function LessonActions({ l }: { l: Lesson }) {
   const pendingCr = l.cr?.status === "pending";
   return <div className="acts">
     <CancelRequestActions l={l} />
-    {pendingCr && <button className="btn s" onClick={async () => {
-      const d = pd(l.date); d.setDate(d.getDate() + 7); const nd = ymd(d);
-      const ok = await run(() => api("POST", `/api/lessons/${l.id}/cancel-request/move`), "Lekcja przeniesiona na " + fd(nd) + ".");
-      if (ok && overlap(lessons, nd, l.time, l.min, l.id).length) modal(<><h2>Uwaga: nakładające się terminy</h2><p>Lekcja została przeniesiona na {fd(nd)}, {l.time}, ale nakłada się na inną lekcję. Jeśli to pomyłka, zmień termin w edycji.</p><DoneBtn /></>);
-    }}>Przenieś na następny tydzień</button>}
     {!pendingCr && l.status === "planned" && <>
       <button className="btn s" onClick={() => modal(<DoneModal l={l} />)}>Przeprowadzona</button>
       <button className="btn s" onClick={() => confirm({ title: "Odwołać lekcję?", text: <>{l.topic || "Bez tematu"} · {fd(l.date)}<br />{fee > 0 ? <>Zostanie naliczona opłata: <b>{pln(fee)}</b>.</> : "Odwołana lekcja nie jest płatna."}</>, ok: "Odwołaj lekcję",
@@ -371,7 +377,7 @@ export function LessonSheet({ id }: { id: string }) {
     {l.prep && <p className="pre" style={{ margin: "0 0 8px" }}><b>Przed zajęciami:</b> {l.prep}</p>}
     {l.notes && <p className="pre" style={{ margin: "0 0 8px" }}><b>Po zajęciach:</b> {l.notes}</p>}
     {l.hw && <p className="pre" style={{ margin: "0 0 8px" }}><b>Praca domowa:</b> {l.hw}{l.hd ? " (termin: " + fd(l.hd) + ")" : ""}</p>}
-    {l.cr?.status === "pending" && <div className="nt">Uczeń prosi o odwołanie: {l.cr.reason}</div>}
+    {l.cr?.status === "pending" && <div className="nt">{l.cr.kind === "move" ? "Uczeń prosi o przeniesienie lekcji na następny tydzień" : "Uczeń prosi o odwołanie"}: {l.cr.reason}</div>}
     {l.cr?.status === "accepted" && l.status === "cancelled" && <p className="hint">Odwołana na prośbę ucznia: {l.cr.reason}</p>}
     {l.cr?.status === "moved" && <p className="hint">Przeniesiona na prośbę ucznia{l.cr.note ? " z " + fd(l.cr.note) : ""}. Przyczyna: {l.cr.reason}</p>}
     <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--bd)" }}><LessonActions l={l} /></div>

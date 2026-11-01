@@ -99,7 +99,7 @@ const mapStudent = (r: any) => ({
   inviteCode: r.invite_code ? fmtCode(r.invite_code) : null, linked: !!r.linked_user_id,
 });
 /** Student's request to cancel a lesson (null when there is none). */
-const mapCr = (r: any) => (r.cr_status ? { status: r.cr_status, reason: r.cr_reason, note: r.cr_note, at: r.cr_at ? new Date(r.cr_at).getTime() : 0 } : null);
+const mapCr = (r: any) => (r.cr_status ? { status: r.cr_status, kind: r.cr_kind || "cancel", reason: r.cr_reason, note: r.cr_note, at: r.cr_at ? new Date(r.cr_at).getTime() : 0 } : null);
 const mapLesson = (r: any) => ({
   id: r.id, sid: r.student_id, subject: r.subject, date: r.date, time: r.time, min: r.min, topic: r.topic, prep: r.prep,
   notes: r.notes, hw: r.hw, hd: r.hw_due || "", status: r.status, paid: r.paid, amount: r.amount, fee: r.fee,
@@ -595,10 +595,10 @@ export async function buildApp(opts: { logger?: boolean; authRateLimit?: number 
   app.post("/api/student/lessons/:id/cancel-request", authLimit, async (req) => {
     const u = await need(req, "student");
     const l = await studentLesson(u, (req.params as any).id);
-    const b = parse(z.object({ reason: str(500).min(3, "Napisz krótko przyczynę odwołania.") }), req.body);
+    const b = parse(z.object({ reason: str(500).min(3, "Napisz krótko przyczynę."), kind: z.enum(["cancel", "move"]).default("cancel") }), req.body);
     if (l.status !== "planned") fail(400, "Można odwołać tylko zaplanowaną lekcję.");
-    if (l.cr_status === "pending") fail(409, "Prośba o odwołanie tej lekcji już czeka na korepetytora.");
-    await q("UPDATE lessons SET cr_status='pending', cr_reason=$2, cr_note='', cr_at=now() WHERE id=$1", [l.id, b.reason]);
+    if (l.cr_status === "pending") fail(409, "Prośba dotycząca tej lekcji już czeka na korepetytora.");
+    await q("UPDATE lessons SET cr_status='pending', cr_kind=$3, cr_reason=$2, cr_note='', cr_at=now() WHERE id=$1", [l.id, b.reason, b.kind]);
     return { ok: true };
   });
   app.delete("/api/student/lessons/:id/cancel-request", async (req) => {

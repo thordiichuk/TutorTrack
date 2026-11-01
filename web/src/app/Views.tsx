@@ -69,7 +69,7 @@ export function Dashboard() {
     <SetupBar />
     <div className="bar"><div><h2 style={{ fontSize: 22, margin: 0 }}>Cześć, {(user?.name || "korepetytorze").split(" ")[0]}!</h2><span className="hint">Podsumowanie za {fm(m)}</span></div><span className="sp" />
       <MonthInput v={m} on={(v) => setUi((u) => ({ ...u, month: v }))} /></div>
-    {reqs.length > 0 && <div className="card" style={{ marginBottom: 16, borderColor: "#f3dca8", background: "var(--aml)" }}><h2>Prośby o odwołanie ({reqs.length})</h2><p className="hint" style={{ margin: "-6px 0 6px" }}>Uczniowie poprosili o odwołanie tych lekcji. Potwierdź albo odrzuć – uczeń zobaczy Twoją decyzję w swoim panelu.</p>
+    {reqs.length > 0 && <div className="card" style={{ marginBottom: 16, borderColor: "#f3dca8", background: "var(--aml)" }}><h2>Prośby uczniów ({reqs.length})</h2><p className="hint" style={{ margin: "-6px 0 6px" }}>Uczniowie poprosili o odwołanie lub przeniesienie tych lekcji. Potwierdź albo odrzuć – uczeń zobaczy Twoją decyzję w swoim panelu.</p>
       {reqs.map((l) => <div key={l.id}><LessonItem l={l} quick={false} /><div className="acts" style={{ margin: "2px 0 10px 70px" }}><CancelRequestActions l={l} /></div></div>)}</div>}
     <div className="grid g4 st2">
       <div className="card stat"><div className="l">Aktywni uczniowie</div><div className="v">{students.filter((s) => s.active).length}</div></div>

@@ -64,13 +64,13 @@ export function StudentPanel() {
 
   const tags = (l: L) => {
     const st = ({ planned: ["Zaplanowana", "ac"], done: ["Przeprowadzona", "gr"], cancelled: ["Odwołana", "rd"] } as const)[l.status];
-    return <>{l.cr?.status === "pending" && <><span className="tag am">Prośba o odwołanie</span>{" "}</>}{l.cr?.status === "rejected" && l.status === "planned" && <><span className="tag rd">Odwołanie odrzucone</span>{" "}</>}{l.cr?.status === "moved" && l.status === "planned" && <><span className="tag ac">Przeniesiona</span>{" "}</>}<span className={"tag " + st[1]}>{st[0]}</span>{" "}{l.notes && <><span className="tag gr">Notatka</span>{" "}</>}{l.hw && (done.has(l.id) ? <span className="tag gr">Zadanie zrobione</span> : <span className="tag am">Zadanie</span>)}</>;
+    return <>{l.cr?.status === "pending" && <><span className="tag am">{l.cr.kind === "move" ? "Prośba o przeniesienie" : "Prośba o odwołanie"}</span>{" "}</>}{l.cr?.status === "rejected" && l.status === "planned" && <><span className="tag rd">Odwołanie odrzucone</span>{" "}</>}{l.cr?.status === "moved" && l.status === "planned" && <><span className="tag ac">Przeniesiona</span>{" "}</>}<span className={"tag " + st[1]}>{st[0]}</span>{" "}{l.notes && <><span className="tag gr">Notatka</span>{" "}</>}{l.hw && (done.has(l.id) ? <span className="tag gr">Zadanie zrobione</span> : <span className="tag am">Zadanie</span>)}</>;
   };
   /** One short status for the compact plan row (most important first). */
   const shortTag = (l: L, clashing: boolean) => {
     if (clashing) return <span className="tag rd">Nakłada się</span>;
     if (l.status === "cancelled") return <span className="tag rd">Odwołana</span>;
-    if (l.cr?.status === "pending") return <span className="tag am">Prośba o odwołanie</span>;
+    if (l.cr?.status === "pending") return <span className="tag am">{l.cr.kind === "move" ? "Prośba o przeniesienie" : "Prośba o odwołanie"}</span>;
     if (l.cr?.status === "rejected" && l.status === "planned") return <span className="tag rd">Odrzucono</span>;
     if (l.cr?.status === "moved" && l.status === "planned") return <span className="tag ac">Przeniesiona</span>;
     if (l.hw && !done.has(l.id)) return <span className="tag am">Zadanie</span>;
@@ -93,12 +93,12 @@ export function StudentPanel() {
       {l.status === "done" && <><h3 style={{ margin: "12px 0 4px", fontSize: 15 }}>Notatka po lekcji</h3><p className="pre" style={{ margin: 0 }}>{l.notes || <span className="hint">Brak notatki.</span>}</p></>}
       {l.hw && <><h3 style={{ margin: "16px 0 4px", fontSize: 15 }}>Praca domowa</h3><p className="pre" style={{ margin: "0 0 6px" }}>{l.hw}</p>{due(l)}</>}
       {l.amount > 0 && <p className="hint" style={{ marginTop: 14 }}>Kwota: {pln(l.amount)}{l.paid ? " · opłacona" : " · nieopłacona"}</p>}
-      {l.cr?.status === "pending" && <div className="nt" style={{ marginTop: 12 }}><b>Prośba o odwołanie wysłana</b> {fdt(l.cr.at)} – czeka na potwierdzenie korepetytora.<br />Przyczyna: {l.cr.reason}</div>}
-      {l.cr?.status === "rejected" && l.status === "planned" && <div className="lerr" style={{ marginTop: 12 }}><b>Korepetytor odrzucił prośbę o odwołanie.</b>{l.cr.note && <><br />Komentarz: {l.cr.note}</>}<br />Twoja przyczyna: {l.cr.reason}</div>}
+      {l.cr?.status === "pending" && <div className="nt" style={{ marginTop: 12 }}><b>{l.cr.kind === "move" ? "Prośba o przeniesienie na następny tydzień wysłana" : "Prośba o odwołanie wysłana"}</b> {fdt(l.cr.at)} – czeka na potwierdzenie korepetytora.<br />Przyczyna: {l.cr.reason}</div>}
+      {l.cr?.status === "rejected" && l.status === "planned" && <div className="lerr" style={{ marginTop: 12 }}><b>{l.cr.kind === "move" ? "Korepetytor odrzucił prośbę o przeniesienie." : "Korepetytor odrzucił prośbę o odwołanie."}</b>{l.cr.note && <><br />Komentarz: {l.cr.note}</>}<br />Twoja przyczyna: {l.cr.reason}</div>}
       {l.cr?.status === "accepted" && l.status === "cancelled" && <p className="hint" style={{ marginTop: 12 }}>Lekcja odwołana na Twoją prośbę. Przyczyna: {l.cr.reason}</p>}
       {l.cr?.status === "moved" && <div className="nt" style={{ marginTop: 12 }}><b>Korepetytor przeniósł lekcję na Twoją prośbę</b>{l.cr.note ? <> – z {fd(l.cr.note)} na {fd(l.date)}</> : null}.<br />Przyczyna: {l.cr.reason}</div>}
       <div className="mf">
-        {l.status === "planned" && l.cr?.status !== "pending" && <button className="btn d" style={{ marginRight: "auto" }} onClick={() => ov.modal(<CancelRequestForm l={l} onSent={load} />)}>Odwołaj lekcję</button>}
+        {l.status === "planned" && l.cr?.status !== "pending" && <button className="btn d" style={{ marginRight: "auto" }} onClick={() => ov.modal(<CancelRequestForm l={l} onSent={load} />)}>Odwołaj lub przenieś</button>}
         {l.cr?.status === "pending" && <button className="btn d" style={{ marginRight: "auto" }} onClick={() => { ov.close(); run(() => api("DELETE", `/api/student/lessons/${l.id}/cancel-request`), "Prośba o odwołanie wycofana."); }}>Wycofaj prośbę</button>}
         <button className="btn" onClick={ov.close}>Zamknij</button>{l.hw && <button className="btn p" onClick={() => toggleHw(l.id, true)}>{done.has(l.id) ? "Cofnij: niezrobione" : "Oznacz zadanie jako zrobione"}</button>}</div></>);
   };
@@ -127,7 +127,7 @@ export function StudentPanel() {
     return <>
       <div className="bar"><div><h2 style={{ fontSize: 22, margin: 0 }}>Cześć, {(user!.name || "").split(" ")[0]}!</h2><span className="hint">{WDL[wdToday]}, {fd(td).split(", ")[1]}</span></div></div>
       {!d!.links.length && <div className="nt" style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>Połącz się z korepetytorem, aby widzieć swoje lekcje, notatki i prace domowe. <button className="btn s p" onClick={() => go("kor")}>Dodaj kod</button></div>}
-      {pending > 0 && <div className="nt">Prośby o odwołanie czekające na decyzję korepetytora: <b>{pending}</b>.</div>}
+      {pending > 0 && <div className="nt">Prośby czekające na decyzję korepetytora: <b>{pending}</b>.</div>}
       <div className="grid g4 st2">
         <div className="card stat"><div className="l">Lekcje w tym tygodniu</div><div className="v">{week.length}</div></div>
         <div className="card stat"><div className="l">Zadania do zrobienia</div><div className={"v" + (todo.length ? " am" : "")}>{todo.length}</div></div>
@@ -313,19 +313,26 @@ function KontoTab({ out, d, load }: { out: () => void; d: Data; load: () => Prom
 
 function CancelRequestForm({ l, onSent }: { l: L; onSent: () => Promise<void> }) {
   const { close, toast } = useOverlay();
+  const [kind, setKind] = useState<"cancel" | "move">("cancel");
   const [reason, setReason] = useState(""), [err, setErr] = useState(""), [busy, setBusy] = useState(false);
+  const nd = (() => { const d = pd(l.date); d.setDate(d.getDate() + 7); return ymd(d); })();
   const send = async () => {
-    if (reason.trim().length < 3) { setErr("Napisz krótko przyczynę odwołania."); return; }
+    if (reason.trim().length < 3) { setErr("Napisz krótko przyczynę."); return; }
     setBusy(true);
-    try { await api("POST", `/api/student/lessons/${l.id}/cancel-request`, { reason: reason.trim() }); close(); toast("Prośba wysłana do korepetytora."); await onSent(); }
+    try { await api("POST", `/api/student/lessons/${l.id}/cancel-request`, { reason: reason.trim(), kind }); close(); toast("Prośba wysłana do korepetytora."); await onSent(); }
     catch (e) { setErr(errMsg(e)); } finally { setBusy(false); }
   };
   return <>
-    <h2>Odwołać lekcję?</h2>
-    <p className="hint" style={{ margin: "-6px 0 10px" }}>{l.subject || "Lekcja"} · {l.tutor} · {fd(l.date)}, {l.time}–{te(l.time, l.min)}</p>
-    <div className="f"><label htmlFor="crr">Przyczyna odwołania *</label><textarea id="crr" rows={3} maxLength={500} placeholder="Np. Jestem chory, mam sprawdzian w szkole, wyjazd rodzinny…" value={reason} onChange={(e) => setReason(e.target.value)} aria-describedby="e_crr" />
+    <h2>{kind === "move" ? "Przenieść lekcję?" : "Odwołać lekcję?"}</h2>
+    <p className="hint" style={{ margin: "-6px 0 12px" }}>{l.subject || "Lekcja"} · {l.tutor} · {fd(l.date)}, {l.time}–{te(l.time, l.min)}</p>
+    <div className="seg" role="radiogroup" aria-label="Rodzaj prośby" style={{ marginBottom: 14 }}>
+      <button role="radio" aria-checked={kind === "cancel"} aria-pressed={kind === "cancel"} onClick={() => setKind("cancel")}>Odwołać</button>
+      <button role="radio" aria-checked={kind === "move"} aria-pressed={kind === "move"} onClick={() => setKind("move")}>Przenieść na następny tydzień</button>
+    </div>
+    {kind === "move" && <div className="nt">Nowy termin: <b>{fd(nd)}, {l.time}–{te(l.time, l.min)}</b></div>}
+    <div className="f"><label htmlFor="crr">Przyczyna *</label><textarea id="crr" rows={3} maxLength={500} placeholder="Np. Jestem chory, mam sprawdzian w szkole, wyjazd rodzinny…" value={reason} onChange={(e) => setReason(e.target.value)} aria-describedby="e_crr" />
       <div className="er" id="e_crr" role="alert" style={{ color: "var(--rd)", fontSize: 12 }}>{err}</div></div>
-    <p className="hint">Korepetytor musi potwierdzić odwołanie. Zgodnie z waszymi ustaleniami może naliczyć opłatę za odwołanie. Do czasu decyzji możesz wycofać prośbę.</p>
+    <p className="hint">{kind === "move" ? "Korepetytor musi potwierdzić nowy termin." : "Korepetytor musi potwierdzić odwołanie. Zgodnie z waszymi ustaleniami może naliczyć opłatę za odwołanie."} Do czasu decyzji możesz wycofać prośbę.</p>
     <div className="mf"><button className="btn" onClick={close}>Anuluj</button><button className="btn p" disabled={busy} onClick={send}>Wyślij prośbę</button></div>
   </>;
 }
