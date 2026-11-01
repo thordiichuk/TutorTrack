@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { api, isDemo } from "../lib/api";
 import { Empty, Ic } from "../lib/icons";
 import { navigate } from "../lib/router";
@@ -134,8 +134,26 @@ function DayGroups({ list, dir }: { list: Lesson[]; dir: number }) {
   const m: Record<string, Lesson[]> = {};
   list.forEach((l) => { (m[l.date] = m[l.date] || []).push(l); });
   const ds = Object.keys(m).sort((a, b) => dir * a.localeCompare(b)), td = ymd(new Date());
-  return <div className="card">{ds.map((d) => <div className="sday" key={d}><div className={"dayh" + (d === td ? " td" : "")}><span>{fd(d)}</span>{d === td && <span className="tag ac">Dziś</span>}</div>
-    {m[d].sort((a, b) => a.time.localeCompare(b.time)).map((l) => <LessonItem key={l.id} l={l} nd />)}</div>)}</div>;
+  // the day closest to today (today itself if it has lessons)
+  const target = ds.reduce((b, d) => (b === "" || Math.abs(pd(d).getTime() - pd(td).getTime()) < Math.abs(pd(b).getTime() - pd(td).getTime()) ? d : b), "");
+  return <><div className="card">{ds.map((d) => <div className="sday" key={d} data-day={d}><div className={"dayh" + (d === td ? " td" : "")}><span>{fd(d)}</span>{d === td && <span className="tag ac">Dziś</span>}</div>
+    {m[d].sort((a, b) => a.time.localeCompare(b.time)).map((l) => <LessonItem key={l.id} l={l} nd />)}</div>)}</div>
+    {target && <TodayJump day={target} />}</>;
+}
+
+/** Floating "Przejdź do dzisiaj" arrow – shown only when today's (or the nearest) day is off screen. */
+function TodayJump({ day }: { day: string }) {
+  const [dir, setDir] = useState<"" | "up" | "down">("");
+  useEffect(() => {
+    const el = document.querySelector<HTMLElement>(`[data-day="${day}"]`);
+    if (!el) return;
+    const upd = () => { const r = el.getBoundingClientRect(); setDir(r.bottom < 70 ? "up" : r.top > innerHeight - 90 ? "down" : ""); };
+    upd(); addEventListener("scroll", upd, { passive: true }); addEventListener("resize", upd);
+    return () => { removeEventListener("scroll", upd); removeEventListener("resize", upd); };
+  }, [day]);
+  if (!dir) return null;
+  const go = () => { const el = document.querySelector<HTMLElement>(`[data-day="${day}"]`); if (!el) return; scrollTo({ top: el.getBoundingClientRect().top + scrollY - 80, behavior: "smooth" }); };
+  return <button className="tjump" onClick={go} aria-label="Przejdź do dzisiaj"><span aria-hidden="true">{dir === "up" ? "↑" : "↓"}</span>Dziś</button>;
 }
 
 function LessonsList() {
