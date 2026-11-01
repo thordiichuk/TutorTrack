@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { api, isDemo } from "../lib/api";
 import {
-  calc, cancelFee, copyText, emailOk, fd, fm, gStr, Lesson, lev, MSHORT, overlap, pd, pln, rateFor, sortL, Student, subjList, toG, ymd, amt, billable, sumAmt,
+  FREE, calc, cancelFee, copyText, emailOk, fd, fm, gStr, Lesson, lev, MSHORT, overlap, pd, pln, rateFor, sortL, Student, subjList, toG, ymd, amt, billable, sumAmt, te,
 } from "../lib/util";
 import { useAuth, useTutor } from "../state";
 import { errMsg, Field, useOverlay } from "../ui/overlay";
 import { Empty } from "../lib/icons";
-import { LessonRow, useData, useUi, useUpsell } from "./common";
+import { LessonItem, LessonTags, registerLessonUi, useData, useUi, useUpsell } from "./common";
 
 const APP_URL = typeof location !== "undefined" ? location.origin : "";
 
@@ -91,7 +91,7 @@ export function StudentForm({ s, onSaved }: { s?: Student; onSaved?: () => void 
       {f.cm === "fixed" && <Field id="scx" label="Stała kwota (zł)" value={f.cx} onChange={set("cx")} error={e.cx} inputMode="decimal" />}
     </fieldset>
     <div className="f"><label htmlFor="sno">Notatka</label><textarea id="sno" rows={3} value={f.note} onChange={(ev) => setF({ ...f, note: ev.target.value })} /></div>
-    <div className="mf"><button className="btn" onClick={close}>Anuluj</button><button className="btn p" onClick={save}>Zapisz ucznia</button></div>
+    <div className="mf">{s && <ArchiveActions s={s} />}<button className="btn" onClick={close}>Anuluj</button><button className="btn p" onClick={save}>Zapisz ucznia</button></div>
   </>;
 }
 
@@ -121,6 +121,7 @@ export function LessonForm({ l, pre, draft }: { l?: Lesson; pre?: string; draft?
   const [d, setD] = useState({ ...d0, minS: String(d0.min), amtS: gStr(d0.amount), feeS: gStr(d0.fee > 0 ? d0.fee : cancelFee(stu(d0.sid), d0.amount)) });
   const [manual, setManual] = useState(!!l || !!draft);
   const [feeManual, setFeeManual] = useState(false);
+  const [more, setMore] = useState(!!(l?.prep || draft?.prep));
   const [e, setE] = useState<Record<string, string>>({});
   const upd = (p: Partial<typeof d>, auto = !manual) => {
     const n = { ...d, ...p };
@@ -163,12 +164,15 @@ export function LessonForm({ l, pre, draft }: { l?: Lesson; pre?: string; draft?
     <h2>{l ? "Edytuj lekcję" : "Dodaj lekcję"}</h2>
     <div className="f"><label htmlFor="lst">Uczeń *</label><select id="lst" value={d.sid} onChange={(ev) => { const s = stu(ev.target.value); setManual(false); upd({ sid: ev.target.value, subject: s ? subjList(s)[0] || "" : "" }, true); }}>
       {act.map((s) => <option key={s.id} value={s.id}>{s.name}{s.active ? "" : " (zarchiwizowany)"}</option>)}</select></div>
-    <div className="f"><label htmlFor="lsu">Przedmiot</label><select id="lsu" value={d.subject} onChange={(ev) => { setManual(false); upd({ subject: ev.target.value }, true); }}>{subOpts.map((x) => <option key={x}>{x}</option>)}</select></div>
+    {subOpts.length > 1 && <div className="f"><label htmlFor="lsu">Przedmiot</label><select id="lsu" value={d.subject} onChange={(ev) => { setManual(false); upd({ subject: ev.target.value }, true); }}>{subOpts.map((x) => <option key={x}>{x}</option>)}</select></div>}
     <div className="f2"><Field id="ld" label="Data *" type="date" value={d.date} onChange={(v) => upd({ date: v })} error={e.date} /><Field id="lt" label="Godzina *" type="time" value={d.time} onChange={(v) => upd({ time: v })} error={e.time} /></div>
-    <div className="f2"><Field id="lm" label="Czas trwania (min) *" type="number" min={1} step={5} value={d.minS} onChange={(v) => upd({ minS: v })} error={e.min} /><Field id="la" label="Kwota (zł) *" value={d.amtS} onChange={(v) => { setManual(true); upd({ amtS: v }, false); }} error={e.amount} inputMode="decimal" /></div>
+    <div className="f2"><Field id="lm" label="Czas trwania (min) *" type="number" min={1} step={5} value={d.minS} onChange={(v) => upd({ minS: v })} error={e.min} /><Field id="lto" label="Temat lekcji" value={d.topic} onChange={(v) => upd({ topic: v })} /></div>
+    <button type="button" className="more" aria-expanded={more || !!e.amount} onClick={() => setMore(!more)}>{more || e.amount ? "▾ Mniej opcji" : `▸ Więcej opcji · kwota ${d.amtS} zł${d.prep ? " · notatka przed zajęciami" : ""}`}</button>
+    {(more || !!e.amount) && <>
+    <Field id="la" label="Kwota (zł) *" value={d.amtS} onChange={(v) => { setManual(true); upd({ amtS: v }, false); }} error={e.amount} inputMode="decimal" />
     <div className="hint" style={{ margin: "-6px 0 10px" }}>Kwota liczy się automatycznie ze stawki ucznia. Możesz ją zmienić ręcznie.</div>
-    <Field id="lto" label="Temat lekcji" value={d.topic} onChange={(v) => upd({ topic: v })} />
     <div className="f"><label htmlFor="lpn">Notatka przed zajęciami</label><TplSel onPick={(t) => upd({ prep: (d.prep ? d.prep + "\n" : "") + t })} /><textarea id="lpn" rows={2} placeholder="Plan lekcji, materiały, zadania do omówienia" value={d.prep} onChange={(ev) => upd({ prep: ev.target.value })} /></div>
+    </>}
     <div className="f2">
       <div className="f"><label htmlFor="lss">Status lekcji</label><select id="lss" value={d.status} onChange={(ev) => upd({ status: ev.target.value as Lesson["status"] }, false)}><option value="planned">Zaplanowana</option><option value="done">Przeprowadzona</option><option value="cancelled">Odwołana</option></select></div>
       <div className="f"><label htmlFor="lps">Status płatności</label><select id="lps" value={d.paid ? "1" : "0"} onChange={(ev) => upd({ paid: ev.target.value === "1" }, false)}><option value="0">Nieopłacona</option><option value="1">Opłacona</option></select></div>
@@ -284,7 +288,7 @@ export function StudentDetail({ id }: { id: string }) {
     <p>E-mail: {s.email || "brak"}<br />Telefon: {s.phone || "brak"}{s.note && <><br />Notatka: {s.note}</>}</p>
     <div className="grid g2" style={{ marginBottom: 12 }}><div className="card stat"><div className="l">Przeprowadzone lekcje</div><div className="v">{dn.length}</div></div><div className="card stat"><div className="l">Do zapłaty</div><div className="v am">{pln(sumAmt(ls.filter(billable), (l) => !l.paid))}</div></div></div>
     <h2>Historia lekcji</h2>
-    {ls.length ? ls.map((l) => <LessonRow key={l.id} l={l} />) : <Empty icon="book" title="Brak lekcji" sub="Dodaj pierwszą lekcję dla tego ucznia." />}
+    {ls.length ? ls.map((l) => <LessonItem key={l.id} l={l} quick={false} />) : <Empty icon="book" title="Brak lekcji" sub="Dodaj pierwszą lekcję dla tego ucznia." />}
     <div className="mf"><button className="btn" onClick={close}>Zamknij</button><button className="btn p" onClick={() => modal(<LessonForm pre={id} />)}>Dodaj lekcję</button></div>
   </>;
 }
@@ -349,3 +353,48 @@ export function SummaryModal({ id }: { id: string }) {
 }
 
 export { errMsg };
+
+/* ---------- lesson window: details + every action in one place ---------- */
+export function LessonSheet({ id }: { id: string }) {
+  const { lessons, stu } = useData();
+  const { close } = useOverlay();
+  const l = lessons.find((x) => x.id === id);
+  if (!l) return <><h2>Lekcja</h2><p className="hint">Ta lekcja została usunięta.</p><div className="mf"><button className="btn" onClick={close}>Zamknij</button></div></>;
+  const s = stu(l.sid), sub = l.subject || (s ? subjList(s)[0] : "");
+  return <>
+    <h2>{s ? s.name : "Lekcja"}{sub ? " · " + sub : ""}</h2>
+    <p className="hint" style={{ margin: "-6px 0 10px" }}>{fd(l.date)}, {l.time}–{te(l.time, l.min)} ({l.min} min) · {l.status === "cancelled" ? (l.fee > 0 ? "opłata " + pln(l.fee) : "bez opłaty") : pln(l.amount)}</p>
+    <div style={{ marginBottom: 12 }}><LessonTags l={l} lessons={lessons} /></div>
+    {l.topic && <p style={{ margin: "0 0 8px" }}><b>Temat:</b> {l.topic}</p>}
+    {l.prep && <p className="pre" style={{ margin: "0 0 8px" }}><b>Przed zajęciami:</b> {l.prep}</p>}
+    {l.notes && <p className="pre" style={{ margin: "0 0 8px" }}><b>Po zajęciach:</b> {l.notes}</p>}
+    {l.hw && <p className="pre" style={{ margin: "0 0 8px" }}><b>Praca domowa:</b> {l.hw}{l.hd ? " (termin: " + fd(l.hd) + ")" : ""}</p>}
+    {l.cr?.status === "pending" && <div className="nt">Uczeń prosi o odwołanie: {l.cr.reason}</div>}
+    {l.cr?.status === "accepted" && l.status === "cancelled" && <p className="hint">Odwołana na prośbę ucznia: {l.cr.reason}</p>}
+    <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--bd)" }}><LessonActions l={l} /></div>
+    <div className="mf"><button className="btn" onClick={close}>Zamknij</button></div>
+  </>;
+}
+
+/** One-tap "done" for planned lessons that already took place (today or earlier). */
+export function QuickDone({ l }: { l: Lesson }) {
+  const { modal } = useOverlay();
+  if (l.status !== "planned" || l.date > ymd(new Date()) || l.cr?.status === "pending") return null;
+  return <button className="btn s qd" title="Oznacz jako przeprowadzoną" onClick={(e) => { e.stopPropagation(); modal(<DoneModal l={l} />); }}>Przeprowadzona</button>;
+}
+registerLessonUi((p) => <LessonSheet {...p} />, (p) => <QuickDone {...p} />);
+
+/** Archive / restore / delete – kept in the edit window instead of every student card. */
+function ArchiveActions({ s }: { s: Student }) {
+  const { user } = useAuth();
+  const { students, lessons } = useData();
+  const { run } = useTutor();
+  const { confirm, close } = useOverlay();
+  const { upsell } = useUpsell();
+  const pro = user?.plan === "pro";
+  if (s.active) return <button className="btn" style={{ marginRight: "auto" }} onClick={() => confirm({ title: "Zarchiwizować ucznia?", text: "Historia lekcji i rozliczenia zostaną zachowane. Ucznia możesz przywrócić w każdej chwili.", ok: "Archiwizuj", onOk: () => { run(() => api("PATCH", "/api/students/" + s.id, { active: false }), "Uczeń zarchiwizowany."); } })}>Archiwizuj</button>;
+  return <span style={{ marginRight: "auto", display: "flex", gap: 8, flexWrap: "wrap" }}>
+    <button className="btn" onClick={() => { if (user?.plan === "free" && students.filter((x) => x.active).length >= FREE) { upsell(); return; } close(); run(() => api("PATCH", "/api/students/" + s.id, { active: true }), "Uczeń przywrócony."); }}>Przywróć</button>
+    <button className="btn d" onClick={() => confirm({ title: "Usunąć ucznia?", text: `${s.name} i jego lekcje (${lessons.filter((l) => l.sid === s.id).length}) ${pro ? "trafią do kosza na 30 dni." : "zostaną trwale usunięte. W planie Pro można je przywrócić z kosza."}`, ok: "Usuń ucznia", danger: true, onOk: () => { run(() => api("DELETE", "/api/students/" + s.id), pro ? "Uczeń w koszu." : "Uczeń usunięty."); } })}>Usuń</button>
+  </span>;
+}

@@ -7,9 +7,9 @@ import {
 } from "../lib/util";
 import { useAuth, useTutor } from "../state";
 import { errMsg, Field, useOverlay } from "../ui/overlay";
-import { LessonRow, LessonTags, useData, useUi, useUpsell } from "./common";
+import { LessonItem, useData, useUi, useUpsell } from "./common";
 import { ThemePicker } from "../ui/themes";
-import { CancelRequestActions, LessonActions, LessonForm, ShareModal, StudentDetail, StudentForm, SummaryModal, summaryText } from "./Forms";
+import { CancelRequestActions, LessonForm, ShareModal, StudentDetail, StudentForm, SummaryModal, summaryText } from "./Forms";
 
 /* ---------- small pieces ---------- */
 const MonthInput = ({ v, on }: { v: string; on: (m: string) => void }) => <input type="month" value={v} aria-label="Miesiąc" onChange={(e) => e.target.value && on(e.target.value)} />;
@@ -48,31 +48,30 @@ export function Dashboard() {
   const { user } = useAuth();
   const { students, lessons } = useData();
   const [ui, setUi] = useUi();
-  const { addStudent, addLesson } = useAdd();
   const m = ui.month, done = monthDone(lessons, m), now = ymd(new Date()) + " " + new Date().toTimeString().slice(0, 5);
   const up = sortL(lessons.filter((l) => l.status === "planned" && l.date + " " + l.time >= now), 1).slice(0, 5);
   const un = sortL(lessons.filter((l) => billable(l) && !l.paid && l.date.slice(0, 7) === m), 1).slice(0, 5);
   const reqs = sortL(lessons.filter((l) => l.cr?.status === "pending"), 1);
-  const late = user?.settings.late === false ? [] : sortL(lessons.filter((l) => l.status === "planned" && l.date + " " + l.time < now), 1);
+  const late = user?.settings.late === false ? [] : sortL(lessons.filter((l) => l.status === "planned" && l.date + " " + l.time < now && l.cr?.status !== "pending"), 1);
   const goal = user?.plan === "pro" ? user.settings.goal || 0 : 0;
   const tot = sumAmt(done, () => true), pc = goal ? Math.min(100, Math.round(tot / goal * 100)) : 0;
   return <>
     <SetupBar />
-    <div className="bar"><div><h2 style={{ fontSize: 22, margin: 0 }}>Cześć, {(user?.name || "korepetytorze").split(" ")[0]}!</h2><span className="hint">Oto Twoje podsumowanie za {fm(m)}.</span></div><span className="sp" />
-      <MonthInput v={m} on={(v) => setUi((u) => ({ ...u, month: v }))} /><button className="btn" onClick={addStudent}><Ic n="plus" s={16} /> Dodaj ucznia</button><button className="btn p" onClick={() => addLesson()}><Ic n="plus" s={16} /> Dodaj lekcję</button></div>
+    <div className="bar"><div><h2 style={{ fontSize: 22, margin: 0 }}>Cześć, {(user?.name || "korepetytorze").split(" ")[0]}!</h2><span className="hint">Podsumowanie za {fm(m)}</span></div><span className="sp" />
+      <MonthInput v={m} on={(v) => setUi((u) => ({ ...u, month: v }))} /></div>
     {reqs.length > 0 && <div className="card" style={{ marginBottom: 16, borderColor: "#f3dca8", background: "var(--aml)" }}><h2>Prośby o odwołanie ({reqs.length})</h2><p className="hint" style={{ margin: "-6px 0 6px" }}>Uczniowie poprosili o odwołanie tych lekcji. Potwierdź albo odrzuć – uczeń zobaczy Twoją decyzję w swoim panelu.</p>
-      {reqs.map((l) => <LessonRow key={l.id} l={l} full actions={<div className="acts"><CancelRequestActions l={l} /></div>} />)}</div>}
-    <div className="grid g4">
+      {reqs.map((l) => <div key={l.id}><LessonItem l={l} quick={false} /><div className="acts" style={{ margin: "2px 0 10px 70px" }}><CancelRequestActions l={l} /></div></div>)}</div>}
+    <div className="grid g4 st2">
       <div className="card stat"><div className="l">Aktywni uczniowie</div><div className="v">{students.filter((s) => s.active).length}</div></div>
       <div className="card stat"><div className="l">Przeprowadzone lekcje</div><div className="v">{done.filter((l) => l.status === "done").length}</div></div>
       <div className="card stat"><div className="l">Opłacone lekcje</div><div className="v gr">{pln(sumAmt(done, (l) => l.paid))}</div></div>
       <div className="card stat"><div className="l">Do zapłaty</div><div className="v am">{pln(sumAmt(done, (l) => !l.paid))}</div></div>
     </div>
     {goal > 0 && <div className="card" style={{ marginTop: 16 }}><div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}><b>Cel miesięczny</b><span>{pln(tot)} z {pln(goal)} ({Math.round(tot / goal * 100)}%)</span></div><div className="pbar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pc} aria-label="Postęp celu miesięcznego" style={{ margin: "8px 0 0" }}><i style={{ width: pc + "%" }} /></div></div>}
-    {late.length > 0 && <div className="card" style={{ marginTop: 16, borderColor: "#f3dca8" }}><h2>Do potwierdzenia ({late.length})</h2><p className="hint" style={{ margin: "-6px 0 6px" }}>Te lekcje miały już się odbyć. Oznacz je jako przeprowadzone lub odwołane.</p>{late.map((l) => <LessonRow key={l.id} l={l} full actions={<LessonActions l={l} />} />)}</div>}
+    {late.length > 0 && <div className="card" style={{ marginTop: 16, borderColor: "#f3dca8" }}><h2>Do potwierdzenia ({late.length})</h2><p className="hint" style={{ margin: "-6px 0 6px" }}>Te lekcje miały już się odbyć. Oznacz je jako przeprowadzone albo stuknij, aby odwołać.</p>{late.map((l) => <LessonItem key={l.id} l={l} />)}</div>}
     <div className="grid g2" style={{ marginTop: 16 }}>
-      <div className="card"><h2>Najbliższe lekcje</h2>{up.length ? up.map((l) => <LessonRow key={l.id} l={l} />) : <Empty icon="inbox" title="Brak zaplanowanych lekcji" sub="Dodaj lekcję, aby zobaczyć ją tutaj." />}</div>
-      <div className="card"><h2>Nieopłacone lekcje – {fm(m)}</h2>{un.length ? un.map((l) => <LessonRow key={l.id} l={l} />) : <Empty icon="wallet" title="Wszystko opłacone" sub="W wybranym miesiącu nie ma zaległości." />}</div>
+      <div className="card"><h2>Najbliższe lekcje</h2>{up.length ? up.map((l) => <LessonItem key={l.id} l={l} quick={false} />) : <Empty icon="inbox" title="Brak zaplanowanych lekcji" sub="Dodaj lekcję, aby zobaczyć ją tutaj." />}</div>
+      <div className="card"><h2>Nieopłacone lekcje – {fm(m)}</h2>{un.length ? un.map((l) => <LessonItem key={l.id} l={l} quick={false} />) : <Empty icon="wallet" title="Wszystko opłacone" sub="W wybranym miesiącu nie ma zaległości." />}</div>
     </div>
   </>;
 }
@@ -110,17 +109,11 @@ export function Students() {
         return <div className="card" key={s.id}>
           <div style={{ display: "flex", gap: 12, alignItems: "center" }}><div className="av">{s.name.charAt(0).toUpperCase()}</div><div style={{ minWidth: 0 }}><b>{s.name}</b><div className="hint">{s.subject} · {pln(s.rate)}/60 min</div></div></div>
           <div style={{ margin: "12px 0", display: "flex", gap: 6, flexWrap: "wrap" }}><span className={"tag " + (s.active ? "gr" : "")}>{s.active ? "Aktywny" : "Zarchiwizowany"}</span><span className="tag">{ls.length} lekcji</span>{s.linked ? <span className="tag ac">Panel ucznia</span> : s.inviteCode ? <span className="tag">Kod wysłany</span> : null}{due > 0 && <span className="tag am">Do zapłaty: {pln(due)}</span>}</div>
-          <div className="hint" style={{ marginBottom: 10 }}>{nx ? "Następna lekcja: " + fd(nx.date) + ", " + nx.time : "Brak zaplanowanych lekcji"}</div>
+          {!s.active && <div className="hint" style={{ marginBottom: 6 }}>Przywrócisz lub usuniesz ucznia w oknie Edytuj.</div>}<div className="hint" style={{ marginBottom: 10 }}>{nx ? "Następna lekcja: " + fd(nx.date) + ", " + nx.time : "Brak zaplanowanych lekcji"}</div>
           <div className="acts">
             <button className="btn s" onClick={() => modal(<StudentDetail id={s.id} />, true)}>Szczegóły</button>
             <button className="btn s" onClick={() => modal(<StudentForm s={s} />)}>Edytuj</button>
             <button className="btn s" onClick={() => modal(<ShareModal id={s.id} />, true)}>{s.inviteCode ? "Kod ucznia" : "Udostępnij uczniowi"}</button>
-            <button className="btn s" onClick={() => {
-              if (s.active) confirm({ title: "Zarchiwizować ucznia?", text: "Historia lekcji i rozliczenia zostaną zachowane. Ucznia możesz przywrócić w każdej chwili.", ok: "Archiwizuj", onOk: () => { run(() => api("PATCH", "/api/students/" + s.id, { active: false }), "Uczeń zarchiwizowany."); } });
-              else if (user?.plan === "free" && students.filter((x) => x.active).length >= FREE) upsell();
-              else run(() => api("PATCH", "/api/students/" + s.id, { active: true }), "Uczeń przywrócony.");
-            }}>{s.active ? "Archiwizuj" : "Przywróć"}</button>
-            {!s.active && <button className="btn s d" onClick={() => confirm({ title: "Usunąć ucznia?", text: `${s.name} i jego lekcje (${lessons.filter((l) => l.sid === s.id).length}) ${pro ? "trafią do kosza na 30 dni." : "zostaną trwale usunięte. W planie Pro można je przywrócić z kosza."}`, ok: "Usuń ucznia", danger: true, onOk: () => { run(() => api("DELETE", "/api/students/" + s.id), pro ? "Uczeń w koszu." : "Uczeń usunięty."); } })}>Usuń</button>}
           </div></div>;
       })}</div>}
   </>;
@@ -131,8 +124,8 @@ function DayGroups({ list, dir }: { list: Lesson[]; dir: number }) {
   const m: Record<string, Lesson[]> = {};
   list.forEach((l) => { (m[l.date] = m[l.date] || []).push(l); });
   const ds = Object.keys(m).sort((a, b) => dir * a.localeCompare(b)), td = ymd(new Date());
-  return <>{ds.map((d) => <div className="card" style={{ marginBottom: 14 }} key={d}><h3 style={{ margin: "0 0 4px", fontSize: 16 }}>{fd(d)}{d === td && <> <span className="tag ac">Dziś</span></>}</h3>
-    {m[d].sort((a, b) => a.time.localeCompare(b.time)).map((l) => <LessonRow key={l.id} l={l} full nd actions={<LessonActions l={l} />} />)}</div>)}</>;
+  return <div className="card">{ds.map((d) => <div className="sday" key={d}><div className={"dayh" + (d === td ? " td" : "")}><span>{fd(d)}</span>{d === td && <span className="tag ac">Dziś</span>}</div>
+    {m[d].sort((a, b) => a.time.localeCompare(b.time)).map((l) => <LessonItem key={l.id} l={l} nd />)}</div>)}</div>;
 }
 
 function LessonsList() {
@@ -140,18 +133,23 @@ function LessonsList() {
   const [ui, setUi] = useUi();
   const f = ui.lf;
   const setF = (p: Partial<typeof f>) => setUi((u) => ({ ...u, lf: { ...u.lf, ...p } }));
+  const [open, setOpen] = useState(false);
+  const nf = [f.st, f.mo, f.ls, f.ps].filter(Boolean).length + (f.o === "asc" ? 1 : 0);
   const list = sortL(lessons.filter((l) => (!f.st || l.sid === f.st) && (!f.mo || l.date.slice(0, 7) === f.mo) && (!f.ls || l.status === f.ls)
     && (!f.ps || ((l.status !== "cancelled" || l.fee > 0) && (f.ps === "paid") === l.paid)) && (!f.q || (l.topic + " " + l.notes).toLowerCase().includes(f.q.toLowerCase()))), f.o === "asc" ? 1 : -1);
   return <>
     <div className="bar">
       <input type="search" placeholder="Szukaj w temacie i notatkach" value={f.q} aria-label="Szukaj w lekcjach" onChange={(e) => setF({ q: e.target.value })} />
+      <button className={"btn" + (nf ? " p" : "")} aria-expanded={open} onClick={() => setOpen(!open)}>Filtry{nf ? ` (${nf})` : ""}</button>
+    </div>
+    {open && <div className="fpanel">
       <select aria-label="Uczeń" value={f.st} onChange={(e) => setF({ st: e.target.value })}><option value="">Wszyscy uczniowie</option>{students.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select>
       <input type="month" value={f.mo} aria-label="Miesiąc" onChange={(e) => setF({ mo: e.target.value })} />
       <select aria-label="Status lekcji" value={f.ls} onChange={(e) => setF({ ls: e.target.value })}><option value="">Każdy status lekcji</option><option value="planned">Zaplanowana</option><option value="done">Przeprowadzona</option><option value="cancelled">Odwołana</option></select>
       <select aria-label="Status płatności" value={f.ps} onChange={(e) => setF({ ps: e.target.value })}><option value="">Każda płatność</option><option value="unpaid">Nieopłacona</option><option value="paid">Opłacona</option></select>
-      <select aria-label="Sortowanie według daty" value={f.o} onChange={(e) => setF({ o: e.target.value as any })}><option value="desc">Data: od najnowszych</option><option value="asc">Data: od najstarszych</option></select>
-      <button className="btn s" onClick={() => setUi((u) => ({ ...u, lf: { st: "", mo: "", ls: "", ps: "", q: "", o: "desc" } }))}>Wyczyść filtry</button>
-    </div>
+      <select aria-label="Sortowanie według daty" value={f.o} onChange={(e) => setF({ o: e.target.value as any })}><option value="desc">Od najnowszych</option><option value="asc">Od najstarszych</option></select>
+      {nf > 0 && <button className="btn" onClick={() => setUi((u) => ({ ...u, lf: { st: "", mo: "", ls: "", ps: "", q: u.lf.q, o: "desc" } }))}>Wyczyść filtry</button>}
+    </div>}
     {list.length ? <DayGroups list={list} dir={f.o === "asc" ? 1 : -1} /> : <div className="card"><Empty icon="book" title="Brak lekcji" sub="Żadna lekcja nie pasuje do filtrów." /></div>}
   </>;
 }
@@ -175,8 +173,7 @@ function Calendar() {
         return <button key={ds} className={"cd" + (n ? " busy" : "") + (ds === td ? " td" : "") + (ui.cd === ds ? " sel" : "")} aria-pressed={ui.cd === ds} aria-label={d + (n ? ", lekcji: " + n : ", wolne")} onClick={() => setUi((u) => ({ ...u, cd: u.cd === ds ? "" : ds }))}><span>{d}</span>{n > 0 && <i>{n}</i>}</button>; })}
     </div>
     <p className="hint" style={{ margin: "10px 0 0" }}>Zaznaczone dni mają lekcje. Kliknij dzień, aby zobaczyć uczniów i godziny.</p>
-    {L && <><h3 style={{ margin: "16px 0 4px" }}>{fd(ui.cd)}</h3>{L.length ? L.map((l) => { const s = stu(l.sid), sub = l.subject || (s ? subjList(s)[0] : "");
-      return <div className="row" key={l.id}><div className="m"><b>{l.time}–{te(l.time, l.min)}</b><span style={{ display: "block", color: "var(--tx)" }}>{s ? s.name : "?"}{sub ? " · " + sub : ""}</span>{l.topic && <span style={{ display: "block" }}>Temat: {l.topic}</span>}</div><div><LessonTags l={l} lessons={lessons} /></div></div>; })
+    {L && <><h3 style={{ margin: "16px 0 4px" }}>{fd(ui.cd)}</h3>{L.length ? L.map((l) => <LessonItem key={l.id} l={l} nd />)
       : <div className="empty">Dzień wolny – brak lekcji.</div>}</>}
   </div>;
 }
@@ -184,7 +181,7 @@ function Calendar() {
 export function Lessons() {
   const [ui, setUi] = useUi();
   return <>
-    <div className="bar"><button className={"btn s" + (ui.lv === "cal" ? "" : " p")} aria-pressed={ui.lv !== "cal"} onClick={() => setUi((u) => ({ ...u, lv: "list" }))}>Lista</button><button className={"btn s" + (ui.lv === "cal" ? " p" : "")} aria-pressed={ui.lv === "cal"} onClick={() => setUi((u) => ({ ...u, lv: "cal" }))}>Kalendarz</button></div>
+    <div className="bar"><div className="seg" role="group" aria-label="Widok lekcji"><button aria-pressed={ui.lv !== "cal"} onClick={() => setUi((u) => ({ ...u, lv: "list" }))}>Lista</button><button aria-pressed={ui.lv === "cal"} onClick={() => setUi((u) => ({ ...u, lv: "cal" }))}>Kalendarz</button></div></div>
     {ui.lv === "cal" ? <Calendar /> : <LessonsList />}
   </>;
 }
@@ -215,10 +212,12 @@ export function Billing() {
       <div className="mf"><button className="btn p" onClick={close}>Zamknij</button></div></>, true);
   };
   return <>
-    <div className="bar"><h2 style={{ margin: 0 }}>Podsumowanie miesiąca</h2><span className="sp" /><MonthInput v={m} on={(v) => setUi((u) => ({ ...u, bm: v }))} />
-      <button className="btn s" onClick={() => download("rozliczenie-" + m + ".csv", csvRows(done, name), "text/csv")}>Eksportuj CSV</button>
-      <button className="btn s" onClick={() => { if (!pro) { proUp("Eksport roku do CSV"); return; } const y = m.slice(0, 4); download("rozliczenie-" + y + ".csv", csvRows(lessons.filter((l) => billable(l) && l.date.slice(0, 4) === y), name), "text/csv"); }}>Eksport roku <span className="tag ac">Pro</span></button>
-      <button className="btn s" onClick={sumAll}>Podsumowania wszystkich <span className="tag ac">Pro</span></button></div>
+    <div className="bar"><MonthInput v={m} on={(v) => setUi((u) => ({ ...u, bm: v }))} /><span className="sp" />
+      <button className="btn" onClick={() => modal(<><h2>Eksport i podsumowania</h2><div className="mnu">
+        <button className="btn" onClick={() => { close(); download("rozliczenie-" + m + ".csv", csvRows(done, name), "text/csv"); }}>Rozliczenie miesiąca – CSV ({fm(m)})</button>
+        <button className="btn" onClick={() => { close(); if (!pro) { proUp("Eksport roku do CSV"); return; } const y = m.slice(0, 4); download("rozliczenie-" + y + ".csv", csvRows(lessons.filter((l) => billable(l) && l.date.slice(0, 4) === y), name), "text/csv"); }}>Rozliczenie całego roku – CSV {!pro && <span className="tag ac">Pro</span>}</button>
+        <button className="btn" onClick={() => { close(); sumAll(); }}>Podsumowania dla wszystkich uczniów {!pro && <span className="tag ac">Pro</span>}</button>
+      </div><div className="mf"><button className="btn" onClick={close}>Zamknij</button></div></>)}>Eksport</button></div>
     <div className="grid g4" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
       <div className="card stat"><div className="l">Należności</div><div className="v">{pln(tot)}</div></div>
       <div className="card stat"><div className="l">Opłacone</div><div className="v gr">{pln(paid)}</div></div>
@@ -238,6 +237,8 @@ export function Billing() {
         </div>}
       </div>; })}</div>}
     <RevenueChart />
+    <h2 className="sect" id="stats">Statystyki</h2>
+    <Stats />
   </>;
 }
 
@@ -267,7 +268,7 @@ export function Stats() {
   bil.forEach((l) => { const s = stu(l.sid), k = l.subject || (s ? subjList(s)[0] : "") || "—"; bs[k] = (bs[k] || 0) + amt(l); const nm = s ? s.name : "?"; bt[nm] = (bt[nm] || 0) + amt(l); });
   L.forEach((l) => { if (l.status === "cancelled") return; const d = WD[(pd(l.date).getDay() + 6) % 7]; wd[d] = (wd[d] || 0) + 1; const h = l.time.slice(0, 2) + ":00"; hr[h] = (hr[h] || 0) + 1; });
   return <>
-    <div className="bar"><h2 style={{ margin: 0 }}>Statystyki</h2><span className="sp" /><select aria-label="Zakres" value={R} onChange={(e) => setUi((u) => ({ ...u, sr: e.target.value }))}><option value="3">Ostatnie 3 miesiące</option><option value="6">Ostatnie 6 miesięcy</option><option value="12">Ostatnie 12 miesięcy</option><option value="all">Cały okres</option></select></div>
+    <div className="bar"><select aria-label="Zakres" value={R} onChange={(e) => setUi((u) => ({ ...u, sr: e.target.value }))}><option value="3">Ostatnie 3 miesiące</option><option value="6">Ostatnie 6 miesięcy</option><option value="12">Ostatnie 12 miesięcy</option><option value="all">Cały okres</option></select></div>
     <div className="grid g4">
       <div className="card stat"><div className="l">Przychód łącznie</div><div className="v">{pln(rev)}</div></div>
       <div className="card stat"><div className="l">Średnio na lekcję</div><div className="v">{dn.length ? pln(Math.round(rev / dn.length)) : "—"}</div></div>
@@ -310,12 +311,25 @@ export function Plan() {
       <div className={"card plan" + (pro ? " cur" : "")}><h2>Pro {pro && <span className="tag ac">Twój plan</span>}</h2><div className="pr">19 zł <span className="hint" style={{ fontSize: 14, fontWeight: 400 }}>/ miesiąc</span></div><ul>{proList.map((x) => <li key={x}>{x}</li>)}</ul>{pro ? <span className="hint">Pro aktywne (tryb testowy).</span> : <button className="btn p" onClick={tryPro}>Przetestuj Pro</button>}</div>
     </div>
     <p className="hint">Płatności nie są jeszcze podłączone – zakup Pro jest symulowany i nic nie jest pobierane.</p>
-    <p className="hint" style={{ marginTop: 12 }}>Kopię danych, import i usuwanie konta znajdziesz w <a href="/aplikacja/settings">Ustawieniach</a>.</p>
   </>;
 }
 
+function PlanCard() {
+  const { user } = useAuth();
+  const { students } = useData();
+  const { tryPro, toFree } = usePlanActions();
+  const [open, setOpen] = useState(false);
+  const pro = user?.plan === "pro", n = students.filter((s) => s.active).length;
+  return <div className="card" id="plan"><h2>Plan: {pro ? "Pro" : "Free"} {pro && <span className="tag ac">tryb testowy</span>}</h2>
+    <p className="hint" style={{ margin: "-6px 0 12px" }}>{pro ? "Bez limitu uczniów, statystyki, kosz, szablony i cel miesięczny." : `Aktywni uczniowie: ${n} z ${FREE}. Pro znosi limit i dodaje statystyki, kosz, szablony i cel miesięczny.`}</p>
+    <div className="acts">{pro ? <button className="btn" onClick={toFree}>Wróć do Free</button> : <button className="btn p" onClick={tryPro}>Przetestuj Pro</button>}<button className="btn" aria-expanded={open} onClick={() => setOpen(!open)}>{open ? "Ukryj porównanie" : "Porównaj plany"}</button></div>
+    {open && <div style={{ marginTop: 16 }}><Plan /></div>}
+  </div>;
+}
+
 /* ---------- settings ---------- */
-export function Settings() {
+export function Settings({ group = "konto" }: { group?: "konto" | "wyglad" | "lekcje" }) {
+  const [grp, setGrp] = useState(group);
   const { user, setUser, updateMe, demo, logout } = useAuth();
   const { data, run, reload } = useTutor();
   const { modal, close, confirm, toast } = useOverlay();
@@ -343,15 +357,20 @@ export function Settings() {
     f.click();
   };
 
-  return <div className="grid" style={{ gap: 16 }}>
-    <ThemePicker />
-
+  const G: [typeof grp, string][] = [["konto", "Konto"], ["wyglad", "Wygląd"], ["lekcje", "Lekcje i dane"]];
+  return <>
+    <div className="bar"><div className="seg" role="tablist" aria-label="Grupy ustawień">{G.map(([k, t]) => <button key={k} role="tab" aria-pressed={grp === k} aria-selected={grp === k} onClick={() => setGrp(k)}>{t}</button>)}</div></div>
+    {grp === "konto" && <div className="grid" style={{ gap: 16 }}>
     <div className="card"><h2>Profil</h2>
       <Field id="pfn" label="Imię lub imię i nazwisko" value={pf.name} onChange={(v) => setPf({ ...pf, name: v })} error={pf.err} />
       <Field id="pfb" label="Nazwa lub marka korepetytora" value={pf.brand} onChange={(v) => setPf({ ...pf, brand: v })} />
       <p className="hint" style={{ margin: "4px 0 16px" }}>E-mail: {user!.email}. Nazwa lub marka jest widoczna dla Twoich uczniów w panelu ucznia.</p>
       <button className="btn p" disabled={demo} onClick={async () => { if (!pf.name.trim()) { setPf({ ...pf, err: "Podaj imię." }); return; } try { await updateMe({ name: pf.name.trim(), brand: pf.brand.trim() }); setPf({ ...pf, err: "" }); toast("Profil zapisany."); } catch (e) { toast(errMsg(e)); } }}>Zapisz profil</button></div>
-
+    <PlanCard />
+    <div className="card"><h2>Konto i bezpieczeństwo</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>Hasło jest przechowywane wyłącznie jako zaszyfrowany skrót.</p><div className="acts"><button className="btn" disabled={demo} onClick={() => modal(<ChangePassword />)}>Zmień hasło</button>{user!.isAdmin && !demo && <button className="btn" onClick={() => navigate("/admin")}>Panel administratora</button>}<button className="btn" onClick={() => confirm({ title: demo ? "Wyjść z trybu demo?" : "Wylogować się?", text: demo ? "Dane przykładowe nie są zapisywane." : "Twoje dane są bezpiecznie zapisane na koncie.", ok: demo ? "Wyjdź" : "Wyloguj się", onOk: logout })}>{demo ? "Wyjdź z dema" : "Wyloguj się"}</button></div></div>
+    </div>}
+    {grp === "wyglad" && <div className="grid" style={{ gap: 16 }}><ThemePicker /></div>}
+    {grp === "lekcje" && <div className="grid" style={{ gap: 16 }}>
     <div className="card"><h2>Domyślne wartości</h2>
       <div className="f2">
         <div className="f"><label htmlFor="sd">Domyślny czas lekcji (min)</label><input id="sd" type="number" min={5} step={5} defaultValue={c.dur || 60} onBlur={(e) => { const v = Number(e.target.value); if (!(v > 0) || Math.round(v) !== v) { toast("Podaj dodatnią liczbę minut."); e.target.value = String(c.dur || 60); return; } if (v !== (c.dur || 60)) save({ dur: v }); }} /></div>
@@ -362,18 +381,13 @@ export function Settings() {
         <div className="f"><label htmlFor="sw">Początek tygodnia w kalendarzu</label><select id="sw" value={c.wk === "sun" ? "sun" : "mon"} onChange={(e) => save({ wk: e.target.value })}><option value="mon">Poniedziałek</option><option value="sun">Niedziela</option></select></div>
       </div>
       <div className="chk" style={{ marginTop: 8 }}><input type="checkbox" id="sl" checked={c.late !== false} onChange={(e) => save({ late: e.target.checked })} /><label htmlFor="sl">Pokazuj na pulpicie lekcje do potwierdzenia</label></div></div>
-
-    <div className="card"><h2>Konto i bezpieczeństwo</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>Hasło jest przechowywane wyłącznie jako zaszyfrowany skrót.</p><button className="btn" disabled={demo} onClick={() => modal(<ChangePassword />)}>Zmień hasło</button></div>
-
     <div className="card"><h2>Cel miesięczny{tag}</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>Pasek postępu na pulpicie pokazuje, ile z celu osiągnąłeś w wybranym miesiącu. Zostaw puste, aby wyłączyć.</p>
       <div className="f"><label htmlFor="sg">Cel (zł)</label><input id="sg" inputMode="decimal" value={goal} disabled={!pr} onChange={(e) => setGoal(e.target.value)} onBlur={() => { const v = goal.trim() === "" ? 0 : toG(goal); if (isNaN(v) || v < 0) { toast("Podaj poprawną, nieujemną kwotę."); return; } if (v !== (c.goal || 0)) save({ goal: v }); }} /></div>{up("Cel miesięczny")}</div>
-
     <div className="card"><h2>Szablony notatek{tag}</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>Wstawiasz je w formularzu lekcji. Dostępne są 4 gotowe szablony i Twoje własne.</p>
       {(c.tpl || []).map((x, i) => <div className="row" key={i}><div className="m"><b>{x.n}</b><span>{x.t}</span></div><button className="btn s d" disabled={!pr} onClick={() => save({ tpl: (c.tpl || []).filter((_, j) => j !== i) }, "Usunięto szablon.")}>Usuń</button></div>)}
       <div className="f" style={{ marginTop: 12 }}><label htmlFor="tn">Nazwa szablonu</label><input id="tn" disabled={!pr} value={tpl.n} onChange={(e) => setTpl({ ...tpl, n: e.target.value })} /></div>
       <div className="f"><label htmlFor="tt">Treść</label><textarea id="tt" rows={3} disabled={!pr} value={tpl.t} onChange={(e) => setTpl({ ...tpl, t: e.target.value })} /></div>
       {pr ? <button className="btn" onClick={async () => { if (!tpl.n.trim() || !tpl.t.trim()) { toast("Podaj nazwę i treść szablonu."); return; } await save({ tpl: [...(c.tpl || []), { n: tpl.n.trim(), t: tpl.t.trim() }] }, "Dodano szablon."); setTpl({ n: "", t: "" }); }}>Dodaj szablon</button> : up("Szablony notatek")}</div>
-
     <div className="card"><h2>Kosz{tag}</h2>
       {!pr ? <><p className="hint">W planie Pro usunięte lekcje i uczniowie trafiają do kosza na 30 dni i można je przywrócić.</p>{up("Kosz z przywracaniem")}</> : <>
         <p className="hint" style={{ margin: "-6px 0 12px" }}>Usunięte lekcje i uczniowie trafiają tu na 30 dni.</p>
@@ -383,14 +397,14 @@ export function Settings() {
             <button className="btn s d" onClick={() => confirm({ title: "Usunąć na stałe?", text: "Tej operacji nie można cofnąć.", ok: "Usuń na stałe", danger: true, onOk: () => { run(() => api("DELETE", `/api/trash/${x.kind}/${x.id}`)); } })}>Usuń na stałe</button></div></div>; })}
           <div style={{ marginTop: 12 }}><button className="btn d" onClick={() => confirm({ title: "Opróżnić kosz?", text: "Wszystkie elementy zostaną trwale usunięte.", ok: "Opróżnij", danger: true, onOk: () => { run(() => api("DELETE", "/api/trash"), "Kosz opróżniony."); } })}>Opróżnij kosz</button></div></>
           : <p className="hint">Kosz jest pusty.</p>}</>}</div>
-
     <div className="card"><h2>Dane</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>Kopia danych zawiera dane uczniów – przechowuj ją bezpiecznie.</p>
       <div className="acts">
         <button className="btn" onClick={async () => { try { const d = await api("GET", "/api/export"); download("tutortrack-kopia-" + ymd(new Date()) + ".json", JSON.stringify(d, null, 1), "application/json"); toast("Kopia zapisana."); } catch (e) { toast(errMsg(e)); } }}>Eksportuj kopię danych</button>
         <button className="btn" disabled={demo} onClick={importFile}>Importuj kopię danych</button>
         <button className="btn d" disabled={demo} onClick={() => modal(<DeleteAccount onDone={() => { setUser(null); logout(); }} />)}>Usuń konto i dane</button>
       </div></div>
-  </div>;
+    </div>}
+  </>;
 }
 
 export function ChangePassword() {

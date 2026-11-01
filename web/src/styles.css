@@ -175,3 +175,13 @@ body[data-th=purple]{--bg:#f7f5ff;--ac:#7c3aed;--ach:#6d28d9;--acl:#ede9fe;--bd:
 @media(max-width:860px){.tabs.fit{mask-image:none}.tabs.fit button{flex:1 1 0;min-width:0;padding:8px 2px}}
 .grid>*{min-width:0}@media(max-width:480px){.g4.st2{grid-template-columns:1fr 1fr}.g4.st2 .stat .v{font-size:20px}}
 .srow .tm{width:54px;white-space:nowrap}
+/* ===== Kompaktowe lekcje u korepetytora ===== */
+.lrow{flex-wrap:wrap}.lrow .ltags{display:flex;flex-wrap:wrap;gap:0;justify-content:flex-end}
+.srow .sb.ok{background:var(--gr)}
+@media(max-width:560px){.lrow .ltags{order:5;flex-basis:100%;justify-content:flex-start;padding-left:70px;margin-top:-2px}.lrow .ltags:empty{display:none}}
+.qd{flex-shrink:0}
+.bar input[type=month]{flex:0 0 auto;min-width:170px;width:auto}
+.fpanel{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:-6px 0 16px}
+.mnu{display:grid;gap:8px}.mnu .btn{justify-content:flex-start;width:100%}
+.sect{margin:24px 0 8px;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--mu)}
+.more{border:0;background:none;color:var(--ac);font-weight:600;padding:4px 0;cursor:pointer;margin:0 0 10px}

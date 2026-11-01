@@ -165,7 +165,7 @@ export function StudentPanel() {
                 <span className="m"><b>{(x as any).ev.title}</b><span>{CATS[(x as any).ev.cat] || "Inne"}{(x as any).ev.repeat === "w" ? " · co tydzień" : ""}</span></span>{bad[k] && <span className="tag rd">Nakłada się</span>}</button>)}
         </div>;
       })}</div>
-      <p className="hint" style={{ marginTop: 10 }}>Fioletowy pasek: lekcje od korepetytora · szary: Twój grafik. Stuknij, aby zobaczyć szczegóły.</p></>;
+      <p className="hint" style={{ marginTop: 10 }}>Kolorowy pasek: lekcje od korepetytora · szary: Twój grafik. Stuknij, aby zobaczyć szczegóły.</p></>;
   }
   function Graf() {
     const intro = <p className="hint" style={{ margin: "0 0 12px" }}>Szkoła, zajęcia dodatkowe i korepetycje spoza TutorTrack. Stuknij zajęcia, aby je edytować lub usunąć.</p>;
@@ -220,7 +220,7 @@ export function StudentPanel() {
       <div className="main">
         <header className="top">
           <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}><a className="brandm" href="/uczen" aria-label="TutorTrack"><span className="logo" style={{ padding: 0 }}><i><Logo /></i></span></a><div><h1>{cur[1]}</h1><small /></div></div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}><span className="hint" id="usr">{user!.name}</span><button className="btn s lo" aria-label="Ustawienia" onClick={() => go("konto")}><Ic n="set" s={16} /></button><button className="btn s lo" onClick={out}>Wyloguj</button>{action}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}><span className="hint" id="usr">{user!.name}</span><button className="btn s lo" aria-label="Ustawienia" onClick={() => go("konto")}><Ic n="set" s={16} /></button>{action}</div>
         </header>
         {err && <p className="banner">{err} <button className="lk" onClick={load}>Spróbuj ponownie</button></p>}
         <main className="content">{!d ? <p className="hint">Ładowanie…</p> : tab === "dash" ? Dash() : tab === "plan" ? Plan() : tab === "graf" ? Graf() : tab === "hw" ? Hw() : tab === "sum" ? Sum() : tab === "kor" ? <KorTab d={d} load={load} run={run} /> : <KontoTab out={out} />}</main>

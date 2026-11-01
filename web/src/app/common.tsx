@@ -1,6 +1,6 @@
 import { createContext, Dispatch, ReactNode, SetStateAction, useContext } from "react";
 import { navigate } from "../lib/router";
-import { amt, Lesson, overlap, pln, PRO_PLN, FREE, Student, subjList, fd, ymd, addDays, ym } from "../lib/util";
+import { amt, billable, Lesson, MSHORT, overlap, pd, pln, PRO_PLN, FREE, Student, subjList, fd, ymd, addDays, ym } from "../lib/util";
 import { useOverlay } from "../ui/overlay";
 import { useTutor } from "../state";
 
@@ -35,18 +35,45 @@ export function useUpsell() {
 }
 
 /* ---------- lesson row ---------- */
+/** Minimal tags: only what needs attention (overlap, today/tomorrow, request, done/cancelled, payment of billable lessons). */
 export function LessonTags({ l, lessons, nd }: { l: Lesson; lessons: Lesson[]; nd?: boolean }) {
-  const st = { planned: ["Zaplanowana", "ac"], done: ["Przeprowadzona", "gr"], cancelled: ["Odwołana", "rd"] }[l.status];
   const td = ymd(new Date());
-  return <>
-    {l.status !== "cancelled" && overlap(lessons, l.date, l.time, l.min, l.id).length > 0 && <><span className="tag rd">Uwaga: termin nakłada się na inną lekcję</span> </>}
-    {!nd && l.status === "planned" && l.date === td && <><span className="tag ac">Dziś</span> </>}
-    {!nd && l.status === "planned" && l.date === addDays(1) && <><span className="tag">Jutro</span> </>}
-    {l.cr?.status === "pending" && <><span className="tag am">Prośba o odwołanie</span> </>}
-    <span className={"tag " + st[1]}>{st[0]}</span>{" "}
-    {(l.status !== "cancelled" || l.fee > 0) && (l.paid ? <span className="tag gr">Opłacona</span> : <span className="tag am">Nieopłacona</span>)}
-  </>;
+  const tags: [string, string][] = [];
+  if (l.status !== "cancelled" && overlap(lessons, l.date, l.time, l.min, l.id).length > 0) tags.push(["Nakłada się", "rd"]);
+  if (!nd && l.status === "planned" && l.date === td) tags.push(["Dziś", "ac"]);
+  if (!nd && l.status === "planned" && l.date === addDays(1)) tags.push(["Jutro", ""]);
+  if (l.cr?.status === "pending") tags.push(["Prośba o odwołanie", "am"]);
+  if (l.status === "done") tags.push(["Przeprowadzona", "gr"]);
+  if (l.status === "cancelled") tags.push(["Odwołana", "rd"]);
+  if (billable(l)) tags.push(l.paid ? ["Opłacona", "gr"] : ["Nieopłacona", "am"]);
+  else if (l.paid) tags.push(["Opłacona z góry", "gr"]);
+  return <>{tags.map(([t, c]) => <span key={t} className={"tag " + c} style={{ marginRight: 4 }}>{t}</span>)}</>;
 }
+
+/** Compact, tappable lesson row. Tapping opens the lesson window with all actions. */
+export function LessonItem({ l, nd, quick = true }: { l: Lesson; nd?: boolean; quick?: boolean }) {
+  const { lessons, stu } = useData();
+  const { modal } = useOverlay();
+  const s = stu(l.sid);
+  const sub = l.subject || (s ? subjList(s)[0] : "");
+  const ov = l.status !== "cancelled" && overlap(lessons, l.date, l.time, l.min, l.id).length > 0;
+  const open = () => modal(<LessonSheetLazy id={l.id} />);
+  const d = pd(l.date);
+  return (
+    <div role="button" tabIndex={0} className={"srow lrow" + (ov ? " clash" : "") + (l.status === "cancelled" ? " cx" : "")} onClick={open}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } }}>
+      <span className="tm">{nd ? <>{l.time}<small>{l.min} min</small></> : <>{d.getDate()} {MSHORT[d.getMonth()]}<small>{l.time}</small></>}</span>
+      <span className={"sb" + (l.status === "done" ? " ok" : "")} />
+      <span className="m"><b>{s ? s.name : "?"}{sub ? " · " + sub : ""}</b><span>{l.topic || (l.status === "cancelled" ? "Lekcja odwołana" : "Bez tematu")}{l.cr?.status === "pending" ? " · prośba: " + l.cr.reason : ""}</span></span>
+      <span className="ltags"><LessonTags l={l} lessons={lessons} nd={nd} /></span>
+      {quick && <QuickDone l={l} />}
+    </div>
+  );
+}
+/* set by Forms.tsx to avoid a circular import at module load */
+export let LessonSheetLazy: (p: { id: string }) => ReactNode = () => null;
+export let QuickDone: (p: { l: Lesson }) => ReactNode = () => null;
+export function registerLessonUi(sheet: typeof LessonSheetLazy, quick: typeof QuickDone) { LessonSheetLazy = sheet; QuickDone = quick; }
 
 export function LessonRow({ l, full, nd, actions }: { l: Lesson; full?: boolean; nd?: boolean; actions?: ReactNode }) {
   const { lessons, stu } = useData();
