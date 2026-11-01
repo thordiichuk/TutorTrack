@@ -104,13 +104,38 @@ Zmiany w bazie (migracje) aplikacja wykonuje sama przy starcie.
 
 ---
 
+## Własna domena (tutortrack.pl w nazwa.pl)
+
+Aktualna konfiguracja: strona działa pod **https://tutortrack.pl**,
+`www.tutortrack.pl` przekierowuje na adres bez `www`.
+
+1. Render → usługa **tutortrack** → **Settings → Custom Domains** → dodane `tutortrack.pl` i `www.tutortrack.pl`.
+2. nazwa.pl → **Panel klienta → Domeny → tutortrack.pl → Ręczna konfiguracja DNS**:
+
+   | Nazwa | Typ | Wartość |
+   |---|---|---|
+   | `tutortrack.pl` | A | `216.24.57.1` |
+   | `www.tutortrack.pl` | CNAME | `tutortrack-my6v.onrender.com` |
+
+   Usunięty został domyślny rekord `*.tutortrack.pl` (A → serwer nazwa.pl).
+   Rekordy MX, TXT i CAA zostały bez zmian.
+3. Po weryfikacji Render sam wystawia certyfikat HTTPS („Certificate Issued”).
+4. W Render → **Environment**: `APP_URL` = `https://tutortrack.pl`.
+
+Jeśli certyfikat kiedyś nie będzie się odnawiał („Certificate Error”), dodaj w nazwa.pl
+rekordy CAA: `0 issue "pki.goog"` i `0 issuewild "pki.goog"` dla `tutortrack.pl`.
+
+**Pamiętaj o odnowieniu domeny** w nazwa.pl (pierwszy rok był promocyjny – sprawdź cenę
+przedłużenia lub przenieś domenę do tańszego rejestratora przed terminem).
+
+---
+
 ## Gdy pojawią się prawdziwi użytkownicy
 
 - W Render zmień plan usługi z **Free** na **Starter** (ok. 7 $ / mies.) –
   strona przestanie „zasypiać” i będzie od razu odpowiadać.
 - W Neon rozważ plan **Launch** – dłuższa historia do przywracania bazy.
-- Własną domenę (np. `tutortrack.pl`) dodasz w Render: **Settings → Custom Domains**,
-  a potem ustaw `APP_URL` na nowy adres.
+- Własna domena jest już skonfigurowana – patrz sekcja „Własna domena” powyżej.
 
 ---
 
