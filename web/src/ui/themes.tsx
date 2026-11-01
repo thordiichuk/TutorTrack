@@ -38,7 +38,7 @@ export function ThemePicker() {
     if (demo) { toast("W trybie demo wygląd jest czarno-biały. Załóż konto, aby wybrać motyw."); return; }
     try { await updateMe({ settings: { theme: id } }); toast("Zmieniono motyw."); } catch (e) { toast(errMsg(e)); }
   };
-  return <div className="card"><h2>Wygląd</h2>
+  return <div className="card"><h2><span className="emo" aria-hidden="true">🎨</span>Wygląd</h2>
     <p className="hint" style={{ margin: "-6px 0 12px" }}>Wybierz kolory panelu. „Systemowy” dopasowuje się do jasnego lub ciemnego trybu telefonu i komputera.</p>
     <div className="thms">{THEMES.map((x) => <button key={x.id} className={"thm" + (cur === x.id ? " on" : "")} aria-pressed={cur === x.id} onClick={() => pick(x.id)}>
       <span className="sw">{x.sw.map((k, i) => <i key={i} style={{ background: k }} />)}</span><b>{x.name}</b></button>)}</div>

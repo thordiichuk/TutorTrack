@@ -200,3 +200,8 @@ body[data-th=purple]{--bg:#f7f5ff;--ac:#7c3aed;--ach:#6d28d9;--acl:#ede9fe;--bd:
 .pn.open{animation:pnin .16s ease-out}@keyframes pnin{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
 }
 @media(max-width:380px){.pn .mo{grid-template-columns:1fr}}
+
+/* emoji markers in settings */
+.emo{margin-right:8px;font-size:1.05em;line-height:1}.seg .emo{margin-right:6px}
+.seg{overflow-x:auto;scrollbar-width:none;max-width:100%}.seg::-webkit-scrollbar{display:none}.seg button{white-space:nowrap}
+@media(max-width:520px){.seg.sg{display:grid;grid-template-columns:1fr 1fr;width:100%;border-radius:14px;gap:4px}.seg.sg button{border-radius:10px;justify-content:center}}

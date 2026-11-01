@@ -320,7 +320,7 @@ function PlanCard() {
   const { tryPro, toFree } = usePlanActions();
   const [open, setOpen] = useState(false);
   const pro = user?.plan === "pro", n = students.filter((s) => s.active).length;
-  return <div className="card" id="plan"><h2>Plan: {pro ? "Pro" : "Free"} {pro && <span className="tag ac">tryb testowy</span>}</h2>
+  return <div className="card" id="plan"><h2><span className="emo" aria-hidden="true">⭐</span>Plan: {pro ? "Pro" : "Free"} {pro && <span className="tag ac">tryb testowy</span>}</h2>
     <p className="hint" style={{ margin: "-6px 0 12px" }}>{pro ? "Bez limitu uczniów, statystyki, kosz, szablony i cel miesięczny." : `Aktywni uczniowie: ${n} z ${FREE}. Pro znosi limit i dodaje statystyki, kosz, szablony i cel miesięczny.`}</p>
     <div className="acts">{pro ? <button className="btn" onClick={toFree}>Wróć do Free</button> : <button className="btn p" onClick={tryPro}>Przetestuj Pro</button>}<button className="btn" aria-expanded={open} onClick={() => setOpen(!open)}>{open ? "Ukryj porównanie" : "Porównaj plany"}</button></div>
     {open && <div style={{ marginTop: 16 }}><Plan /></div>}
@@ -328,7 +328,7 @@ function PlanCard() {
 }
 
 /* ---------- settings ---------- */
-export function Settings({ group = "konto" }: { group?: "konto" | "wyglad" | "lekcje" }) {
+export function Settings({ group = "konto" }: { group?: "konto" | "wyglad" | "lekcje" | "kosz" }) {
   const [grp, setGrp] = useState(group);
   const { user, setUser, updateMe, demo, logout } = useAuth();
   const { data, run, reload } = useTutor();
@@ -357,21 +357,21 @@ export function Settings({ group = "konto" }: { group?: "konto" | "wyglad" | "le
     f.click();
   };
 
-  const G: [typeof grp, string][] = [["konto", "Konto"], ["wyglad", "Wygląd"], ["lekcje", "Lekcje i dane"]];
+  const G: [typeof grp, string, string][] = [["konto", "Konto", "👤"], ["wyglad", "Wygląd", "🎨"], ["lekcje", "Lekcje i dane", "📚"], ["kosz", "Kosz", "🗑️"]];
   return <>
-    <div className="bar"><div className="seg" role="tablist" aria-label="Grupy ustawień">{G.map(([k, t]) => <button key={k} role="tab" aria-pressed={grp === k} aria-selected={grp === k} onClick={() => setGrp(k)}>{t}</button>)}</div></div>
+    <div className="bar"><div className="seg sg" role="tablist" aria-label="Grupy ustawień">{G.map(([k, t, e]) => <button key={k} role="tab" aria-pressed={grp === k} aria-selected={grp === k} onClick={() => setGrp(k)}><span className="emo" aria-hidden="true">{e}</span>{t}{k === "kosz" && pr && data!.trash.length > 0 && <i className="tbadge" style={{ position: "static", marginLeft: 6 }}>{data!.trash.length}</i>}</button>)}</div></div>
     {grp === "konto" && <div className="grid" style={{ gap: 16 }}>
-    <div className="card"><h2>Profil</h2>
+    <div className="card"><h2><span className="emo" aria-hidden="true">👤</span>Profil</h2>
       <Field id="pfn" label="Imię lub imię i nazwisko" value={pf.name} onChange={(v) => setPf({ ...pf, name: v })} error={pf.err} />
       <Field id="pfb" label="Nazwa lub marka korepetytora" value={pf.brand} onChange={(v) => setPf({ ...pf, brand: v })} />
       <p className="hint" style={{ margin: "4px 0 16px" }}>E-mail: {user!.email}. Nazwa lub marka jest widoczna dla Twoich uczniów w panelu ucznia.</p>
       <button className="btn p" disabled={demo} onClick={async () => { if (!pf.name.trim()) { setPf({ ...pf, err: "Podaj imię." }); return; } try { await updateMe({ name: pf.name.trim(), brand: pf.brand.trim() }); setPf({ ...pf, err: "" }); toast("Profil zapisany."); } catch (e) { toast(errMsg(e)); } }}>Zapisz profil</button></div>
     <PlanCard />
-    <div className="card"><h2>Konto i bezpieczeństwo</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>Hasło jest przechowywane wyłącznie jako zaszyfrowany skrót.</p><div className="acts"><button className="btn" disabled={demo} onClick={() => modal(<ChangePassword />)}>Zmień hasło</button>{user!.isAdmin && !demo && <button className="btn" onClick={() => navigate("/admin")}>Panel administratora</button>}<button className="btn" onClick={() => confirm({ title: demo ? "Wyjść z trybu demo?" : "Wylogować się?", text: demo ? "Dane przykładowe nie są zapisywane." : "Twoje dane są bezpiecznie zapisane na koncie.", ok: demo ? "Wyjdź" : "Wyloguj się", onOk: logout })}>{demo ? "Wyjdź z dema" : "Wyloguj się"}</button></div></div>
+    <div className="card"><h2><span className="emo" aria-hidden="true">🔒</span>Konto i bezpieczeństwo</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>Hasło jest przechowywane wyłącznie jako zaszyfrowany skrót.</p><div className="acts"><button className="btn" disabled={demo} onClick={() => modal(<ChangePassword />)}>Zmień hasło</button>{user!.isAdmin && !demo && <button className="btn" onClick={() => navigate("/admin")}>Panel administratora</button>}<button className="btn" onClick={() => confirm({ title: demo ? "Wyjść z trybu demo?" : "Wylogować się?", text: demo ? "Dane przykładowe nie są zapisywane." : "Twoje dane są bezpiecznie zapisane na koncie.", ok: demo ? "Wyjdź" : "Wyloguj się", onOk: logout })}>{demo ? "Wyjdź z dema" : "Wyloguj się"}</button></div></div>
     </div>}
     {grp === "wyglad" && <div className="grid" style={{ gap: 16 }}><ThemePicker /></div>}
     {grp === "lekcje" && <div className="grid" style={{ gap: 16 }}>
-    <div className="card"><h2>Domyślne wartości</h2>
+    <div className="card"><h2><span className="emo" aria-hidden="true">⚙️</span>Domyślne wartości</h2>
       <div className="f2">
         <div className="f"><label htmlFor="sd">Domyślny czas lekcji (min)</label><input id="sd" type="number" min={5} step={5} defaultValue={c.dur || 60} onBlur={(e) => { const v = Number(e.target.value); if (!(v > 0) || Math.round(v) !== v) { toast("Podaj dodatnią liczbę minut."); e.target.value = String(c.dur || 60); return; } if (v !== (c.dur || 60)) save({ dur: v }); }} /></div>
         <div className="f"><label htmlFor="st">Godzina nowej lekcji</label><input id="st" type="time" defaultValue={c.time || "16:00"} onBlur={(e) => { if (e.target.value && e.target.value !== (c.time || "16:00")) save({ time: e.target.value }); }} /></div>
@@ -381,14 +381,22 @@ export function Settings({ group = "konto" }: { group?: "konto" | "wyglad" | "le
         <div className="f"><label htmlFor="sw">Początek tygodnia w kalendarzu</label><select id="sw" value={c.wk === "sun" ? "sun" : "mon"} onChange={(e) => save({ wk: e.target.value })}><option value="mon">Poniedziałek</option><option value="sun">Niedziela</option></select></div>
       </div>
       <div className="chk" style={{ marginTop: 8 }}><input type="checkbox" id="sl" checked={c.late !== false} onChange={(e) => save({ late: e.target.checked })} /><label htmlFor="sl">Pokazuj na pulpicie lekcje do potwierdzenia</label></div></div>
-    <div className="card"><h2>Cel miesięczny{tag}</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>Pasek postępu na pulpicie pokazuje, ile z celu osiągnąłeś w wybranym miesiącu. Zostaw puste, aby wyłączyć.</p>
+    <div className="card"><h2><span className="emo" aria-hidden="true">🎯</span>Cel miesięczny{tag}</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>Pasek postępu na pulpicie pokazuje, ile z celu osiągnąłeś w wybranym miesiącu. Zostaw puste, aby wyłączyć.</p>
       <div className="f"><label htmlFor="sg">Cel (zł)</label><input id="sg" inputMode="decimal" value={goal} disabled={!pr} onChange={(e) => setGoal(e.target.value)} onBlur={() => { const v = goal.trim() === "" ? 0 : toG(goal); if (isNaN(v) || v < 0) { toast("Podaj poprawną, nieujemną kwotę."); return; } if (v !== (c.goal || 0)) save({ goal: v }); }} /></div>{up("Cel miesięczny")}</div>
-    <div className="card"><h2>Szablony notatek{tag}</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>Wstawiasz je w formularzu lekcji. Dostępne są 4 gotowe szablony i Twoje własne.</p>
+    <div className="card"><h2><span className="emo" aria-hidden="true">📝</span>Szablony notatek{tag}</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>Wstawiasz je w formularzu lekcji. Dostępne są 4 gotowe szablony i Twoje własne.</p>
       {(c.tpl || []).map((x, i) => <div className="row" key={i}><div className="m"><b>{x.n}</b><span>{x.t}</span></div><button className="btn s d" disabled={!pr} onClick={() => save({ tpl: (c.tpl || []).filter((_, j) => j !== i) }, "Usunięto szablon.")}>Usuń</button></div>)}
       <div className="f" style={{ marginTop: 12 }}><label htmlFor="tn">Nazwa szablonu</label><input id="tn" disabled={!pr} value={tpl.n} onChange={(e) => setTpl({ ...tpl, n: e.target.value })} /></div>
       <div className="f"><label htmlFor="tt">Treść</label><textarea id="tt" rows={3} disabled={!pr} value={tpl.t} onChange={(e) => setTpl({ ...tpl, t: e.target.value })} /></div>
       {pr ? <button className="btn" onClick={async () => { if (!tpl.n.trim() || !tpl.t.trim()) { toast("Podaj nazwę i treść szablonu."); return; } await save({ tpl: [...(c.tpl || []), { n: tpl.n.trim(), t: tpl.t.trim() }] }, "Dodano szablon."); setTpl({ n: "", t: "" }); }}>Dodaj szablon</button> : up("Szablony notatek")}</div>
-    <div className="card"><h2>Kosz{tag}</h2>
+    <div className="card"><h2><span className="emo" aria-hidden="true">💾</span>Dane</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>Kopia danych zawiera dane uczniów – przechowuj ją bezpiecznie.</p>
+      <div className="acts">
+        <button className="btn" onClick={async () => { try { const d = await api("GET", "/api/export"); download("tutortrack-kopia-" + ymd(new Date()) + ".json", JSON.stringify(d, null, 1), "application/json"); toast("Kopia zapisana."); } catch (e) { toast(errMsg(e)); } }}>Eksportuj kopię danych</button>
+        <button className="btn" disabled={demo} onClick={importFile}>Importuj kopię danych</button>
+        <button className="btn d" disabled={demo} onClick={() => modal(<DeleteAccount onDone={() => { setUser(null); logout(); }} />)}>Usuń konto i dane</button>
+      </div></div>
+    </div>}
+    {grp === "kosz" && <div className="grid" style={{ gap: 16 }}>
+    <div className="card"><h2><span className="emo" aria-hidden="true">🗑️</span>Kosz{tag}</h2>
       {!pr ? <><p className="hint">W planie Pro usunięte lekcje i uczniowie trafiają do kosza na 30 dni i można je przywrócić.</p>{up("Kosz z przywracaniem")}</> : <>
         <p className="hint" style={{ margin: "-6px 0 12px" }}>Usunięte lekcje i uczniowie trafiają tu na 30 dni.</p>
         {data!.trash.length ? <>{data!.trash.map((x) => { const d = Math.max(0, 30 - Math.floor((Date.now() - x.deletedAt) / 864e5)); const nm = x.kind === "student" ? `Uczeń: ${x.name} (${x.lessons} lekcji)` : `Lekcja: ${x.name || "usunięty uczeń"} · ${fd(x.date!)}, ${x.time}`;
@@ -397,12 +405,6 @@ export function Settings({ group = "konto" }: { group?: "konto" | "wyglad" | "le
             <button className="btn s d" onClick={() => confirm({ title: "Usunąć na stałe?", text: "Tej operacji nie można cofnąć.", ok: "Usuń na stałe", danger: true, onOk: () => { run(() => api("DELETE", `/api/trash/${x.kind}/${x.id}`)); } })}>Usuń na stałe</button></div></div>; })}
           <div style={{ marginTop: 12 }}><button className="btn d" onClick={() => confirm({ title: "Opróżnić kosz?", text: "Wszystkie elementy zostaną trwale usunięte.", ok: "Opróżnij", danger: true, onOk: () => { run(() => api("DELETE", "/api/trash"), "Kosz opróżniony."); } })}>Opróżnij kosz</button></div></>
           : <p className="hint">Kosz jest pusty.</p>}</>}</div>
-    <div className="card"><h2>Dane</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>Kopia danych zawiera dane uczniów – przechowuj ją bezpiecznie.</p>
-      <div className="acts">
-        <button className="btn" onClick={async () => { try { const d = await api("GET", "/api/export"); download("tutortrack-kopia-" + ymd(new Date()) + ".json", JSON.stringify(d, null, 1), "application/json"); toast("Kopia zapisana."); } catch (e) { toast(errMsg(e)); } }}>Eksportuj kopię danych</button>
-        <button className="btn" disabled={demo} onClick={importFile}>Importuj kopię danych</button>
-        <button className="btn d" disabled={demo} onClick={() => modal(<DeleteAccount onDone={() => { setUser(null); logout(); }} />)}>Usuń konto i dane</button>
-      </div></div>
     </div>}
   </>;
 }
