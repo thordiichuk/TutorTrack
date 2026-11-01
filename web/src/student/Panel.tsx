@@ -20,7 +20,7 @@ const wdOf = (date: string) => (pd(date).getDay() + 6) % 7; // Monday = 0
 const RED = { background: "var(--rdl)", borderLeft: "4px solid var(--rd)", paddingLeft: 10, borderRadius: 8 };
 
 const TABS: [string, string, string, string][] = [
-  ["plan", "Plan", "home", "Plan"], ["graf", "Mój grafik", "cal", "Grafik"], ["hw", "Zadania", "check", "Zadania"],
+  ["dash", "Pulpit", "home", "Pulpit"], ["plan", "Plan", "cal", "Plan"], ["graf", "Mój grafik", "book", "Grafik"], ["hw", "Zadania", "check", "Zadania"],
   ["sum", "Podsumowanie", "chart", "Miesiąc"], ["kor", "Korepetytorzy", "users", "Nauczyciele"], ["konto", "Ustawienia", "set", "Ustawienia"],
 ];
 
@@ -29,7 +29,7 @@ export function StudentPanel() {
   const ov = useOverlay();
   const [d, setD] = useState<Data | null>(null);
   const [err, setErr] = useState("");
-  const [tab, setTab] = useState("plan");
+  const [tab, setTab] = useState("dash");
   const [wk, setWk] = useState(0);
   const [m, setM] = useState(ym(new Date()));
   const [hf, setHf] = useState<"todo" | "done" | "all">("todo");
@@ -105,6 +105,42 @@ export function StudentPanel() {
   const out = () => ov.confirm({ title: "Wylogować się?", text: "Twoje dane są bezpiecznie zapisane na koncie.", ok: "Wyloguj się", onOk: logout });
 
   /* ----- tabs ----- */
+  function Dash() {
+    const now = new Date(), td = ymd(now), nowKey = td + " " + now.toTimeString().slice(0, 5);
+    const mon = new Date(); mon.setHours(0, 0, 0, 0); mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7));
+    const sun = new Date(mon); sun.setDate(sun.getDate() + 6);
+    const week = all.filter((l) => l.status !== "cancelled" && l.date >= ymd(mon) && l.date <= ymd(sun));
+    const upcoming = all.filter((l) => l.status === "planned" && l.date + " " + l.time >= nowKey).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+    const next = upcoming[0];
+    const monthMin = all.filter((l) => l.status === "done" && l.date.slice(0, 7) === ym(now)).reduce((t, l) => t + l.min, 0);
+    const todo = all.filter((l) => l.hw && !done.has(l.id)).sort((a, b) => (a.hd || a.date).localeCompare(b.hd || b.date));
+    const notes = all.filter((l) => l.status === "done" && l.notes).sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time)).slice(0, 3);
+    const pending = all.filter((l) => l.cr?.status === "pending").length;
+    const wdToday = (now.getDay() + 6) % 7;
+    const today = [...all.filter((l) => l.date === td).map((l) => ({ s: l.time, e: te(l.time, l.min), l })), ...d!.events.filter((e) => (e.repeat === "w" ? e.weekday === wdToday : e.date === td)).map((e) => ({ s: e.start, e: e.end, ev: e }))].sort((a, b) => a.s.localeCompare(b.s));
+    const nextLabel = next ? (next.date === td ? "dziś" : next.date === addDays(1) ? "jutro" : WDSHORT[pd(next.date).getDay()]) + " " + next.time : "—";
+    const lrow = (l: L, when = false) => <button type="button" key={l.id} className={"srow" + (l.status === "cancelled" ? " cx" : "")} onClick={() => lessonModal(l.id)}>
+      <span className="tm">{when ? <>{l.date === td ? "Dziś" : l.date === addDays(1) ? "Jutro" : pd(l.date).getDate() + " " + MSHORT[pd(l.date).getMonth()]}<small>{l.time}</small></> : <>{l.time}<small>{te(l.time, l.min)}</small></>}</span><span className="sb" />
+      <span className="m"><b>{l.subject || "Lekcja"}</b><span>{l.tutor}{l.topic ? " · " + l.topic : ""}</span></span>{shortTag(l, false)}</button>;
+    return <>
+      <div className="bar"><div><h2 style={{ fontSize: 22, margin: 0 }}>Cześć, {(user!.name || "").split(" ")[0]}!</h2><span className="hint">{WDL[wdToday]}, {fd(td).split(", ")[1]}</span></div></div>
+      {!d!.links.length && <div className="nt" style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>Połącz się z korepetytorem, aby widzieć swoje lekcje, notatki i prace domowe. <button className="btn s p" onClick={() => go("kor")}>Dodaj kod</button></div>}
+      {pending > 0 && <div className="nt">Prośby o odwołanie czekające na decyzję korepetytora: <b>{pending}</b>.</div>}
+      <div className="grid g4 st2">
+        <div className="card stat"><div className="l">Lekcje w tym tygodniu</div><div className="v">{week.length}</div></div>
+        <div className="card stat"><div className="l">Zadania do zrobienia</div><div className={"v" + (todo.length ? " am" : "")}>{todo.length}</div></div>
+        <div className="card stat"><div className="l">Czas nauki w miesiącu</div><div className="v">{fmtH(monthMin)}</div></div>
+        <div className="card stat"><div className="l">Najbliższa lekcja</div><div className="v">{nextLabel}</div></div>
+      </div>
+      <div className="grid g2" style={{ marginTop: 16 }}>
+        <div className="card"><h2>Dziś</h2>{today.length ? today.map((x, k) => "l" in x && x.l ? lrow(x.l) : <button type="button" key={k} className="srow" onClick={() => evForm((x as any).ev)}><span className="tm">{x.s}<small>{x.e}</small></span><span className="sb o" /><span className="m"><b>{(x as any).ev.title}</b><span>{CATS[(x as any).ev.cat] || "Inne"}</span></span></button>) : <p className="hint" style={{ margin: 0 }}>Dziś nie masz zaplanowanych zajęć.</p>}</div>
+        <div className="card"><h2>Najbliższe lekcje</h2>{upcoming.length ? upcoming.slice(0, 5).map((l) => lrow(l, true)) : <p className="hint" style={{ margin: 0 }}>Brak zaplanowanych lekcji.</p>}</div>
+        <div className="card"><div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}><h2 style={{ margin: 0 }}>Do zrobienia</h2><span className="sp" style={{ flex: 1 }} />{todo.length > 4 && <button className="btn s" onClick={() => go("hw")}>Wszystkie ({todo.length})</button>}</div>
+          {todo.length ? todo.slice(0, 4).map((l) => <div className="srow" key={l.id} style={{ cursor: "default" }}><button className="chkc" aria-label="Oznacz jako zrobione" onClick={() => toggleHw(l.id)} /><span className="m" onClick={() => lessonModal(l.id)} style={{ cursor: "pointer" }}><b>{l.hw}</b><span>{l.subject || "Lekcja"} · {l.tutor}</span></span>{due(l)}</div>) : <p className="hint" style={{ margin: 0 }}>Wszystkie prace domowe są zrobione.</p>}</div>
+        <div className="card"><h2>Ostatnie notatki</h2>{notes.length ? notes.map((l) => <button type="button" key={l.id} className="srow" onClick={() => lessonModal(l.id)}><span className="tm">{pd(l.date).getDate()} {MSHORT[pd(l.date).getMonth()]}<small>{l.time}</small></span><span className="sb" /><span className="m"><b>{l.subject || "Lekcja"}{l.topic ? " · " + l.topic : ""}</b><span>{l.notes}</span></span></button>) : <p className="hint" style={{ margin: 0 }}>Tu pojawią się notatki od korepetytora po lekcjach.</p>}</div>
+      </div>
+    </>;
+  }
   function Plan() {
     if (!d!.links.length && !d!.events.length) return <div className="card"><Empty icon="cal" title="Twój plan jest pusty" sub="Dodaj kod od korepetytora albo własne zajęcia, aby zobaczyć plan tygodnia." />
       <div className="acts" style={{ justifyContent: "center" }}><button className="btn p" onClick={() => go("kor")}>Dodaj kod od korepetytora</button><button className="btn" onClick={() => evForm()}>Dodaj własne zajęcia</button></div></div>;
@@ -168,7 +204,7 @@ export function StudentPanel() {
     </>;
   }
 
-  const action = tab === "plan" || tab === "graf"
+  const action = tab === "dash" || tab === "plan" || tab === "graf"
     ? <button className="btn p" onClick={() => evForm()}><Ic n="plus" s={16} /><span>Dodaj zajęcia</span></button>
     : tab === "kor" ? <button className="btn p" onClick={() => document.getElementById("kcode")?.focus()}><Ic n="plus" s={16} /><span>Dodaj kod</span></button> : null;
 
@@ -184,13 +220,13 @@ export function StudentPanel() {
       <div className="main">
         <header className="top">
           <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}><a className="brandm" href="/uczen" aria-label="TutorTrack"><span className="logo" style={{ padding: 0 }}><i><Logo /></i></span></a><div><h1>{cur[1]}</h1><small /></div></div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}><span className="hint" id="usr">{user!.name}</span><button className="btn s lo" onClick={out}>Wyloguj</button>{action}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}><span className="hint" id="usr">{user!.name}</span><button className="btn s lo" aria-label="Ustawienia" onClick={() => go("konto")}><Ic n="set" s={16} /></button><button className="btn s lo" onClick={out}>Wyloguj</button>{action}</div>
         </header>
         {err && <p className="banner">{err} <button className="lk" onClick={load}>Spróbuj ponownie</button></p>}
-        <main className="content">{!d ? <p className="hint">Ładowanie…</p> : tab === "plan" ? Plan() : tab === "graf" ? Graf() : tab === "hw" ? Hw() : tab === "sum" ? Sum() : tab === "kor" ? <KorTab d={d} load={load} run={run} /> : <KontoTab out={out} />}</main>
+        <main className="content">{!d ? <p className="hint">Ładowanie…</p> : tab === "dash" ? Dash() : tab === "plan" ? Plan() : tab === "graf" ? Graf() : tab === "hw" ? Hw() : tab === "sum" ? Sum() : tab === "kor" ? <KorTab d={d} load={load} run={run} /> : <KontoTab out={out} />}</main>
       </div>
     </div>
-    <nav className="tabs fit" aria-label="Menu">{TABS.map((x) => <button key={x[0]} className={tab === x[0] ? "on" : ""} aria-current={tab === x[0] ? "page" : undefined} onClick={() => go(x[0])}><Ic n={x[2]} s={22} />{x[3]}{x[0] === "hw" && nT > 0 && <i className="tbadge">{nT}</i>}</button>)}</nav>
+    <nav className="tabs fit" aria-label="Menu">{TABS.filter((x) => x[0] !== "konto").map((x) => <button key={x[0]} className={tab === x[0] ? "on" : ""} aria-current={tab === x[0] ? "page" : undefined} onClick={() => go(x[0])}><Ic n={x[2]} s={22} />{x[3]}{x[0] === "hw" && nT > 0 && <i className="tbadge">{nT}</i>}</button>)}</nav>
   </>;
 }
 

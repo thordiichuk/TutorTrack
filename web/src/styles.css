@@ -173,3 +173,5 @@ body[data-th=purple]{--bg:#f7f5ff;--ac:#7c3aed;--ach:#6d28d9;--acl:#ede9fe;--bd:
 .tabs button{position:relative}
 .tbadge{position:absolute;top:2px;left:calc(50% + 6px);background:var(--am);color:#fff;font-style:normal;font-size:10px;font-weight:700;border-radius:99px;padding:0 5px;line-height:16px}
 @media(max-width:860px){.tabs.fit{mask-image:none}.tabs.fit button{flex:1 1 0;min-width:0;padding:8px 2px}}
+.grid>*{min-width:0}@media(max-width:480px){.g4.st2{grid-template-columns:1fr 1fr}.g4.st2 .stat .v{font-size:20px}}
+.srow .tm{width:54px;white-space:nowrap}
