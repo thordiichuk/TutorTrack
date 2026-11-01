@@ -56,17 +56,13 @@ Testy API (wymagają działającej bazy z `DATABASE_URL`):
 npm test
 ```
 
-## Wdrożenie (Render)
+## Wdrożenie (Neon + Render)
 
-1. Na [render.com](https://render.com): **New → Blueprint** i wybierz to repozytorium
-   (`render.yaml` tworzy usługę i bazę PostgreSQL).
-2. Ustaw zmienne:
-   - `APP_URL` – publiczny adres strony, np. `https://tutortrack.onrender.com`,
-   - `SMTP_URL` i `MAIL_FROM` – do wysyłki e-maili z resetem hasła
-     (np. `smtps://login:haslo@smtp.twojdostawca.pl:465`).
-3. Po wdrożeniu strona działa pod adresem z `APP_URL`. Własną domenę dodasz w ustawieniach usługi.
+Instrukcja krok po kroku: **[DEPLOY.md](DEPLOY.md)**. W skrócie: baza PostgreSQL w Neon
+(Frankfurt), strona w Render z `render.yaml` (Docker, Frankfurt), zmienne `DATABASE_URL`
+i `APP_URL`.
 
-Ten sam obraz (`Dockerfile`) działa też na Fly.io, Railway, DigitalOcean App Platform
+Ten sam obraz (`Dockerfile`) działa też na Railway, Fly.io, DigitalOcean
 czy własnym serwerze – potrzebna jest tylko zmienna `DATABASE_URL`.
 
 ## Zmienne środowiskowe

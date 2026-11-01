@@ -1,20 +1,20 @@
-# Render Blueprint: New → Blueprint → select this repository.
+# Render Blueprint (strona) + baza danych w Neon.
+# Render: New → Blueprint → wybierz to repozytorium. Instrukcja: DEPLOY.md
 services:
   - type: web
     name: tutortrack
     runtime: docker
-    plan: free
+    plan: free            # zmień na "starter", żeby strona nie „zasypiała”
+    region: frankfurt     # dane w UE
     healthCheckPath: /api/health
     envVars:
+      - key: NODE_ENV
+        value: production
       - key: DATABASE_URL
-        fromDatabase: { name: tutortrack-db, property: connectionString }
+        sync: false       # adres bazy z Neon (Connection string, z ?sslmode=require)
       - key: APP_URL
-        sync: false          # e.g. https://tutortrack.onrender.com
+        sync: false       # np. https://tutortrack.onrender.com
       - key: SMTP_URL
-        sync: false          # e.g. smtps://user:pass@smtp.example.com:465 (password reset e-mails)
+        sync: false       # opcjonalnie: poczta do resetu hasła
       - key: MAIL_FROM
-        sync: false
-databases:
-  - name: tutortrack-db
-    plan: free
-    databaseName: tutortrack
+        sync: false       # opcjonalnie: np. TutorTrack <no-reply@twojadomena.pl>
