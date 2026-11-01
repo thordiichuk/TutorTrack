@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../lib/api";
 import { Empty, Ic, Logo } from "../lib/icons";
-import { addDays, fd, fmtH, MSHORT, pln, te, WDL, WDSHORT, ym, ymd } from "../lib/util";
+import { addDays, fd, fmtH, MSHORT, pd, pln, te, WDL, WDSHORT, ym, ymd } from "../lib/util";
 import { useAuth } from "../state";
 import { errMsg, Field, useOverlay } from "../ui/overlay";
 import { ChangePassword, DeleteAccount } from "../app/Views";
@@ -12,6 +12,11 @@ type Ev = { id: string; title: string; cat: string; repeat: "w" | "o"; weekday: 
 type Data = { links: Link[]; events: Ev[]; done: string[] };
 type L = SLesson & { tutor: string; sid: string };
 const CATS: Record<string, string> = { school: "Szkoła", tutor: "Korepetycje spoza TutorTrack", extra: "Zajęcia dodatkowe", other: "Inne" };
+/** Two time ranges ("HH:MM") overlap. */
+const clash = (aS: string, aE: string, bS: string, bE: string) => aS < bE && bS < aE;
+const wdOf = (date: string) => (pd(date).getDay() + 6) % 7; // Monday = 0
+const RED = { background: "var(--rdl)", borderLeft: "4px solid var(--rd)", paddingLeft: 10, borderRadius: 8 };
+
 const TABS: [string, string][] = [["plan", "Plan"], ["graf", "Mój grafik"], ["hw", "Zadania"], ["sum", "Podsumowanie"], ["kor", "Korepetytorzy"], ["konto", "Konto"]];
 
 export function StudentPanel() {
@@ -72,7 +77,7 @@ export function StudentPanel() {
       {l.amount > 0 && <p className="hint" style={{ marginTop: 14 }}>Kwota: {pln(l.amount)}{l.paid ? " · opłacona" : " · nieopłacona"}</p>}
       <div className="mf"><button className="btn" onClick={ov.close}>Zamknij</button>{l.hw && <button className="btn p" onClick={() => toggleHw(l.id, true)}>{done.has(l.id) ? "Cofnij: niezrobione" : "Oznacz zadanie jako zrobione"}</button>}</div></>);
   };
-  const evForm = (e?: Ev) => ov.modal(<EvForm e={e} onSave={(b) => run(() => (e ? api("PATCH", "/api/student/events/" + e.id, b) : api("POST", "/api/student/events", b)), e ? "Zapisano zmiany." : "Dodano zajęcia do grafiku.")}
+  const evForm = (e?: Ev) => ov.modal(<EvForm e={e} lessons={all} events={d!.events} onSave={(b) => run(() => (e ? api("PATCH", "/api/student/events/" + e.id, b) : api("POST", "/api/student/events", b)), e ? "Zapisano zmiany." : "Dodano zajęcia do grafiku.")}
     onDel={e ? () => ov.confirm({ title: "Usunąć zajęcia?", text: "Zajęcia znikną z Twojego grafiku.", ok: "Usuń", danger: true, onOk: () => { run(() => api("DELETE", "/api/student/events/" + e.id), "Usunięto zajęcia."); } }) : undefined} />);
   const out = () => ov.confirm({ title: "Wylogować się?", text: "Twoje dane są bezpiecznie zapisane na koncie.", ok: "Wyloguj się", onOk: logout });
 
@@ -88,9 +93,12 @@ export function StudentPanel() {
       <div className="card">{Array.from({ length: 7 }, (_, i) => {
         const day = new Date(mon); day.setDate(day.getDate() + i); const ds = ymd(day);
         const it = [...all.filter((l) => l.date === ds).map((l) => ({ s: l.time, e: te(l.time, l.min), l })), ...d!.events.filter((e) => (e.repeat === "w" ? e.weekday === i : e.date === ds)).map((e) => ({ s: e.start, e: e.end, ev: e }))].sort((a, b) => a.s.localeCompare(b.s));
+        const live = (x: { l?: L } | { ev: Ev }) => !("l" in x) || !x.l || x.l.status !== "cancelled";
+        const bad = it.map((x, j) => live(x) && it.some((y, k) => k !== j && live(y) && clash(x.s, x.e, y.s, y.e)));
+        const warn = (k: number) => bad[k] ? <span className="tag rd">Nakłada się</span> : null;
         return <div className="uday" key={ds}><h3>{WDSHORT[day.getDay()]} {day.getDate()} {MSHORT[day.getMonth()]}{ds === td && <> <span className="tag ac">Dziś</span></>}</h3>
-          {it.length ? it.map((x, k) => "l" in x && x.l ? <div className="row" key={k}><div className="m"><b>{x.s}–{x.e} · {x.l.subject || "Lekcja"}</b><span>{x.l.tutor}{x.l.topic ? " · " + x.l.topic : ""}</span></div><div>{tags(x.l)}</div><button className="btn s" onClick={() => lessonModal(x.l.id)}>Szczegóły</button></div>
-            : <div className="row" key={k}><div className="m"><b>{x.s}–{x.e} · {(x as any).ev.title}</b><span>{CATS[(x as any).ev.cat] || "Inne"}{(x as any).ev.repeat === "w" ? " · co tydzień" : ""}</span></div><span className="tag">Mój grafik</span><button className="btn s" onClick={() => evForm((x as any).ev)}>Edytuj</button></div>)
+          {it.length ? it.map((x, k) => "l" in x && x.l ? <div className="row" key={k} style={bad[k] ? RED : undefined}><div className="m"><b>{x.s}–{x.e} · {x.l.subject || "Lekcja"}</b><span>{x.l.tutor}{x.l.topic ? " · " + x.l.topic : ""}</span></div><div>{warn(k)} {tags(x.l)}</div><button className="btn s" onClick={() => lessonModal(x.l.id)}>Szczegóły</button></div>
+            : <div className="row" key={k} style={bad[k] ? RED : undefined}><div className="m"><b>{x.s}–{x.e} · {(x as any).ev.title}</b><span>{CATS[(x as any).ev.cat] || "Inne"}{(x as any).ev.repeat === "w" ? " · co tydzień" : ""}</span></div><div>{warn(k)} <span className="tag">Mój grafik</span></div><button className="btn s" onClick={() => evForm((x as any).ev)}>Edytuj</button></div>)
             : <p className="hint" style={{ margin: "0 0 4px" }}>Wolny dzień</p>}</div>;
       })}</div></>;
   }
@@ -140,13 +148,27 @@ export function StudentPanel() {
   </>;
 }
 
-function EvForm({ e, onSave, onDel }: { e?: Ev; onSave: (b: object) => Promise<boolean>; onDel?: () => void }) {
+function EvForm({ e, lessons, events, onSave, onDel }: { e?: Ev; lessons: L[]; events: Ev[]; onSave: (b: object) => Promise<boolean>; onDel?: () => void }) {
   const { close } = useOverlay();
+  const [conf, setConf] = useState<{ key: string; list: string[] } | null>(null);
   const [f, setF] = useState(e ? { ...e } : { title: "", cat: "school", repeat: "w" as "w" | "o", weekday: (new Date().getDay() + 6) % 7, date: ymd(new Date()), start: "16:00", end: "17:00" });
   const [er, setEr] = useState<Record<string, string>>({});
+  // any change of day or time invalidates an earlier overlap warning
+  useEffect(() => { setConf(null); }, [f.repeat, f.weekday, f.date, f.start, f.end]);
   const save = async () => {
     const x = { title: f.title.trim() ? "" : "Podaj nazwę zajęć.", date: f.repeat === "o" && !f.date ? "Wybierz datę." : "", start: f.start ? "" : "Podaj godzinę.", end: !f.end ? "Podaj godzinę." : f.start && f.end <= f.start ? "Koniec musi być po początku." : "" };
     setEr(x); if (Object.values(x).some(Boolean)) return;
+    // find lessons and own activities at the same time
+    const td = ymd(new Date()), wd = f.repeat === "w" ? f.weekday : wdOf(f.date);
+    const sameDay = (date: string) => (f.repeat === "w" ? date >= td && wdOf(date) === wd : date === f.date);
+    const list = [
+      ...lessons.filter((l) => l.status !== "cancelled" && sameDay(l.date) && clash(f.start, f.end, l.time, te(l.time, l.min)))
+        .map((l) => `${l.subject || "Lekcja"} (${l.tutor}) – ${fd(l.date)}, ${l.time}–${te(l.time, l.min)}`),
+      ...events.filter((o) => o.id !== e?.id && (o.repeat === "w" ? o.weekday === wd : sameDay(o.date)) && clash(f.start, f.end, o.start, o.end))
+        .map((o) => `${o.title} – ${o.repeat === "w" ? WDL[o.weekday].toLowerCase() + ", co tydzień" : fd(o.date)}, ${o.start}–${o.end}`),
+    ];
+    const key = JSON.stringify([f.repeat, f.weekday, f.date, f.start, f.end]);
+    if (list.length && conf?.key !== key) { setConf({ key, list }); return; }
     if (await onSave({ title: f.title.trim(), cat: f.cat, repeat: f.repeat, weekday: f.weekday, date: f.repeat === "o" ? f.date : "", start: f.start, end: f.end })) close();
   };
   return <><h2>{e ? "Edytuj zajęcia" : "Dodaj zajęcia"}</h2>
@@ -156,7 +178,8 @@ function EvForm({ e, onSave, onDel }: { e?: Ev; onSave: (b: object) => Promise<b
     {f.repeat === "w" ? <div className="f"><label htmlFor="ewd">Dzień tygodnia</label><select id="ewd" value={f.weekday} onChange={(x) => setF({ ...f, weekday: +x.target.value })}>{WDL.map((n, i) => <option key={i} value={i}>{n}</option>)}</select></div>
       : <Field id="edt" label="Data *" type="date" value={f.date} onChange={(v) => setF({ ...f, date: v })} error={er.date} />}
     <div className="f2"><Field id="es" label="Od *" type="time" value={f.start} onChange={(v) => setF({ ...f, start: v })} error={er.start} /><Field id="ee" label="Do *" type="time" value={f.end} onChange={(v) => setF({ ...f, end: v })} error={er.end} /></div>
-    <div className="mf">{onDel && <button className="btn d" style={{ marginRight: "auto" }} onClick={onDel}>Usuń</button>}<button className="btn" onClick={close}>Anuluj</button><button className="btn p" onClick={save}>Zapisz</button></div></>;
+    {conf && <div className="lerr" role="alert"><b>Te zajęcia nakładają się na:</b><ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>{conf.list.slice(0, 5).map((t) => <li key={t}>{t}</li>)}</ul>{conf.list.length > 5 && <div>…i jeszcze {conf.list.length - 5}</div>}<div style={{ marginTop: 6 }}>Zmień godzinę albo zapisz mimo to.</div></div>}
+    <div className="mf">{onDel && <button className="btn d" style={{ marginRight: "auto" }} onClick={onDel}>Usuń</button>}<button className="btn" onClick={close}>Anuluj</button><button className="btn p" onClick={save}>{conf && conf.key === JSON.stringify([f.repeat, f.weekday, f.date, f.start, f.end]) ? "Zapisz mimo to" : "Zapisz"}</button></div></>;
 }
 
 function KorTab({ d, load, run }: { d: Data; load: () => Promise<void>; run: (fn: () => Promise<unknown>, ok?: string) => Promise<boolean> }) {
