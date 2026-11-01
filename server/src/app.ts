@@ -72,6 +72,11 @@ const settingsIn = z.object({
   tpl: z.array(z.object({ n: str(80).min(1), t: str(2000).min(1) })).max(50),
   onbBilling: z.boolean(),
   welcomeSkipped: z.boolean(),
+  // contact details the tutor chooses to show to linked students
+  cEmail: z.union([z.string().trim().max(200).email("Podaj poprawny e-mail."), z.literal("")]),
+  cPhone: str(40),
+  showEmail: z.boolean(),
+  showPhone: z.boolean(),
 }).partial();
 const eventIn = z.object({
   title: str(120).min(1),
@@ -510,7 +515,7 @@ export async function buildApp(opts: { logger?: boolean; authRateLimit?: number 
   /* ----- student ----- */
   app.get("/api/student/data", async (req) => {
     const u = await need(req, "student");
-    const links = await q(`SELECT s.id, s.name, s.subject, t.name AS tutor_name, t.brand AS tutor_brand
+    const links = await q(`SELECT s.id, s.name, s.subject, t.name AS tutor_name, t.brand AS tutor_brand, t.email AS tutor_email, t.settings AS tutor_settings
       FROM students s JOIN users t ON t.id=s.tutor_id WHERE s.linked_user_id=$1 AND s.deleted_at IS NULL ORDER BY s.created_at`, [u.id]);
     const ls = await q(`SELECT l.* FROM lessons l JOIN students s ON s.id=l.student_id
       WHERE s.linked_user_id=$1 AND s.deleted_at IS NULL AND l.deleted_at IS NULL ORDER BY l.date, l.time`, [u.id]);
@@ -519,6 +524,10 @@ export async function buildApp(opts: { logger?: boolean; authRateLimit?: number 
     return {
       links: links.map((s: any) => ({
         sid: s.id, tutor: s.tutor_brand || s.tutor_name, studentName: s.name, subject: s.subject,
+        contact: {
+          email: s.tutor_settings?.showEmail ? s.tutor_settings.cEmail || s.tutor_email : "",
+          phone: s.tutor_settings?.showPhone ? s.tutor_settings.cPhone || "" : "",
+        },
         lessons: ls.filter((l: any) => l.student_id === s.id).map((l: any) => ({
           id: l.id, date: l.date, time: l.time, min: l.min, subject: l.subject || s.subject.split(",")[0].trim(), topic: l.topic, status: l.status,
           notes: l.status === "done" ? l.notes : "", hw: l.status === "done" ? l.hw : "", hd: l.status === "done" ? l.hw_due || "" : "",

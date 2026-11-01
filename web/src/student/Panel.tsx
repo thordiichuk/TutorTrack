@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../lib/api";
 import { Empty, Ic, Logo } from "../lib/icons";
-import { addDays, CancelRequest, download, fd, fdt, fmtH, MSHORT, pd, pln, te, WDL, WDSHORT, ym, ymd } from "../lib/util";
+import { addDays, CancelRequest, download, fd, fm, fdt, fmtH, MSHORT, pd, pln, te, WDL, WDSHORT, ym, ymd } from "../lib/util";
 import { useAuth } from "../state";
 import { errMsg, Field, useOverlay } from "../ui/overlay";
 import { ChangePassword, DeleteAccount } from "../app/Views";
@@ -9,7 +9,7 @@ import { navigate } from "../lib/router";
 import { ThemePicker } from "../ui/themes";
 
 type SLesson = { id: string; date: string; time: string; min: number; subject: string; topic: string; status: "planned" | "done" | "cancelled"; notes: string; hw: string; hd: string; amount: number; paid: boolean; cr: CancelRequest | null };
-type Link = { sid: string; tutor: string; studentName: string; subject: string; lessons: SLesson[] };
+type Link = { sid: string; tutor: string; studentName: string; subject: string; contact?: { email: string; phone: string }; lessons: SLesson[] };
 type Ev = { id: string; title: string; cat: string; repeat: "w" | "o"; weekday: number; date: string; start: string; end: string };
 type Data = { links: Link[]; events: Ev[]; done: string[] };
 type L = SLesson & { tutor: string; sid: string };
@@ -31,6 +31,7 @@ export function StudentPanel() {
   const [err, setErr] = useState("");
   const [tab, setTab] = useState("dash");
   const [wk, setWk] = useState(0);
+  const [sel, setSel] = useState(-1); // selected weekday in the phone view of Plan (-1 = today / Monday)
   const [m, setM] = useState(ym(new Date()));
   const [hf, setHf] = useState<"todo" | "done" | "all">("todo");
 
@@ -151,35 +152,54 @@ export function StudentPanel() {
     const mon = new Date(); mon.setHours(0, 0, 0, 0); mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7) + 7 * wk);
     const end = new Date(mon); end.setDate(end.getDate() + 6);
     const td = ymd(new Date());
+    type It = { s: string; e: string; l?: L; ev?: Ev; bad?: boolean };
+    const days = Array.from({ length: 7 }, (_, i) => {
+      const day = new Date(mon); day.setDate(day.getDate() + i); const ds = ymd(day);
+      const it: It[] = [...all.filter((l) => l.date === ds).map((l) => ({ s: l.time, e: te(l.time, l.min), l })), ...d!.events.filter((e) => (e.repeat === "w" ? e.weekday === i : e.date === ds)).map((e) => ({ s: e.start, e: e.end, ev: e }))].sort((a, b) => a.s.localeCompare(b.s));
+      const live = (x: It) => !x.l || x.l.status !== "cancelled";
+      it.forEach((x, j) => { x.bad = live(x) && it.some((y, k) => k !== j && live(y) && clash(x.s, x.e, y.s, y.e)); });
+      return { day, ds, it };
+    });
+    const todayIdx = days.findIndex((x) => x.ds === td);
+    const cur = sel >= 0 ? sel : todayIdx >= 0 ? todayIdx : 0;
+    const block = (x: It, k: number) => x.l
+      ? <button type="button" key={k} className={"pblk les" + (x.bad ? " clash" : "") + (x.l.status === "cancelled" ? " cx" : "")} onClick={() => lessonModal(x.l!.id)}>
+          <span className="ptm">{x.s}–{x.e}</span><b>{x.l.subject || "Lekcja"}</b><span className="ps">{x.l.tutor}</span>{shortTag(x.l, !!x.bad)}</button>
+      : <button type="button" key={k} className={"pblk own c-" + x.ev!.cat + (x.bad ? " clash" : "")} onClick={() => evForm(x.ev)}>
+          <span className="ptm">{x.s}–{x.e}</span><b>{x.ev!.title}</b>{x.bad && <span className="tag rd">Nakłada się</span>}</button>;
     return <>
-      <div className="wkbar"><button className="btn s" onClick={() => setWk(wk - 1)} aria-label="Poprzedni tydzień">‹</button><b>{mon.getDate()} {MSHORT[mon.getMonth()]} – {end.getDate()} {MSHORT[end.getMonth()]}</b><button className="btn s" onClick={() => setWk(wk + 1)} aria-label="Następny tydzień">›</button>{wk !== 0 && <button className="btn s" onClick={() => setWk(0)}>Dziś</button>}</div>
-      <div className="card">{Array.from({ length: 7 }, (_, i) => {
-        const day = new Date(mon); day.setDate(day.getDate() + i); const ds = ymd(day);
-        const it = [...all.filter((l) => l.date === ds).map((l) => ({ s: l.time, e: te(l.time, l.min), l })), ...d!.events.filter((e) => (e.repeat === "w" ? e.weekday === i : e.date === ds)).map((e) => ({ s: e.start, e: e.end, ev: e }))].sort((a, b) => a.s.localeCompare(b.s));
-        const live = (x: { l?: L } | { ev: Ev }) => !("l" in x) || !x.l || x.l.status !== "cancelled";
-        const bad = it.map((x, j) => live(x) && it.some((y, k) => k !== j && live(y) && clash(x.s, x.e, y.s, y.e)));
-        return <div className="sday" key={ds}>
-          <div className={"dayh" + (ds === td ? " td" : "")}><span>{WDSHORT[day.getDay()]} {day.getDate()} {MSHORT[day.getMonth()]}</span>{ds === td && <span className="tag ac">Dziś</span>}{!it.length && <span className="free">wolne</span>}</div>
-          {it.map((x, k) => "l" in x && x.l
-            ? <button type="button" key={k} className={"srow" + (bad[k] ? " clash" : "") + (x.l.status === "cancelled" ? " cx" : "")} onClick={() => lessonModal(x.l.id)}>
-                <span className="tm">{x.s}<small>{x.e}</small></span><span className="sb" />
-                <span className="m"><b>{x.l.subject || "Lekcja"}</b><span>{x.l.tutor}{x.l.topic ? " · " + x.l.topic : ""}</span></span>{shortTag(x.l, bad[k])}</button>
-            : <button type="button" key={k} className={"srow" + (bad[k] ? " clash" : "")} onClick={() => evForm((x as any).ev)}>
-                <span className="tm">{x.s}<small>{x.e}</small></span><span className="sb o" />
-                <span className="m"><b>{(x as any).ev.title}</b><span>{CATS[(x as any).ev.cat] || "Inne"}{(x as any).ev.repeat === "w" ? " · co tydzień" : ""}</span></span>{bad[k] && <span className="tag rd">Nakłada się</span>}</button>)}
-        </div>;
-      })}</div>
-      <p className="hint" style={{ marginTop: 10 }}>Kolorowy pasek: lekcje od korepetytora · szary: Twój grafik. Stuknij, aby zobaczyć szczegóły.</p></>;
+      <div className="wkbar"><button className="btn s" onClick={() => { setWk(wk - 1); setSel(-1); }} aria-label="Poprzedni tydzień">‹</button><b>{mon.getDate()} {MSHORT[mon.getMonth()]} – {end.getDate()} {MSHORT[end.getMonth()]}</b><button className="btn s" onClick={() => { setWk(wk + 1); setSel(-1); }} aria-label="Następny tydzień">›</button>{wk !== 0 && <button className="btn s" onClick={() => { setWk(0); setSel(-1); }}>Dziś</button>}</div>
+      <div className="plegend"><span><i className="les" />Lekcje od korepetytorów</span><span><i className="own" />Mój grafik</span></div>
+      {/* phone: day picker + agenda of one day */}
+      <div className="dstrip" role="tablist" aria-label="Dzień tygodnia">{days.map((x, i) => <button key={x.ds} role="tab" aria-selected={i === cur} className={(i === cur ? "on" : "") + (x.ds === td ? " td" : "")} onClick={() => setSel(i)}>
+        <small>{WDSHORT[x.day.getDay()].replace(".", "")}</small><b>{x.day.getDate()}</b><span className="dots">{x.it.some((y) => y.l && y.l.status !== "cancelled") && <i className="les" />}{x.it.some((y) => y.ev) && <i className="own" />}</span></button>)}</div>
+      <div className="card pday">{days[cur].it.length ? days[cur].it.map(block) : <p className="hint" style={{ margin: 0, textAlign: "center" }}>Wolny dzień – brak lekcji i zajęć.</p>}</div>
+      {/* desktop: whole week in columns */}
+      <div className="pweek">{days.map((x) => <div key={x.ds} className={"pcol" + (x.ds === td ? " td" : "")}>
+        <div className="pch"><small>{WDSHORT[x.day.getDay()]}</small><b>{x.day.getDate()} {MSHORT[x.day.getMonth()]}</b></div>
+        {x.it.length ? x.it.map(block) : <span className="pfree">wolne</span>}</div>)}</div>
+    </>;
   }
   function Graf() {
-    const intro = <p className="hint" style={{ margin: "0 0 12px" }}>Szkoła, zajęcia dodatkowe i korepetycje spoza TutorTrack. Stuknij zajęcia, aby je edytować lub usunąć.</p>;
+    const intro = <p className="hint" style={{ margin: "0 0 12px" }}>Tu zarządzasz własnymi zajęciami: szkołą, zajęciami dodatkowymi i korepetycjami spoza TutorTrack. Wszystko razem z lekcjami zobaczysz w zakładce Plan.</p>;
     if (!d!.events.length) return <>{intro}<div className="card"><Empty icon="cal" title="Brak własnych zajęć" sub="Dodaj szkołę, stałe zajęcia lub lekcje u innych korepetytorów." /><div className="acts" style={{ justifyContent: "center" }}><button className="btn p" onClick={() => evForm()}>Dodaj zajęcia</button></div></div></>;
-    const row = (e: Ev) => <button type="button" key={e.id} className={"srow" + (e.repeat === "o" && e.date < ymd(new Date()) ? " cx" : "")} onClick={() => evForm(e)}>
-      <span className="tm">{e.start}<small>{e.end}</small></span><span className="sb o" /><span className="m"><b>{e.title}</b><span>{CATS[e.cat] || "Inne"}{e.repeat === "o" ? " · " + fd(e.date) : ""}</span></span></button>;
-    const W = d!.events.filter((e) => e.repeat === "w"), O = d!.events.filter((e) => e.repeat === "o").sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
+    const WD2 = ["Pn", "Wt", "Śr", "Cz", "Pt", "Sb", "Nd"];
+    const td = ymd(new Date());
+    const EMO: Record<string, string> = { school: "🏫", extra: "⚽", tutor: "📘", other: "📌" };
+    const W = d!.events.filter((e) => e.repeat === "w");
+    const O = d!.events.filter((e) => e.repeat === "o").sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
+    const Oup = O.filter((e) => e.date >= td), Opast = O.filter((e) => e.date < td).reverse();
+    // weekly items grouped by category, then by title (e.g. "Szkoła" Mon–Fri as one entry)
+    const cats = Object.keys(CATS).filter((c) => W.some((e) => e.cat === c));
     return <>{intro}
-      {W.length > 0 && <div className="card">{WDL.map((n, i) => { const x = W.filter((e) => e.weekday === i).sort((a, b) => a.start.localeCompare(b.start)); return x.length ? <div className="sday" key={i}><div className="dayh"><span>{n}</span></div>{x.map(row)}</div> : null; })}</div>}
-      {O.length > 0 && <div className="card" style={{ marginTop: 16 }}><div className="dayh"><span>Jednorazowe</span></div>{O.map(row)}</div>}</>;
+      {cats.map((c) => { const byT: Record<string, Ev[]> = {}; W.filter((e) => e.cat === c).forEach((e) => { (byT[e.title] = byT[e.title] || []).push(e); });
+        return <div className="card gcat" key={c}><h2><span className="emo" aria-hidden="true">{EMO[c]}</span>{CATS[c]}<span className="tag" style={{ marginLeft: 8 }}>co tydzień</span></h2>
+          {Object.entries(byT).map(([t, es]) => <div className="gitem" key={t}><b>{t}</b><div className="gslots">{es.sort((a, b) => a.weekday - b.weekday || a.start.localeCompare(b.start)).map((e) => <button type="button" key={e.id} className={"gslot c-" + c} onClick={() => evForm(e)} aria-label={"Edytuj: " + t + ", " + WDL[e.weekday] + " " + e.start}><b>{WD2[e.weekday]}</b>{e.start}–{e.end}</button>)}</div></div>)}</div>; })}
+      {Oup.length > 0 && <div className="card gcat"><h2><span className="emo" aria-hidden="true">🗓️</span>Jednorazowe – nadchodzące</h2>
+        {Oup.map((e) => <button type="button" key={e.id} className="gone" onClick={() => evForm(e)}><span className={"gdate c-" + e.cat}><b>{pd(e.date).getDate()}</b><small>{MSHORT[pd(e.date).getMonth()]}</small></span><span className="m"><b>{e.title}</b><span>{WDL[wdOf(e.date)]} · {e.start}–{e.end} · {CATS[e.cat] || "Inne"}</span></span></button>)}</div>}
+      {Opast.length > 0 && <details className="card gcat"><summary><b>Minione jednorazowe ({Opast.length})</b></summary>
+        {Opast.map((e) => <button type="button" key={e.id} className="gone cx" onClick={() => evForm(e)}><span className={"gdate c-" + e.cat}><b>{pd(e.date).getDate()}</b><small>{MSHORT[pd(e.date).getMonth()]}</small></span><span className="m"><b>{e.title}</b><span>{e.start}–{e.end} · {CATS[e.cat] || "Inne"}</span></span></button>)}</details>}
+    </>;
   }
   function Hw() {
     const X = all.filter((l) => l.hw && (hf === "all" || (hf === "done") === done.has(l.id))).sort((a, b) => { const x = a.hd || a.date, y = b.hd || b.date; return hf === "done" ? y.localeCompare(x) : x.localeCompare(y); });
@@ -194,7 +214,9 @@ export function StudentPanel() {
     const min = dn.reduce((t, l) => t + l.min, 0), bil = L.filter((l) => l.status === "done" || (l.status === "cancelled" && l.amount > 0)), tot = bil.reduce((t, l) => t + l.amount, 0), paid = bil.reduce((t, l) => t + (l.paid ? l.amount : 0), 0), hw = L.filter((l) => l.hw);
     const bs: Record<string, number> = {}; dn.forEach((l) => { const k = l.subject || "—"; bs[k] = (bs[k] || 0) + l.min; });
     const e = Object.entries(bs).sort((a, b) => b[1] - a[1]), mx = e.length ? e[0][1] : 1;
-    const head = <div className="bar"><input type="month" value={m} aria-label="Miesiąc" onChange={(x) => x.target.value && setM(x.target.value)} /></div>;
+    const shiftM = (k: number) => { const [y, mo] = m.split("-").map(Number); setM(ym(new Date(y, mo - 1 + k, 1))); };
+    const mt = fm(m);
+    const head = <div className="bar"><div className="mpick" role="group" aria-label="Miesiąc"><button type="button" aria-label="Poprzedni miesiąc" onClick={() => shiftM(-1)}>‹</button><span aria-live="polite">{mt.charAt(0).toUpperCase() + mt.slice(1)}</span><button type="button" aria-label="Następny miesiąc" onClick={() => shiftM(1)}>›</button></div></div>;
     if (!L.length) return <>{head}<div className="card"><Empty icon="chart" title="Brak lekcji w tym miesiącu" sub="Wybierz inny miesiąc albo dodaj kod od korepetytora." /></div></>;
     const byDate = (a: L, b: L) => (a.date + a.time).localeCompare(b.date + b.time);
     return <>{head}
@@ -282,7 +304,7 @@ function KorTab({ d, load, run }: { d: Data; load: () => Promise<void>; run: (fn
         <form className="bar" style={{ margin: 0 }} onSubmit={(x) => { x.preventDefault(); add(); }}><input id="kcode" value={code} onChange={(x) => setCode(x.target.value)} placeholder="XXXX-XXXX-XXXX-XXXX" autoComplete="off" spellCheck={false} aria-label="Kod dostępu" aria-describedby="e_ucode" style={{ fontFamily: "ui-monospace,Menlo,Consolas,monospace", letterSpacing: 1 }} /><button className="btn p" type="submit" disabled={busy}>Dodaj kod</button></form>
         <div className="er" id="e_ucode" role="alert" style={{ color: "var(--rd)", fontSize: 13, marginTop: 6 }}>{e}</div></div>
       <div className="card" style={{ marginTop: 16 }}><h2>Twoi korepetytorzy</h2>
-        {d.links.length ? d.links.map((k) => <div className="row" key={k.sid}><div className="av">{(k.tutor || "K").charAt(0).toUpperCase()}</div><div className="m"><b>{k.tutor}</b><span>{k.subject} · lekcji: {k.lessons.length}</span></div>
+        {d.links.length ? d.links.map((k) => <div className="row" key={k.sid}><div className="av">{(k.tutor || "K").charAt(0).toUpperCase()}</div><div className="m"><b>{k.tutor}</b><span>{k.subject} · lekcji: {k.lessons.length}</span>{k.contact?.email || k.contact?.phone ? <span className="ktc">{k.contact.email && <a href={"mailto:" + k.contact.email}>✉️ {k.contact.email}</a>}{k.contact.phone && <a href={"tel:" + k.contact.phone.replace(/\s/g, "")}>📞 {k.contact.phone}</a>}</span> : <span className="hint" style={{ fontSize: 12, display: "block", marginTop: 2 }}>Korepetytor nie udostępnił danych kontaktowych.</span>}</div>
           <button className="btn s d" onClick={() => ov.confirm({ title: "Odłączyć korepetytora?", text: "Lekcje, notatki i zadania od tego korepetytora znikną z Twojego panelu. Aby połączyć się ponownie, poproś korepetytora o nowy kod.", ok: "Odłącz", danger: true, onOk: () => { run(() => api("DELETE", "/api/student/link/" + k.sid), "Odłączono korepetytora."); } })}>Odłącz</button></div>)
           : <p className="hint">Nie połączono jeszcze żadnego korepetytora.</p>}</div>
       <p className="hint" style={{ marginTop: 12 }}>Twoje lekcje widzisz tylko Ty i korepetytor, który je prowadzi. Wszystkie funkcje dla ucznia są bezpłatne.</p></>;

@@ -407,6 +407,7 @@ export function Settings({ group = "konto" }: { group?: "konto" | "wyglad" | "le
       <Field id="pfb" label="Nazwa lub marka korepetytora" value={pf.brand} onChange={(v) => setPf({ ...pf, brand: v })} />
       <p className="hint" style={{ margin: "4px 0 16px" }}>E-mail: {user!.email}. Nazwa lub marka jest widoczna dla Twoich uczniów w panelu ucznia.</p>
       <button className="btn p" disabled={demo} onClick={async () => { if (!pf.name.trim()) { setPf({ ...pf, err: "Podaj imię." }); return; } try { await updateMe({ name: pf.name.trim(), brand: pf.brand.trim() }); setPf({ ...pf, err: "" }); toast("Profil zapisany."); } catch (e) { toast(errMsg(e)); } }}>Zapisz profil</button></div>
+    <ContactCard />
     <PlanCard />
     <div className="card"><h2><span className="emo" aria-hidden="true">🔒</span>Konto i bezpieczeństwo</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>Hasło jest przechowywane wyłącznie jako zaszyfrowany skrót.</p><div className="acts"><button className="btn" disabled={demo} onClick={() => modal(<ChangePassword />)}>Zmień hasło</button>{user!.isAdmin && !demo && <button className="btn" onClick={() => navigate("/admin")}>Panel administratora</button>}<button className="btn" onClick={() => confirm({ title: demo ? "Wyjść z trybu demo?" : "Wylogować się?", text: demo ? "Dane przykładowe nie są zapisywane." : "Twoje dane są bezpiecznie zapisane na koncie.", ok: demo ? "Wyjdź" : "Wyloguj się", onOk: logout })}>{demo ? "Wyjdź z dema" : "Wyloguj się"}</button></div></div>
     </div>}
@@ -448,6 +449,28 @@ export function Settings({ group = "konto" }: { group?: "konto" | "wyglad" | "le
           : <p className="hint">Kosz jest pusty.</p>}</>}</div>
     </div>}
   </>;
+}
+
+/** Contact details visible to linked students – the tutor decides what is shown. */
+function ContactCard() {
+  const { user, demo, updateMe } = useAuth();
+  const { toast } = useOverlay();
+  const c = user!.settings;
+  const [f, setF] = useState({ showEmail: !!c.showEmail, cEmail: c.cEmail || user!.email, showPhone: !!c.showPhone, cPhone: c.cPhone || "" });
+  const [e, setE] = useState<Record<string, string>>({});
+  const save = async () => {
+    const er = { cEmail: f.showEmail && !/^\S+@\S+\.\S+$/.test(f.cEmail.trim()) ? "Podaj poprawny e-mail." : "", cPhone: f.showPhone && f.cPhone.trim().length < 5 ? "Podaj numer telefonu." : "" };
+    setE(er); if (er.cEmail || er.cPhone) return;
+    try { await updateMe({ settings: { showEmail: f.showEmail, cEmail: f.cEmail.trim(), showPhone: f.showPhone, cPhone: f.cPhone.trim() } }); toast("Zapisano dane kontaktowe."); } catch (x) { toast(errMsg(x)); }
+  };
+  return <div className="card"><h2><span className="emo" aria-hidden="true">📇</span>Kontakt dla uczniów</h2>
+    <p className="hint" style={{ margin: "-6px 0 12px" }}>Zaznacz, co uczniowie połączeni z Tobą kodem mają widzieć w zakładce „Korepetytorzy”. Domyślnie nic nie jest widoczne.</p>
+    <label className="chk"><input type="checkbox" checked={f.showEmail} onChange={(x) => setF({ ...f, showEmail: x.target.checked })} />Pokazuj e-mail</label>
+    {f.showEmail && <Field id="cem" label="E-mail dla uczniów" type="email" value={f.cEmail} onChange={(v) => setF({ ...f, cEmail: v })} error={e.cEmail} />}
+    <label className="chk"><input type="checkbox" checked={f.showPhone} onChange={(x) => setF({ ...f, showPhone: x.target.checked })} />Pokazuj numer telefonu</label>
+    {f.showPhone && <Field id="cph" label="Telefon dla uczniów" type="tel" value={f.cPhone} onChange={(v) => setF({ ...f, cPhone: v })} error={e.cPhone} />}
+    <button className="btn p" style={{ marginTop: 8 }} disabled={demo} onClick={save}>Zapisz kontakt</button>
+  </div>;
 }
 
 export function ChangePassword() {

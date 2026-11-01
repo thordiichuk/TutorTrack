@@ -222,3 +222,34 @@ body[data-th=purple]{--bg:#f7f5ff;--ac:#7c3aed;--ach:#6d28d9;--acl:#ede9fe;--bd:
 .tjump{position:fixed;right:20px;bottom:24px;z-index:7;display:inline-flex;align-items:center;gap:6px;border:0;border-radius:99px;padding:10px 16px;background:var(--ac);color:#fff;font:inherit;font-weight:600;font-size:14px;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.22);animation:up .2s}.tjump span{font-size:17px;line-height:1}.tjump:hover{background:var(--ach)}
 @media(max-width:860px){.tjump{bottom:calc(76px + env(safe-area-inset-bottom));right:16px}}
 @media(max-width:560px){.sbar{display:grid;grid-template-columns:1fr 1fr;gap:8px}.sbar input[type=search]{grid-column:1/-1}.sbar select{min-width:0;width:100%}}
+/* ---- student: Plan (week calendar) ---- */
+.plegend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--mu);margin:-4px 0 12px}.plegend span{display:inline-flex;align-items:center;gap:6px}
+.plegend i,.dstrip .dots i{display:inline-block;width:10px;height:10px;border-radius:3px}.plegend i.les,.dots i.les{background:var(--ac)}.plegend i.own,.dots i.own{background:transparent;border:2px solid var(--mu)}
+.pblk{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;border:0;border-radius:10px;padding:8px 10px;margin-bottom:6px;font:inherit;color:var(--tx);cursor:pointer;min-width:0}
+.pblk b{font-size:14px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pblk .ptm{font-size:12px;font-weight:600;color:var(--mu)}.pblk .ps{font-size:12px;color:var(--mu);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pblk .tag{margin-top:4px}
+.pblk.les{background:var(--acl);border-left:4px solid var(--ac)}.pblk.les .ptm{color:var(--ach)}
+.pblk.own{background:var(--card);border:1px dashed var(--bdh,var(--bd));border-left:4px solid var(--mu)}
+.pblk.own.c-school{border-left-color:#3b82f6}.pblk.own.c-extra{border-left-color:#16a34a}.pblk.own.c-tutor{border-left-color:#d97706}.pblk.own.c-other{border-left-color:#8b8fa8}
+.pblk.clash{box-shadow:inset 0 0 0 2px var(--rd)}.pblk.cx b{text-decoration:line-through;color:var(--mu)}.pblk.cx{opacity:.75}
+.pweek{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
+.pcol{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:8px;min-height:180px}.pcol.td{border-color:var(--ac);box-shadow:0 0 0 1px var(--ac)}
+.pch{display:flex;flex-direction:column;padding:2px 2px 8px;margin-bottom:6px;border-bottom:1px solid var(--bd)}.pch small{color:var(--mu);text-transform:uppercase;font-size:11px;font-weight:600}.pch b{font-size:14px}.pcol.td .pch b{color:var(--ac)}
+.pfree{display:block;text-align:center;color:var(--mu);font-size:12px;padding-top:16px}
+.dstrip,.pday{display:none}
+@media(max-width:860px){.pweek{display:none}.pday{display:block;padding:12px}
+.dstrip{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:12px}
+.dstrip button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 6px;border:1px solid var(--bd);background:var(--card);border-radius:12px;font:inherit;color:var(--tx);cursor:pointer}
+.dstrip small{font-size:11px;color:var(--mu);text-transform:uppercase}.dstrip b{font-size:16px}.dstrip .dots{display:flex;gap:3px;height:8px}.dstrip .dots i{width:6px;height:6px;border-radius:50%}.dstrip .dots i.own{border-width:1.5px}
+.dstrip button.td b{color:var(--ac)}.dstrip button.on{background:var(--ac);border-color:var(--ac);color:#fff}.dstrip button.on small,.dstrip button.on b{color:#fff}.dstrip button.on .dots i.les{background:#fff}.dstrip button.on .dots i.own{border-color:#fff}
+.pday .pblk{padding:10px 12px}}
+/* ---- student: Mój grafik (manage own activities) ---- */
+.gcat{margin-bottom:16px}.gcat h2{display:flex;align-items:center}
+.gitem{padding:10px 0;border-top:1px solid var(--bd)}.gitem:first-of-type{border-top:0}.gitem>b{display:block;margin-bottom:8px}
+.gslots{display:flex;flex-wrap:wrap;gap:6px}
+.gslot{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--bd);background:var(--bg);border-radius:9px;padding:6px 10px;font:inherit;font-size:13px;color:var(--tx);cursor:pointer;border-left:3px solid var(--mu)}.gslot:hover{border-color:var(--ac)}.gslot b{color:var(--mu);font-size:12px}
+.gslot.c-school,.gdate.c-school{border-left-color:#3b82f6}.gslot.c-extra,.gdate.c-extra{border-left-color:#16a34a}.gslot.c-tutor,.gdate.c-tutor{border-left-color:#d97706}
+.gone{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;border-top:1px solid var(--bd);background:none;padding:10px 0;font:inherit;color:var(--tx);cursor:pointer}.gone:first-of-type{border-top:0}
+.gone .m{display:flex;flex-direction:column;min-width:0}.gone .m span{font-size:13px;color:var(--mu)}.gone.cx{opacity:.6}
+.gdate{display:flex;flex-direction:column;align-items:center;justify-content:center;width:46px;height:46px;flex:none;border-radius:10px;background:var(--bg);border:1px solid var(--bd);border-left:3px solid var(--mu)}.gdate b{font-size:17px;line-height:1}.gdate small{font-size:11px;color:var(--mu)}
+details.gcat summary{cursor:pointer;list-style:none}details.gcat summary::-webkit-details-marker{display:none}details.gcat[open] summary{margin-bottom:6px}
+.ktc{display:flex !important;flex-wrap:wrap;gap:4px 14px;margin-top:4px}.ktc a{color:var(--ac);text-decoration:none;font-size:13px}

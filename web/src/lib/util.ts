@@ -5,6 +5,7 @@ export type Settings = {
   theme?: "light" | "auto" | "dark" | "graphite" | "blue" | "green" | "pink" | "orange" | "purple";
   dur?: number; time?: string; rate?: number; wk?: "mon" | "sun"; late?: boolean; goal?: number;
   tpl?: { n: string; t: string }[]; onbBilling?: boolean; welcomeSkipped?: boolean;
+  cEmail?: string; cPhone?: string; showEmail?: boolean; showPhone?: boolean;
 };
 export type User = { id: string; email: string; role: Role; name: string; brand: string; plan: "free" | "pro"; settings: Settings; isAdmin?: boolean };
 export type Student = {
