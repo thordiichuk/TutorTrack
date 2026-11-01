@@ -8,6 +8,7 @@ import {
 import { useAuth, useTutor } from "../state";
 import { errMsg, Field, useOverlay } from "../ui/overlay";
 import { LessonRow, LessonTags, useData, useUi, useUpsell } from "./common";
+import { ThemePicker } from "../ui/themes";
 import { CancelRequestActions, LessonActions, LessonForm, ShareModal, StudentDetail, StudentForm, SummaryModal, summaryText } from "./Forms";
 
 /* ---------- small pieces ---------- */
@@ -301,11 +302,11 @@ export function Plan() {
   const { students } = useData();
   const { tryPro, toFree } = usePlanActions();
   const pro = user?.plan === "pro", n = students.filter((s) => s.active).length;
-  const proList = ["Bez limitu aktywnych uczniów", "Wszystko z planu Free", "Rozszerzone statystyki: przychód według przedmiotu i ucznia, odwołania, obłożenie", "Wykres przychodu z 6 miesięcy i eksport roku", "Podsumowania dla wszystkich uczniów naraz i wydruk PDF", "Cel miesięczny z paskiem postępu", "Szablony notatek", "Kosz z przywracaniem przez 30 dni", "Motywy kolorystyczne"];
+  const proList = ["Bez limitu aktywnych uczniów", "Wszystko z planu Free", "Rozszerzone statystyki: przychód według przedmiotu i ucznia, odwołania, obłożenie", "Wykres przychodu z 6 miesięcy i eksport roku", "Podsumowania dla wszystkich uczniów naraz i wydruk PDF", "Cel miesięczny z paskiem postępu", "Szablony notatek", "Kosz z przywracaniem przez 30 dni"];
   return <>
     {!pro && n > FREE && <div className="card" style={{ borderColor: "#f3dca8", background: "var(--aml)", marginBottom: 16 }}><b>Masz {n} aktywnych uczniów, a limit Free to {FREE}.</b><div>Wszystkie dane są zachowane i widoczne. Dodawanie i przywracanie uczniów jest zablokowane, dopóki nie zarchiwizujesz części uczniów lub nie włączysz Pro.</div></div>}
     <div className="plans">
-      <div className={"card plan" + (pro ? "" : " cur")}><h2>Free {!pro && <span className="tag ac">Twój plan</span>}</h2><div className="pr">0 zł</div><ul><li>Do {FREE} aktywnych uczniów</li><li>Lekcje, notatki i rozliczenia</li><li>Archiwum bez limitu</li><li>Przypomnienie o niepotwierdzonych lekcjach, szybkie odwoływanie i powtarzanie lekcji</li><li>Opłata za odwołanie, kopie danych, eksport CSV i zbiorcze oznaczanie płatności</li><li>Panel ucznia: udostępnianie lekcji, notatek i prac domowych</li></ul>{pro && <button className="btn" onClick={toFree}>Wróć do Free</button>}</div>
+      <div className={"card plan" + (pro ? "" : " cur")}><h2>Free {!pro && <span className="tag ac">Twój plan</span>}</h2><div className="pr">0 zł</div><ul><li>Do {FREE} aktywnych uczniów</li><li>Lekcje, notatki i rozliczenia</li><li>Archiwum bez limitu</li><li>Przypomnienie o niepotwierdzonych lekcjach, szybkie odwoływanie i powtarzanie lekcji</li><li>Opłata za odwołanie, kopie danych, eksport CSV i zbiorcze oznaczanie płatności</li><li>Panel ucznia: udostępnianie lekcji, notatek i prac domowych</li><li>Motywy kolorystyczne</li></ul>{pro && <button className="btn" onClick={toFree}>Wróć do Free</button>}</div>
       <div className={"card plan" + (pro ? " cur" : "")}><h2>Pro {pro && <span className="tag ac">Twój plan</span>}</h2><div className="pr">19 zł <span className="hint" style={{ fontSize: 14, fontWeight: 400 }}>/ miesiąc</span></div><ul>{proList.map((x) => <li key={x}>{x}</li>)}</ul>{pro ? <span className="hint">Pro aktywne (tryb testowy).</span> : <button className="btn p" onClick={tryPro}>Przetestuj Pro</button>}</div>
     </div>
     <p className="hint">Płatności nie są jeszcze podłączone – zakup Pro jest symulowany i nic nie jest pobierane.</p>
@@ -343,10 +344,7 @@ export function Settings() {
   };
 
   return <div className="grid" style={{ gap: 16 }}>
-    <div className="card"><h2>Wygląd</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>{demo ? "W trybie demo wygląd jest czarno-biały." : "Motywy kolorystyczne są dostępne w planie Pro."}</p>
-      <div className="thms">{T.map((x) => { const lock = x[0] !== "light" && !pr && !demo; return <button key={x[0]} className={"thm" + (th === x[0] ? " on" : "")} aria-pressed={th === x[0]} onClick={() => {
-        if (demo) { toast("W trybie demo wygląd jest czarno-biały."); return; } if (x[0] !== "light" && !pr) { proUp("Motywy kolorystyczne"); return; } save({ theme: x[0] }, "Zmieniono motyw."); }}>
-        <span className="sw">{x[2].map((k) => <i key={k} style={{ background: k }} />)}</span><b>{x[1]}{lock && <> <span className="tag ac">Pro</span></>}</b></button>; })}</div></div>
+    <ThemePicker />
 
     <div className="card"><h2>Profil</h2>
       <Field id="pfn" label="Imię lub imię i nazwisko" value={pf.name} onChange={(v) => setPf({ ...pf, name: v })} error={pf.err} />

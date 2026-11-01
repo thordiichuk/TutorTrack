@@ -62,7 +62,7 @@ const lessonPatch = z.object({
   status: z.enum(["planned", "done", "cancelled"]), paid: z.boolean(), amount: money, fee: money, sid: z.string().regex(UUID),
 }).partial();
 const settingsIn = z.object({
-  theme: z.enum(["light", "dark", "pink", "green"]),
+  theme: z.enum(["light", "auto", "dark", "graphite", "blue", "green", "pink", "orange", "purple"]),
   dur: z.number().int().min(1).max(1440),
   time: z.string().regex(TIME),
   rate: money,

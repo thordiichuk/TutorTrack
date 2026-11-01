@@ -110,7 +110,7 @@ function Calculator() {
 export function Home() {
   const { enterDemo } = useAuth();
   useReveal(); useHashScroll();
-  const proList = ["Bez limitu aktywnych uczniów", "Wszystko z planu Free", "Rozszerzone statystyki: przychód według przedmiotu i ucznia, odwołania, obłożenie", "Wykres przychodu z 6 miesięcy i eksport roku", "Podsumowania dla wszystkich uczniów naraz i wydruk PDF", "Cel miesięczny z paskiem postępu", "Szablony notatek", "Kosz z przywracaniem przez 30 dni", "Motywy kolorystyczne"];
+  const proList = ["Bez limitu aktywnych uczniów", "Wszystko z planu Free", "Rozszerzone statystyki: przychód według przedmiotu i ucznia, odwołania, obłożenie", "Wykres przychodu z 6 miesięcy i eksport roku", "Podsumowania dla wszystkich uczniów naraz i wydruk PDF", "Cel miesięczny z paskiem postępu", "Szablony notatek", "Kosz z przywracaniem przez 30 dni"];
   return (
     <PubPage aud="tutor"><div className="pi">
       <section className="hero"><div><AudSw s={false} /><h1>Dziennik korepetytora, który porządkuje uczniów, lekcje i rozliczenia</h1><p>Notatki w kilku miejscach i niepewność, kto ma zapłacić i ile? TutorTrack trzyma wszystko w jednym miejscu.</p><div className="btns"><a className="btn p" href="/rejestracja">Zacznij bezpłatnie</a><button className="btn" onClick={enterDemo}>Zobacz demo</button></div><p className="hint" style={{ marginTop: 12 }}>Bez karty. Plan darmowy do {FREE} aktywnych uczniów.</p></div>
@@ -130,7 +130,7 @@ export function Home() {
         {[["1. Dodaj ucznia", "Imię, przedmiot i stawka za 60 minut."], ["2. Dodaj pierwszą lekcję", "Kwota policzy się sama."], ["3. Sprawdź rozliczenie miesiąca", "Zobacz, kto i ile ma zapłacić."]].map((x, i) => <div className="card rv" key={i}><h3>{x[0]}</h3><p>{x[1]}</p><Demo i={i} /></div>)}
       </div></section>
       <section className="sec" id="cennik"><h2>Cennik</h2><p className="hint">Prosty plan, bez niespodzianek.</p><div className="plans">
-        <div className="card plan"><h2>Free</h2><div className="pr">0 zł</div><ul><li>Do {FREE} aktywnych uczniów</li><li>Wszystkie podstawowe funkcje</li><li>Panel ucznia dla Twoich uczniów</li></ul><a className="btn" href="/rejestracja">Zacznij bezpłatnie</a></div>
+        <div className="card plan"><h2>Free</h2><div className="pr">0 zł</div><ul><li>Do {FREE} aktywnych uczniów</li><li>Wszystkie podstawowe funkcje</li><li>Panel ucznia dla Twoich uczniów</li><li>Motywy kolorystyczne</li></ul><a className="btn" href="/rejestracja">Zacznij bezpłatnie</a></div>
         <div className="card plan cur"><h2>Pro <span className="tag ac">Polecany</span></h2><div className="pr">{pln(PRO_PLN).replace(",00", "")} <span className="hint" style={{ fontSize: 14, fontWeight: 400 }}>/ miesiąc</span></div><ul>{proList.map((x) => <li key={x}>{x}</li>)}</ul><a className="btn p" href="/rejestracja">Zacznij i przetestuj Pro</a></div>
       </div><p className="hint">Płatność za Pro jest na razie symulowana – nic nie jest pobierane.</p></section>
       <section className="sec"><Calculator /></section>

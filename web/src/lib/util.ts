@@ -2,7 +2,7 @@
 
 export type Role = "tutor" | "student";
 export type Settings = {
-  theme?: "light" | "dark" | "pink" | "green";
+  theme?: "light" | "auto" | "dark" | "graphite" | "blue" | "green" | "pink" | "orange" | "purple";
   dur?: number; time?: string; rate?: number; wk?: "mon" | "sun"; late?: boolean; goal?: number;
   tpl?: { n: string; t: string }[]; onbBilling?: boolean; welcomeSkipped?: boolean;
 };

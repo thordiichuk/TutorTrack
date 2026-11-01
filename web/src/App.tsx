@@ -7,6 +7,7 @@ import { useAuth, TutorProvider } from "./state";
 import { StudentPanel } from "./student/Panel";
 import { AdminPanel } from "./admin/AdminPanel";
 import { ModalHost } from "./ui/overlay";
+import { useApplyTheme } from "./ui/themes";
 
 const TITLES: Record<string, string> = {
   "/": "TutorTrack – dziennik korepetytora", "/uczen": "TutorTrack – dla ucznia", "/rejestracja": "Załóż konto – TutorTrack", "/logowanie": "Zaloguj się – TutorTrack",
@@ -27,14 +28,14 @@ function Routes({ path }: { path: string }) {
   useLinkInterception();
   const { user, loading, demo } = useAuth();
 
-  // page-level body state: demo grayscale and Pro colour themes
+  // page-level body state: demo grayscale and the user's colour theme inside the panels
+  const inApp = path.startsWith("/aplikacja");
+  const inPanel = inApp || path === "/uczen/panel" || path === "/admin";
+  useApplyTheme(inPanel && user && !demo ? user.settings.theme || "light" : "");
   useEffect(() => {
-    const inApp = path.startsWith("/aplikacja");
     document.body.classList.toggle("demo", demo && inApp);
-    const th = inApp && !demo && user?.plan === "pro" && user.settings.theme && user.settings.theme !== "light" ? user.settings.theme : "";
-    if (th) document.body.dataset.th = th; else delete document.body.dataset.th;
     if (TITLES[path]) document.title = TITLES[path];
-  }, [path, demo, user]);
+  }, [path, demo, inApp]);
   useEffect(() => { if (!location.hash) window.scrollTo(0, 0); }, [path]);
 
   if (loading) return null;
