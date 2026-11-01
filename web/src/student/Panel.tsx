@@ -130,7 +130,7 @@ export function StudentPanel() {
   }
 
   return <>
-    <header className="ph"><div className="pi phi"><a className="logo" href="/uczen" aria-label="TutorTrack – strona dla ucznia"><i><Logo /></i></a><b>Panel ucznia</b>
+    <header className="ph"><div className="pi phi"><a className="logo" href="/uczen"><i><Logo /></i>TutorTrack</a><span className="hint">Panel ucznia</span>
       <span className="hint" style={{ marginLeft: "auto", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{user!.name}</span><button className="btn s" onClick={out}>Wyloguj</button></div></header>
     <div className="pi">
       <nav className="utabs" aria-label="Sekcje panelu ucznia">{TABS.map((x) => <button key={x[0]} className={"btn s" + (tab === x[0] ? " p" : "")} aria-current={tab === x[0] ? "page" : undefined} onClick={() => { setTab(x[0]); window.scrollTo(0, 0); }}>{x[1]}{x[0] === "hw" && nT > 0 && <> <span className="tag am">{nT}</span></>}</button>)}</nav>

@@ -46,7 +46,7 @@ export function PubHeader({ aud }: { aud: Aud }) {
   }
   return (
     <header className="ph"><div className="pi phi">
-      <a className="logo" href={home} aria-label="TutorTrack"><i><Logo /></i></a>
+      <a className="logo" href={home}><i><Logo /></i>TutorTrack</a>
       <nav className={"pn" + (open ? " open" : "")} id="pn" aria-label="Nawigacja główna">
         {links.map(([id, t]) => <button key={id} className={"lk" + (on === id ? " on" : "")} aria-current={on === id ? "true" : undefined} onClick={() => { setOpen(false); scrollToId(id, home); }}>{t}</button>)}
         <span className="mo">{cta}</span>
