@@ -476,15 +476,16 @@ function go(x){var t="#/aplikacja/"+x;ignore=location.hash!==t;location.hash=t;r
 window.addEventListener("hashchange",function(){if(ignore){ignore=false;return}route()});
 function route(){ob=0;
  var p=location.hash.replace(/^#\/?/,"").split("/");closeModal(true);
- if(p[0]==="uczen"&&p[1]==="panel"){stuPanel();return}
+ if(p[0]==="uczen"&&p[1]==="panel"){if(spIn())stuPanel();else stuAuth("logowanie",true);return}
+ if(p[0]==="uczen"&&(p[1]==="rejestracja"||p[1]==="logowanie")){if(spIn()){location.hash="#/uczen/panel";return}stuAuth(p[1]);return}
  if(p[0]==="aplikacja"){
   if(!logged()){noticeFlag=true;pub("logowanie");return}
   view=p[1]&&TITLES[p[1]]?p[1]:"dash";$("pub").hidden=true;$("appw").hidden=false;$("tabs").hidden=false;render();window.scrollTo(0,0)
  }else pub(p[0])
 }
 function pubHead(){
- var l=logged(),su=curPage==="uczen",lk=(su?[["korzysci","Korzyści"],["jak","Jak to działa"],["pytania-u","Pytania"]]:[["funkcje","Funkcje"],["kroki","Pierwsze kroki"],["cennik","Cennik"]]).map(function(x){return '<button class="lk" data-sc="'+x[0]+'">'+x[1]+'</button>'}).join("");
- var cta=su?'<a class="btn" href="#/">Jestem korepetytorem</a><a class="btn p" href="#/uczen/panel">Zaloguj się</a>':l?'<a class="btn p" href="#/aplikacja/dash">Przejdź do panelu</a>':'<a class="btn" href="#/logowanie">Zaloguj się</a><a class="btn p" href="#/rejestracja">Zacznij bezpłatnie</a>';
+ var l=logged(),su=curPage.indexOf("uczen")===0,lk=(su?[["korzysci","Korzyści"],["jak","Jak to działa"],["pytania-u","Pytania"]]:[["funkcje","Funkcje"],["kroki","Pierwsze kroki"],["cennik","Cennik"]]).map(function(x){return '<button class="lk" data-sc="'+x[0]+'">'+x[1]+'</button>'}).join("");
+ var cta=su?'<a class="btn" href="#/">Jestem korepetytorem</a>'+(spIn()?'<a class="btn p" href="#/uczen/panel">Mój panel</a>':'<a class="btn" href="#/uczen/logowanie">Zaloguj się</a><a class="btn p" href="#/uczen/rejestracja">Zarejestruj się</a>'):l?'<a class="btn p" href="#/aplikacja/dash">Przejdź do panelu</a>':'<a class="btn" href="#/logowanie">Zaloguj się</a><a class="btn p" href="#/rejestracja">Zacznij bezpłatnie</a>';
  return '<header class="ph"><div class="pi phi"><a class="logo" href="#/" aria-label="TutorTrack"><i>'+LOGO+'</i></a><nav class="pn" id="pn" aria-label="Nawigacja główna">'+lk+'<span class="mo">'+cta+'</span></nav><div class="de">'+cta+'</div><button class="btn s mt" id="mt" aria-expanded="false" aria-controls="pn" aria-label="Menu">'+ic("menu")+'</button></div></header>'
 }
 function pubFoot(){return '<footer class="pi pf"><span>© '+new Date().getFullYear()+' TutorTrack</span><a href="#/regulamin">Regulamin</a><a href="#/prywatnosc">Polityka prywatności</a></footer>'}
@@ -564,7 +565,7 @@ function vWelcome(){
 }
 document.addEventListener("click",function(e){
  var s=e.target.closest("[data-sc]");
- if(s){var pn=$("pn");if(pn)pn.classList.remove("open");var t=$(s.dataset.sc);if(t&&(curPage===""||curPage==="uczen"))t.scrollIntoView({behavior:"smooth"});else{pendingSc=s.dataset.sc;location.hash="#/"}return}
+ if(s){var pn=$("pn");if(pn)pn.classList.remove("open");var t=$(s.dataset.sc);if(t&&(curPage===""||curPage==="uczen"))t.scrollIntoView({behavior:"smooth"});else{pendingSc=s.dataset.sc;location.hash=curPage.indexOf("uczen")===0?"#/uczen":"#/"}return}
  var m=e.target.closest("#mt");if(m){var o=$("pn").classList.toggle("open");m.setAttribute("aria-expanded",o);return}
  var b=e.target.closest("[data-a]");if(!b)return;var a=b.dataset.a;
  if(a==="logout"){var wg=sg()==="g";confirmBox(wg?"Wyjść z trybu demo?":"Wylogować się?",wg?"Dane przykładowe nie są zapisywane.":"Twoje dane zostaną w tej przeglądarce. Wrócisz do nich po ponownym zalogowaniu.",wg?"Wyjdź":"Wyloguj się",function(){ss(null);if(wg)load();if(PR){PR.logged=false;savePr()}toast("Wylogowano.");location.hash="#/"})}
@@ -620,7 +621,7 @@ function demo(i){
 function audSw(s){return '<nav class="aud" aria-label="Wersja strony"><a href="#/"'+(s?'':' aria-current="page"')+'>Dla korepetytora</a><a href="#/uczen"'+(s?' aria-current="page"':'')+'>Dla ucznia</a></nav>'}
 function vStudentHome(){
  var W=[["pon.","16:00","Matematyka","Ewa M.","note"],["śr.","18:00","Angielski","Tomasz L.","hw"],["czw.","17:00","Fizyka","Piotr Z.",""],["sob.","10:00","Matematyka","Ewa M.",""]];
- var h='<div class="pi"><section class="hero"><div>'+audSw(1)+'<h1>Wszystkie korepetycje w jednym planie</h1><p>Własny grafik, lekcje u wszystkich korepetytorów, notatki po zajęciach i prace domowe – w jednym miejscu.</p><div class="btns"><a class="btn p" href="#/uczen/panel">Otwórz panel ucznia</a><button class="btn" data-sc="jak">Zobacz, jak to działa</button></div><p class="hint" style="margin-top:12px">Wszystkie funkcje dla ucznia są bezpłatne. Wystarczy kod od korepetytora i konto claude.ai.</p></div>';
+ var h='<div class="pi"><section class="hero"><div>'+audSw(1)+'<h1>Wszystkie korepetycje w jednym planie</h1><p>Własny grafik, lekcje u wszystkich korepetytorów, notatki po zajęciach i prace domowe – w jednym miejscu.</p><div class="btns"><a class="btn p" href="#/uczen/rejestracja">Zarejestruj się</a><button class="btn" data-sc="jak">Zobacz, jak to działa</button></div><p class="hint" style="margin-top:12px">Wszystkie funkcje dla ucznia są bezpłatne. Masz już konto? <a href="#/uczen/logowanie">Zaloguj się</a></p></div>';
  h+='<div class="card" role="img" aria-label="Przykładowy podgląd planu ucznia"><div class="hint" style="margin-bottom:8px">Przykładowy plan ucznia · ten tydzień</div><div class="mk"><div class="card stat"><div class="l">Lekcje w miesiącu</div><div class="v">9</div></div><div class="card stat"><div class="l">Godziny</div><div class="v">8,5 h</div></div><div class="card stat"><div class="l">Zadania</div><div class="v am">2</div></div></div>';
  W.forEach(function(r){h+='<div class="row"><div class="m"><b>'+r[0]+' '+r[1]+' · '+r[2]+'</b><span>Korepetytor: '+r[3]+'</span></div>'+(r[4]==="note"?'<span class="tag gr">Nowa notatka</span>':r[4]==="hw"?'<span class="tag am">Zadanie do czw.</span>':'<span class="tag ac">Zaplanowana</span>')+'</div>'});
  h+='</div></section>';
@@ -628,7 +629,7 @@ function vStudentHome(){
  h+='<section class="sec" id="jak"><h2>Jak to działa</h2><p class="hint">Trzy kroki do uporządkowanej nauki.</p><div class="grid g3">'+[["1. Ułóż swój grafik","Dodaj szkołę i stałe zajęcia, żeby widzieć wolne terminy."],["2. Wpisz kod od korepetytora","Lekcje, notatki i zadania same trafiają do Twojego planu."],["3. Notatka i praca domowa po lekcji","Korepetytor przesyła podsumowanie i zadanie z terminem."]].map(function(x,i){return '<div class="card rv"><h3>'+x[0]+'</h3><p>'+x[1]+'</p>'+studentDemo(i)+'</div>'}).join("")+'</div></section>';
  var q=[["Czy panel ucznia jest płatny?","Nie. Wszystkie funkcje dla ucznia są bezpłatne."],["Jak połączyć się z korepetytorem?","Korepetytor tworzy w TutorTrack kod dostępu. Wpisujesz go w panelu ucznia (zakładka Korepetytorzy) – lekcje, notatki i prace domowe pojawiają się automatycznie i aktualizują po każdej zmianie."],["Czy mogę mieć kilku korepetytorów?","Tak. Możesz dodać kilka kodów, a lekcje u korepetytorów spoza TutorTrack wpisać do własnego grafiku."],["Kto widzi moje lekcje i notatki?","Dane od korepetytora są zaszyfrowane kodem dostępu – odczyta je tylko ktoś, kto zna kod. Twój grafik i odhaczone zadania są zapisane tylko w Twojej przeglądarce."],["Czego potrzebuję?","Konta claude.ai i kodu od korepetytora. Bez kodu możesz korzystać z własnego grafiku."]];
  h+='<section class="sec" id="pytania-u"><h2>Pytania</h2>'+q.map(function(x){return '<details><summary>'+x[0]+'</summary><p>'+x[1]+'</p></details>'}).join("")+'</section>';
- h+='<section class="cta rv"><h2>Uczysz się z korepetytorem?</h2><p>Poproś korepetytora o kod dostępu – plan, notatki i prace domowe będą w jednym miejscu.</p><a class="btn" href="#/uczen/panel">Otwórz panel ucznia</a></section></div>';
+ h+='<section class="cta rv"><h2>Uczysz się z korepetytorem?</h2><p>Poproś korepetytora o kod dostępu – plan, notatki i prace domowe będą w jednym miejscu.</p><a class="btn" href="#/uczen/rejestracja">Zarejestruj się</a></section></div>';
  return h
 }
 function studentDemo(i){
@@ -843,12 +844,44 @@ function uData(did){return UD[did]||U.cache[did]||null}
 function uLessons(){var a=[];U.codes.forEach(function(c){var d=uData(c.did);if(!d||!Array.isArray(d.ls))return;d.ls.forEach(function(l){if(!l||typeof l.d!=="string"||typeof l.tm!=="string")return;a.push({k:c.did+":"+l.i,did:c.did,t:String(d.t||"Korepetytor"),d:l.d,tm:l.tm,m:+l.m||0,sub:String(l.sub||""),top:String(l.top||""),st:l.st,n:String(l.n||""),hw:String(l.hw||""),hd:String(l.hd||""),a:+l.a||0,p:!!l.p})})});return a}
 function uFind(k){return uLessons().filter(function(l){return l.k===k})[0]}
 function fmtH(min){return (min/60).toLocaleString("pl-PL",{maximumFractionDigits:1})+" h"}
+/* Konto ucznia (symulacja, zapis w tej przeglądarce) */
+var SPK="tutortrack-student-profile-v1",SP=null;
+function spLoad(){try{SP=JSON.parse(localStorage.getItem(SPK))}catch(e){SP=null}}
+function spSave(){try{if(SP)localStorage.setItem(SPK,JSON.stringify(SP));else localStorage.removeItem(SPK)}catch(e){}}
+function spIn(){return !!(SP&&SP.logged)}
+function pwOk(p){return p.length>=8&&/\p{L}/u.test(p)&&/\d/.test(p)}
+function stuAuth(kind,notice){document.body.classList.remove("demo");document.body.removeAttribute("data-th");curPage="uczen-"+kind;
+ $("appw").hidden=true;$("tabs").hidden=true;$("pub").hidden=false;var h;
+ if(kind==="rejestracja"){document.title="TutorTrack – rejestracja ucznia";
+  h='<div class="au"><h1>Załóż konto ucznia</h1><p class="hint">Bezpłatnie. Konto i Twój grafik zapisują się w tej przeglądarce. Aby pobierać dane od korepetytora, musisz też być zalogowany do claude.ai. Nie wpisuj prawdziwych danych osobowych.</p><form id="srf" novalidate>'+field("un","Imię *","","text",'autocomplete="given-name"')+field("ue","Adres e-mail *","","email",'autocomplete="email"')+field("up","Hasło * (min. 8 znaków, litera i cyfra)","","password",'autocomplete="new-password"')+field("uq","Powtórz hasło *","","password",'autocomplete="new-password"')+field("uk","Kod od korepetytora (opcjonalnie)","","text",'placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false"')+'<div class="chk"><input type="checkbox" id="ut" aria-describedby="e_ut"><label for="ut">Akceptuję <a href="#/regulamin" target="_blank" rel="noopener">regulamin</a> *</label></div><div class="er" id="e_ut" role="alert" style="margin-bottom:12px;color:var(--rd);font-size:12px"></div><button class="btn p" type="submit" style="width:100%;justify-content:center">Zarejestruj się</button></form><p class="hint" style="text-align:center">Masz już konto? <a href="#/uczen/logowanie">Zaloguj się</a></p><p class="hint" style="text-align:center">Jesteś korepetytorem? <a href="#/rejestracja">Załóż konto korepetytora</a></p></div>'}
+ else{document.title="TutorTrack – logowanie ucznia";
+  h='<div class="au"><h1>Zaloguj się jako uczeń</h1>'+(notice?'<div class="nt" role="alert">Aby wejść do panelu ucznia, zaloguj się.</div>':"")+'<form id="slf" novalidate><div class="lerr" id="ulerr" role="alert"></div>'+field("ule","Adres e-mail","","email",'autocomplete="email"')+field("ulp","Hasło","","password",'autocomplete="current-password"')+'<button class="btn p" type="submit" style="width:100%;justify-content:center;margin-top:10px">Zaloguj się</button></form><p style="text-align:center"><button class="lk" data-u="forgot" type="button">Nie pamiętasz hasła?</button></p><p class="hint" style="text-align:center">Nie masz konta? <a href="#/uczen/rejestracja">Zarejestruj się</a></p></div>'}
+ $("pub").innerHTML=pubHead()+h+pubFoot();window.scrollTo(0,0);
+ var f=$("srf")||$("slf");f.onsubmit=kind==="rejestracja"?stuReg:stuLog;var fi=$(kind==="rejestracja"?"un":"ule");if(fi)fi.focus()}
+function stuReg(e){e.preventDefault();
+ var n=v("un").trim(),em=v("ue").trim().toLowerCase(),pw=v("up"),pw2=v("uq"),kc=v("uk").trim(),first=null;
+ var R=[["un",!n,"Podaj imię."],["ue",!/^\S+@\S+\.\S+$/.test(em),"Podaj poprawny adres e-mail."],["up",!pwOk(pw),pw.length<8?"Hasło musi mieć co najmniej 8 znaków.":"Hasło musi zawierać literę i cyfrę."],["uq",pw!==pw2||!pw2,pw2?"Hasła muszą być identyczne.":"Powtórz hasło."],["uk",kc&&!okCode(kc),"Kod ma 16 znaków (litery i cyfry). Możesz go też dodać później."],["ut",!$("ut").checked,"Zaakceptuj regulamin, aby kontynuować."]];
+ R.forEach(function(r){err(r[0],r[1]?r[2]:"");if(r[1]&&!first)first=r[0]});if(first){$(first).focus();return}
+ if(SP&&SP.email===em){err("ue","Konto ucznia z tym adresem już istnieje – zaloguj się.");$("ue").focus();return}
+ var mk=async function(){var old=SP;SP={name:n,email:em,pw:hs("u|"+em+pw),logged:true};spSave();
+  if(old){Object.keys(uSubs).forEach(uUnsub);U={codes:[],ev:[],done:{},cache:{}};uSave()}
+  if(kc){var code=fmtCode(kc),did=await codeId(code);if(!U.codes.some(function(c){return c.did===did})){U.codes.push({code:code,did:did});uSave()}uv.tab="plan"}
+  toast("Konto ucznia utworzone.");location.hash="#/uczen/panel"};
+ if(SP)confirmBox("Zastąpić konto ucznia?","W tej przeglądarce jest już konto ucznia "+esc(SP.email)+". Nowa rejestracja je zastąpi i usunie zapisany tu grafik oraz kody.","Zastąp konto",mk,true);else mk()}
+function stuLog(e){e.preventDefault();var em=v("ule").trim().toLowerCase(),pw=v("ulp"),bad=0;
+ bad|=err("ule",em?"":"Podaj adres e-mail.");bad|=err("ulp",pw?"":"Podaj hasło.");if(bad)return;
+ if(!SP||SP.email!==em||SP.pw!==hs("u|"+em+pw)){$("ulerr").textContent="Nieprawidłowy e-mail lub hasło. Konto ucznia istnieje tylko w przeglądarce, w której zostało założone.";$("ulp").focus();return}
+ SP.logged=true;spSave();toast("Zalogowano.");location.hash="#/uczen/panel"}
+document.addEventListener("click",function(e){var b=e.target.closest("[data-u]");if(!b)return;var a=b.dataset.u;
+ if(a==="out")confirmBox("Wylogować się?","Twój grafik i kody zostaną w tej przeglądarce. Wrócisz do nich po ponownym zalogowaniu.","Wyloguj się",function(){if(SP){SP.logged=false;spSave()}toast("Wylogowano.");location.hash="#/uczen"});
+ else if(a==="forgot"){modal('<h2>Ustaw nowe hasło</h2><p class="hint">Symulacja: nie wysyłamy e-maila. Podaj adres konta ucznia i ustaw nowe hasło w tej przeglądarce.</p>'+field("ufe","Adres e-mail","","email")+field("ufp","Nowe hasło (min. 8 znaków, litera i cyfra)","","password")+'<div class="mf"><button class="btn" data-m="close">Anuluj</button><button class="btn p" id="ufs">Zapisz hasło</button></div>');
+  $("ufs").onclick=function(){var em=v("ufe").trim().toLowerCase(),pw=v("ufp"),bad=0;bad|=err("ufe",!SP||SP.email!==em?"Nie znaleziono konta ucznia o tym adresie w tej przeglądarce.":"");bad|=err("ufp",pwOk(pw)?"":"Hasło musi mieć co najmniej 8 znaków oraz literę i cyfrę.");if(bad)return;SP.pw=hs("u|"+em+pw);spSave();closeModal();toast("Hasło zmienione. Zaloguj się.")}}});
 function stuPanel(){document.body.classList.remove("demo");document.body.removeAttribute("data-th");curPage="panel";
  $("appw").hidden=true;$("tabs").hidden=true;$("pub").hidden=false;document.title="TutorTrack – panel ucznia";
  if(!U)uLoad();uSubAll();uRender();window.scrollTo(0,0)}
 function uRender(){if(curPage!=="panel")return;var a=document.activeElement,keep=a&&a.id==="ucode"?a.value:null;
  var T=[["plan","Plan"],["graf","Mój grafik"],["hw","Zadania"],["sum","Podsumowanie"],["kor","Korepetytorzy"]],nT=uLessons().filter(function(l){return l.hw&&!U.done[l.k]}).length;
- var h='<header class="ph"><div class="pi phi"><a class="logo" href="#/uczen" aria-label="TutorTrack – strona dla ucznia"><i>'+LOGO+'</i></a><b>Panel ucznia</b><a class="btn s" href="#/uczen" style="margin-left:auto">O panelu</a></div></header><div class="pi"><nav class="utabs" aria-label="Sekcje panelu ucznia">'+T.map(function(x){return '<button class="btn s'+(uv.tab===x[0]?" p":"")+'" data-u="tab" data-t="'+x[0]+'"'+(uv.tab===x[0]?' aria-current="page"':"")+'>'+x[1]+(x[0]==="hw"&&nT?' <span class="tag am">'+nT+'</span>':"")+'</button>'}).join("")+'</nav>';
+ var h='<header class="ph"><div class="pi phi"><a class="logo" href="#/uczen" aria-label="TutorTrack – strona dla ucznia"><i>'+LOGO+'</i></a><b>Panel ucznia</b><span class="hint" style="margin-left:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0">'+esc(SP&&SP.name||"")+'</span><button class="btn s" data-u="out">Wyloguj</button></div></header><div class="pi"><nav class="utabs" aria-label="Sekcje panelu ucznia">'+T.map(function(x){return '<button class="btn s'+(uv.tab===x[0]?" p":"")+'" data-u="tab" data-t="'+x[0]+'"'+(uv.tab===x[0]?' aria-current="page"':"")+'>'+x[1]+(x[0]==="hw"&&nT?' <span class="tag am">'+nT+'</span>':"")+'</button>'}).join("")+'</nav>';
  if(DBX.st==="off"&&U.codes.length)h+='<div class="nt">Brak połączenia z bazą danych – widzisz dane z ostatniej wizyty. Otwórz panel na claude.ai po zalogowaniu, aby pobrać aktualne.</div>';
  h+='<main style="padding-bottom:48px">'+({plan:uPlan,graf:uGraf,hw:uHw,sum:uSum,kor:uKor}[uv.tab]||uPlan)()+'</main></div>';
  $("pub").innerHTML=h;
@@ -931,7 +964,7 @@ document.addEventListener("keydown",function(e){if(e.key==="Enter"&&e.target.id=
 function amt(l){return l.status==="cancelled"?(l.fee||0):l.amount}
 function billable(l){return l.status==="done"||(l.status==="cancelled"&&l.fee>0)}
 function cancelFeeOld(r){var c=S.cancel||{mode:"off",fixed:0};if(c.mode==="fixed")return Math.min(c.fixed||0,r.amount);if(c.mode==="percent"){var st=stu(r.sid);return Math.round(r.amount*((st&&st.cancelPct)||0)/100)}return 0}
-syLoad();uLoad();load();loadPr();if(sg()==="g")S=seed();migFee();purgeTrash();route();dbInit();
+syLoad();uLoad();spLoad();load();loadPr();if(sg()==="g")S=seed();migFee();purgeTrash();route();dbInit();
 </script>
 </body>
 </html>

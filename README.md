@@ -14,6 +14,7 @@ Wersja na żywo: https://claude.ai/artifact/TGfY4RMaMMiYRtFE3b8SaD
 - udostępnianie uczniowi panelu kodem dostępu.
 
 **Dla ucznia (wszystko bezpłatne)**
+- konto ucznia: rejestracja i logowanie (symulacja, zapis w przeglądarce),
 - plan tygodnia: lekcje od korepetytorów + własne zajęcia,
 - własny grafik (zajęcia co tydzień lub jednorazowe),
 - prace domowe z terminami i odhaczaniem,
