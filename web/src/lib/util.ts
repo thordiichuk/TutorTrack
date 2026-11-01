@@ -90,3 +90,5 @@ export function download(name: string, text: string, mime: string) {
 export async function copyText(t: string) {
   try { await navigator.clipboard.writeText(t); return true; } catch { return false; }
 }
+/** Polish plural for "lekcja": 1 lekcja, 2–4 lekcje, 5+ lekcji. */
+export function lekcje(n: number) { const d = n % 10, h = n % 100; return n + " " + (n === 1 ? "lekcja" : d >= 2 && d <= 4 && (h < 12 || h > 14) ? "lekcje" : "lekcji"); }

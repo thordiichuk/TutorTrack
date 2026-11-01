@@ -4,6 +4,7 @@ import { Empty, Ic } from "../lib/icons";
 import { navigate } from "../lib/router";
 import {
   amt, billable, cq, download, fd, fm, FREE, gStr, Lesson, MSHORT, pad, pd, pln, PRO_PLN, sortL, subjList, sumAmt, te, toG, ym, ymd, pwOk, copyText,
+  lekcje,
 } from "../lib/util";
 import { useAuth, useTutor } from "../state";
 import { errMsg, Field, useOverlay } from "../ui/overlay";
@@ -12,7 +13,16 @@ import { ThemePicker } from "../ui/themes";
 import { CancelRequestActions, LessonForm, ShareModal, StudentDetail, StudentForm, SummaryModal, summaryText } from "./Forms";
 
 /* ---------- small pieces ---------- */
-const MonthInput = ({ v, on }: { v: string; on: (m: string) => void }) => <input type="month" value={v} aria-label="Miesiąc" onChange={(e) => e.target.value && on(e.target.value)} />;
+/** Month switcher: ‹ Listopad 2026 › – always in Polish, independent of the browser language. */
+function MonthInput({ v, on }: { v: string; on: (m: string) => void }) {
+  const shift = (k: number) => { const [y, mo] = v.split("-").map(Number); on(ym(new Date(y, mo - 1 + k, 1))); };
+  const t = fm(v);
+  return <div className="mpick" role="group" aria-label="Miesiąc">
+    <button type="button" aria-label="Poprzedni miesiąc" onClick={() => shift(-1)}>‹</button>
+    <span aria-live="polite">{t.charAt(0).toUpperCase() + t.slice(1)}</span>
+    <button type="button" aria-label="Następny miesiąc" onClick={() => shift(1)}>›</button>
+  </div>;
+}
 const monthDone = (ls: Lesson[], m: string) => ls.filter((l) => billable(l) && l.date.slice(0, 7) === m);
 function BarList({ o, ff }: { o: Record<string, number>; ff: (n: number) => string }) {
   const e = Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, 8), mx = e.length ? e[0][1] : 1;
@@ -108,7 +118,7 @@ export function Students() {
         const nx = sortL(lessons.filter((l) => l.sid === s.id && l.status === "planned" && l.date >= ymd(new Date())), 1)[0];
         return <div className="card" key={s.id}>
           <div style={{ display: "flex", gap: 12, alignItems: "center" }}><div className="av">{s.name.charAt(0).toUpperCase()}</div><div style={{ minWidth: 0 }}><b>{s.name}</b><div className="hint">{s.subject} · {pln(s.rate)}/60 min</div></div></div>
-          <div style={{ margin: "12px 0", display: "flex", gap: 6, flexWrap: "wrap" }}><span className={"tag " + (s.active ? "gr" : "")}>{s.active ? "Aktywny" : "Zarchiwizowany"}</span><span className="tag">{ls.length} lekcji</span>{s.linked ? <span className="tag ac">Panel ucznia</span> : s.inviteCode ? <span className="tag">Kod wysłany</span> : null}{due > 0 && <span className="tag am">Do zapłaty: {pln(due)}</span>}</div>
+          <div style={{ margin: "12px 0", display: "flex", gap: 6, flexWrap: "wrap" }}><span className={"tag " + (s.active ? "gr" : "")}>{s.active ? "Aktywny" : "Zarchiwizowany"}</span><span className="tag">{lekcje(ls.length)}</span>{s.linked ? <span className="tag ac">Panel ucznia</span> : s.inviteCode ? <span className="tag">Kod wysłany</span> : null}{due > 0 && <span className="tag am">Do zapłaty: {pln(due)}</span>}</div>
           {!s.active && <div className="hint" style={{ marginBottom: 6 }}>Przywrócisz lub usuniesz ucznia w oknie Edytuj.</div>}<div className="hint" style={{ marginBottom: 10 }}>{nx ? "Następna lekcja: " + fd(nx.date) + ", " + nx.time : "Brak zaplanowanych lekcji"}</div>
           <div className="acts">
             <button className="btn s" onClick={() => modal(<StudentDetail id={s.id} />, true)}>Szczegóły</button>
@@ -218,17 +228,17 @@ export function Billing() {
         <button className="btn" onClick={() => { close(); if (!pro) { proUp("Eksport roku do CSV"); return; } const y = m.slice(0, 4); download("rozliczenie-" + y + ".csv", csvRows(lessons.filter((l) => billable(l) && l.date.slice(0, 4) === y), name), "text/csv"); }}>Rozliczenie całego roku – CSV {!pro && <span className="tag ac">Pro</span>}</button>
         <button className="btn" onClick={() => { close(); sumAll(); }}>Podsumowania dla wszystkich uczniów {!pro && <span className="tag ac">Pro</span>}</button>
       </div><div className="mf"><button className="btn" onClick={close}>Zamknij</button></div></>)}>Eksport</button></div>
-    <div className="grid g4" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
+    <div className="grid g4 bst" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
       <div className="card stat"><div className="l">Należności</div><div className="v">{pln(tot)}</div></div>
       <div className="card stat"><div className="l">Opłacone</div><div className="v gr">{pln(paid)}</div></div>
       <div className="card stat"><div className="l">Pozostało do zapłaty</div><div className="v am">{pln(tot - paid)}</div></div>
     </div>
-    {noFee > 0 && <div className="nt">Odwołane lekcje bez naliczonej opłaty w tym miesiącu: {noFee}. Opłatę za odwołanie ustawisz w danych ucznia (Uczniowie → Edytuj).</div>}
+    {noFee > 0 && <div className="nt" style={{ marginTop: 14 }}>Odwołane lekcje bez naliczonej opłaty w tym miesiącu: {noFee}. Opłatę za odwołanie ustawisz w danych ucznia (Uczniowie → Edytuj).</div>}
     <p className="hint">Podsumowania dotyczą dat lekcji, a nie dat otrzymania przelewów. To prosty dziennik rozliczeń – nie system księgowy ani narzędzie do faktur.</p>
     {!ids.length ? <div className="card"><Empty icon="wallet" title="Brak przeprowadzonych lekcji" sub="W tym miesiącu nie ma lekcji do rozliczenia." /></div> : <div className="grid">{ids.map((id) => {
       const ls = done.filter((l) => l.sid === id), t = sumAmt(ls, () => true), p = sumAmt(ls, (l) => l.paid), un = ls.filter((l) => !l.paid), o = ui.open[id], due = t - p;
       return <div className="card" key={id}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}><b>{name(id) || "?"}</b><span className="tag">{ls.length} lekcji</span></div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}><b>{name(id) || "?"}</b><span className="tag">{lekcje(ls.length)}</span></div>
         <div style={{ display: "flex", gap: 18, flexWrap: "wrap", margin: "12px 0", fontSize: 13, color: "var(--mu)" }}><span>Należność<br /><b style={{ fontSize: 15, color: "var(--tx)" }}>{pln(t)}</b></span><span>Opłacone<br /><b style={{ fontSize: 15, color: "var(--gr)" }}>{pln(p)}</b></span><span>Do zapłaty<br /><b style={{ fontSize: 15, color: due ? "var(--am)" : "var(--tx)" }}>{pln(due)}</b></span></div>
         <div className="acts">{un.length ? <button className="btn s" aria-expanded={!!o} onClick={() => setUi((u) => ({ ...u, open: { ...u.open, [id]: !u.open[id] } }))}>{o ? "Zwiń" : "Nieopłacone (" + un.length + ")"}</button> : <span className="tag gr">Rozliczone</span>}<button className="btn s" onClick={() => modal(<SummaryModal id={id} />)}>Podsumowanie</button></div>
         {o && un.length > 0 && <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--bd)" }}>
@@ -250,8 +260,8 @@ function RevenueChart() {
   if (user?.plan !== "pro") return <div className="card" style={{ marginTop: 16 }}><h2>Przychód z 6 miesięcy <span className="tag ac">Pro</span></h2><p className="hint">Zobacz opłacone i zaległe kwoty miesiąc po miesiącu.</p><button className="btn p s" onClick={() => proUp("Wykres przychodu")}>Odblokuj w Pro</button></div>;
   const [y, mo] = ui.bm.split("-").map(Number); let mx = 1;
   const M = Array.from({ length: 6 }, (_, k) => { const d = new Date(y, mo - 1 - (5 - k), 1), key = ym(d), ls = lessons.filter((l) => billable(l) && l.date.slice(0, 7) === key), p = sumAmt(ls, (l) => l.paid), du = sumAmt(ls, (l) => !l.paid); mx = Math.max(mx, p + du); return { l: MSHORT[d.getMonth()], p, d: du }; });
-  return <div className="card" style={{ marginTop: 16 }}><h2>Przychód z 6 miesięcy</h2><div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
-    {M.map((x, i) => <div key={i} style={{ flex: 1, minWidth: 0, textAlign: "center", fontSize: 12 }}><div style={{ height: 110, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}><div style={{ background: "var(--am)", height: Math.round(x.d / mx * 110), borderRadius: "4px 4px 0 0" }} /><div style={{ background: "var(--gr)", height: Math.round(x.p / mx * 110) }} /></div>{x.l}<br /><b>{pln(x.p + x.d).replace(",00", "")}</b></div>)}
+  return <div className="card" style={{ marginTop: 16 }}><h2>Przychód z 6 miesięcy <span className="hint" style={{ fontWeight: 400, fontSize: 13 }}>(zł)</span></h2><div className="rchart">
+    {M.map((x, i) => <div key={i} className={"rc" + (i === 5 ? " cur" : "")}><div className="rcb"><div className="rcs">{x.d > 0 && <i style={{ background: "var(--am)", height: Math.max(3, Math.round(x.d / mx * 110)) }} />}{x.p > 0 && <i style={{ background: "var(--gr)", height: Math.max(3, Math.round(x.p / mx * 110)) }} />}</div></div><span>{x.l}</span><b>{x.p + x.d ? Math.round((x.p + x.d) / 100).toLocaleString("pl-PL") : "–"}</b></div>)}
   </div><p className="hint">Zielony: opłacone, bursztynowy: zaległe. Dane według dat lekcji.</p></div>;
 }
 

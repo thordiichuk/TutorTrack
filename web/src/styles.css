@@ -205,3 +205,16 @@ body[data-th=purple]{--bg:#f7f5ff;--ac:#7c3aed;--ach:#6d28d9;--acl:#ede9fe;--bd:
 .emo{margin-right:8px;font-size:1.05em;line-height:1}.seg .emo{margin-right:6px}
 .seg{overflow-x:auto;scrollbar-width:none;max-width:100%}.seg::-webkit-scrollbar{display:none}.seg button{white-space:nowrap}
 @media(max-width:520px){.seg.sg{display:grid;grid-template-columns:1fr 1fr;width:100%;border-radius:14px;gap:4px}.seg.sg button{border-radius:10px;justify-content:center}}
+/* month switcher */
+.mpick{display:inline-flex;align-items:center;background:var(--card);border:1px solid var(--bd);border-radius:12px;height:42px;overflow:hidden}
+.mpick button{border:0;background:none;width:40px;height:100%;font-size:22px;line-height:1;color:var(--mu);cursor:pointer}.mpick button:hover{background:var(--hov,var(--acl));color:var(--ac)}
+.mpick span{min-width:130px;text-align:center;font-weight:600;font-size:15px;padding:0 4px;white-space:nowrap}
+/* billing summary on phones: one compact row per value */
+@media(max-width:560px){.g4.bst{grid-template-columns:1fr!important;gap:8px}.bst .stat{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px}.bst .stat .v{margin:0;font-size:20px;white-space:nowrap}.bst .stat .l{font-size:14px}}
+.acts{align-items:center}
+/* revenue chart */
+.rchart{display:flex;gap:8px;align-items:flex-end;margin-top:6px}
+.rc{flex:1;min-width:0;text-align:center;font-size:12px;color:var(--mu);display:flex;flex-direction:column;gap:2px}
+.rc b{color:var(--tx);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rc.cur span{color:var(--ac);font-weight:700}
+.rcb{height:110px;display:flex;justify-content:center;align-items:flex-end;background:var(--bg);border-radius:8px;margin-bottom:4px}
+.rcs{width:min(36px,70%);display:flex;flex-direction:column;justify-content:flex-end;border-radius:6px 6px 0 0;overflow:hidden}.rcs i{display:block}
