@@ -417,3 +417,11 @@ body[data-th=dark] .rqbox,body[data-th=graphite] .rqbox{background:var(--aml);bo
 .kplan h2{font-size:16px;margin:0 0 4px}
 .kpr{display:flex;align-items:center;gap:12px;width:100%;border:0;background:none;padding:8px 0;text-align:left;cursor:pointer;color:var(--tx);font:inherit}
 .kpb{width:6px;height:36px;border-radius:3px;flex:none}.kpt{font-size:15px}
+
+/* selected lesson + today's group */
+.lrow2.sel{background:var(--acl);box-shadow:inset 4px 0 0 var(--ac)}.lrow2.sel .lwho b{color:var(--ac)}
+.dgrp.today .dgl{border:2px solid var(--ac);box-shadow:0 0 0 4px var(--acl)}
+.dgrp.today .dgh b{font-size:17px}
+.tdtag{font-style:normal;font-size:11px;font-weight:700;color:#fff;background:var(--ac);border-radius:6px;padding:2px 8px;align-self:center}
+.dgrp.flash .dgl{animation:tflash 1.4s ease-out}
+@keyframes tflash{0%,30%{box-shadow:0 0 0 10px color-mix(in srgb,var(--ac) 35%,transparent)}100%{box-shadow:0 0 0 4px var(--acl)}}

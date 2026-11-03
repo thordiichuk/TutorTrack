@@ -166,10 +166,10 @@ function DayGroups({ list, dir }: { list: Lesson[]; dir: number }) {
   const ds = Object.keys(m).sort((a, b) => dir * a.localeCompare(b)), td = ymd(new Date());
   // the day closest to today (today itself if it has lessons)
   const target = ds.reduce((b, d) => (b === "" || Math.abs(pd(d).getTime() - pd(td).getTime()) < Math.abs(pd(b).getTime() - pd(td).getTime()) ? d : b), "");
-  return <><div className="days">{ds.map((d) => { const x = pd(d); const n = m[d].length; return <section className="dgrp" key={d} data-day={d}>
-    <div className={"dgh" + (d === td ? " td" : "")}><b>{dayTitle(d)}</b><span>{x.getDate()} {MLONG_G[x.getMonth()]}{x.getFullYear() !== new Date().getFullYear() ? " " + x.getFullYear() : ""} · {n} {n === 1 ? "lekcja" : n < 5 ? "lekcje" : "lekcji"}</span></div>
+  return <><div className="days">{ds.map((d) => { const x = pd(d); const n = m[d].length; return <section className={"dgrp" + (d === td ? " today" : "")} key={d} data-day={d}>
+    <div className={"dgh" + (d === td ? " td" : "")}><b>{dayTitle(d)}</b>{d === td && <i className="tdtag">dzisiaj</i>}<span>{x.getDate()} {MLONG_G[x.getMonth()]}{x.getFullYear() !== new Date().getFullYear() ? " " + x.getFullYear() : ""} · {n} {n === 1 ? "lekcja" : n < 5 ? "lekcje" : "lekcji"}</span></div>
     <div className="dgl">{m[d].sort((a, b) => a.time.localeCompare(b.time)).map((l) => <LessonItem key={l.id} l={l} nd />)}</div></section>; })}</div>
-    {target && <TodayJump day={target} has={target === td} />}</>;
+    {target && <TodayJump key={ds[0] + "|" + ds.length} day={target} has={target === td} />}</>;
 }
 const MLONG_G = ["stycznia", "lutego", "marca", "kwietnia", "maja", "czerwca", "lipca", "sierpnia", "września", "października", "listopada", "grudnia"];
 
@@ -187,7 +187,9 @@ function TodayJump({ day, has }: { day: string; has: boolean }) {
   if (!dir) return null;
   const go = () => {
     if (!has) { toast("Dziś nie ma zaplanowanych lekcji."); return; }
-    const el = document.querySelector<HTMLElement>(`[data-day="${day}"]`); if (!el) return; scrollTo({ top: el.getBoundingClientRect().top + scrollY - 80, behavior: "smooth" }); };
+    const el = document.querySelector<HTMLElement>(`[data-day="${day}"]`); if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); };
   return <button className="tjump" onClick={go} aria-label="Przejdź do dzisiaj"><span aria-hidden="true">{dir === "up" ? "↑" : "↓"}</span>Dziś</button>;
 }
 

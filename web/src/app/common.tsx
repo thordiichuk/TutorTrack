@@ -1,4 +1,4 @@
-import { createContext, Dispatch, ReactNode, SetStateAction, useContext } from "react";
+import { createContext, Dispatch, ReactNode, SetStateAction, useContext, useEffect } from "react";
 import { navigate } from "../lib/router";
 import { amt, billable, Lesson, MSHORT, overlap, pd, pln, PRO_PLN, FREE, Student, subjList, fd, ymd, addDays, ym, te, subjColor } from "../lib/util";
 import { useOverlay } from "../ui/overlay";
@@ -8,11 +8,11 @@ import { useTutor } from "../state";
 export type Ui = {
   q: string; sf: "active" | "arch" | "all"; so: "az" | "za" | "ln" | "new"; subj: string;
   lf: { m: "up" | "pay" | "past" | "all"; st: string; sb: string; mo: string; ls: string; ps: string; q: string; o: "desc" | "asc" };
-  month: string; bm: string; open: Record<string, boolean>; lv: "list" | "cal"; cm: string; cd: string; sr: string;
+  sel: string; month: string; bm: string; open: Record<string, boolean>; lv: "list" | "cal"; cm: string; cd: string; sr: string;
 };
 export const initialUi = (): Ui => ({
   q: "", sf: "active", so: "az", subj: "", lf: { m: "up", st: "", sb: "", mo: "", ls: "", ps: "", q: "", o: "desc" },
-  month: ym(new Date()), bm: ym(new Date()), open: {}, lv: "list", cm: ym(new Date()), cd: "", sr: "6",
+  sel: "", month: ym(new Date()), bm: ym(new Date()), open: {}, lv: "list", cm: ym(new Date()), cd: "", sr: "6",
 });
 export const UiCtx = createContext<[Ui, Dispatch<SetStateAction<Ui>>]>(null as any);
 export const useUi = () => useContext(UiCtx);
@@ -64,17 +64,27 @@ function lessonChip(l: Lesson, ov: boolean): [string, string] | null {
 /** Compact, tappable lesson row. Tapping opens the lesson window with all actions. */
 export function LessonItem({ l, nd, quick = true }: { l: Lesson; nd?: boolean; quick?: boolean }) {
   const { lessons, stu } = useData();
-  const { modal } = useOverlay();
+  const { modal, current } = useOverlay();
+  const [ui, setUi] = useUi();
   const s = stu(l.sid);
   const sub = l.subject || (s ? subjList(s)[0] : "");
   const ov = l.status !== "cancelled" && overlap(lessons, l.date, l.time, l.min, l.id).length > 0;
-  const open = () => modal(<LessonSheetLazy id={l.id} />);
+  const sel = ui.sel === l.id;
+  // the highlight lasts while the lesson window is open
+  useEffect(() => { if (sel && !current) { const t = setTimeout(() => setUi((u) => (u.sel === l.id ? { ...u, sel: "" } : u)), 600); return () => clearTimeout(t); } }, [sel, current]);
+  const open = (e?: { currentTarget: HTMLElement }) => {
+    setUi((u) => ({ ...u, sel: l.id }));
+    // on phones the window slides up from the bottom – move the chosen row above it
+    const el = e?.currentTarget;
+    if (el && innerWidth <= 600 && !el.closest(".modal")) { const top = el.getBoundingClientRect().top; if (top > 140) scrollBy({ top: top - 90, behavior: "smooth" }); }
+    modal(<LessonSheetLazy id={l.id} />);
+  };
   const d = pd(l.date);
   const chip = lessonChip(l, ov);
   const money = l.status === "cancelled" ? (l.fee > 0 ? pln(l.fee) : "–") : pln(l.amount);
   return (
-    <div role="button" tabIndex={0} className={"lrow2" + (ov ? " clash" : "") + (l.status === "cancelled" ? " cx" : "")} onClick={open}
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } }}>
+    <div role="button" tabIndex={0} aria-current={sel ? "true" : undefined} className={"lrow2" + (ov ? " clash" : "") + (l.status === "cancelled" ? " cx" : "") + (sel ? " sel" : "")} onClick={open}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(e); } }}>
       <span className="lbar" style={{ background: l.status === "cancelled" ? "var(--bd)" : subjColor(sub) }} />
       <span className="ltm">{nd ? <>{l.time}<small>{te(l.time, l.min)}</small></> : <>{d.getDate()} {MSHORT[d.getMonth()]}<small>{l.time}</small></>}</span>
       <span className="lwho"><b>{s ? s.name : "?"}</b><span>{[sub, l.topic || (l.status === "cancelled" ? "" : "bez tematu")].filter(Boolean).join(" · ")}{l.cr?.status === "pending" ? " · „" + l.cr.reason + "”" : ""}</span></span>
