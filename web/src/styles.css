@@ -465,3 +465,11 @@ body.stu .slogout{border-radius:18px;font-weight:800}
 .lfmenu button{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;padding:9px 10px;border-radius:8px;font:inherit;font-size:14px;color:var(--tx);cursor:pointer;text-align:left}
 .lfmenu button:hover,.lfmenu button.on{background:var(--acl)}.lfmenu button.on{font-weight:700}
 @media(max-width:860px){.lflags{margin-left:auto}.lflags~.mt{margin-left:8px}}
+/* billing: unpaid lessons nested under the student */
+.bexp{padding:10px 16px 14px 32px;background:var(--bg);border-top:1px solid var(--bd)}
+.bexp>.acts{margin-bottom:10px!important}
+.bexp .unr{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:9px 12px;margin-top:6px}
+.bexp .unr:first-of-type{border-top:1px solid var(--bd)}
+.bexp .unr .lwho b{font-size:14px}
+.brow+.brow{border-top:6px solid var(--bg)}
+@media(max-width:600px){.bexp{padding-left:16px}}
