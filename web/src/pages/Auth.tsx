@@ -5,7 +5,7 @@ import { emailOk, pwOk, User } from "../lib/util";
 import { useAuth } from "../state";
 import { errMsg, Field, useOverlay } from "../ui/overlay";
 import { PubPage } from "./Public";
-import { tr } from "../lib/i18n";
+import { LANG, tr } from "../lib/i18n";
 
 type Errs = Record<string, string>;
 const dest = (u: User) => (u.role === "tutor" ? "/aplikacja/dash" : "/uczen/panel");
@@ -132,7 +132,7 @@ function Forgot() {
   const [sent, setSent] = useState<null | { devLink?: string }>(null);
   async function send() {
     if (!emailOk(email.trim())) { setErr(tr("Podaj poprawny adres e-mail.")); return; }
-    try { setSent(await api("POST", "/api/auth/forgot", { email: email.trim() })); } catch (x) { setErr(errMsg(x)); }
+    try { setSent(await api("POST", "/api/auth/forgot", { email: email.trim(), lang: LANG })); } catch (x) { setErr(errMsg(x)); }
   }
   if (sent) return <><h2>{tr("Sprawdź skrzynkę")}</h2><p>{tr("Jeśli konto z adresem")}{" "}<b>{email.trim()}</b>{" "}{tr("istnieje, wysłaliśmy na nie link do ustawienia nowego hasła. Link jest ważny przez godzinę.")}</p>
     {sent.devLink && <p className="hint">{tr("Tryb deweloperski (brak skonfigurowanej poczty):")}{" "}<a href={sent.devLink.replace(/^https?:\/\/[^/]+/, "")} onClick={close}>{tr("otwórz link")}</a></p>}

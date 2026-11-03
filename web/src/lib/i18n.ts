@@ -11,7 +11,8 @@ const KEY = "tt_lang";
 function detect(): Lang {
   try { const s = localStorage.getItem(KEY); if (s === "pl" || s === "uk" || s === "en") return s; } catch { /* private mode */ }
   const n = (navigator.language || "pl").toLowerCase();
-  return n.startsWith("uk") || n.startsWith("ru") ? "uk" : n.startsWith("pl") ? "pl" : n.startsWith("en") ? "en" : "pl";
+  // Polish market: Polish by default, Ukrainian for Ukrainian/Russian browsers; English only when chosen
+  return n.startsWith("uk") || n.startsWith("ru") ? "uk" : "pl";
 }
 export const LANG: Lang = detect();
 const D: Record<string, string> = LANG === "uk" ? uk : LANG === "en" ? en : {};

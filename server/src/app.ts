@@ -256,15 +256,21 @@ export async function buildApp(opts: { logger?: boolean; authRateLimit?: number 
   app.get("/api/auth/me", async (req) => ({ user: await currentUser(req) }));
 
   app.post("/api/auth/forgot", authLimit, async (req) => {
-    const b = parse(z.object({ email: z.string().trim().toLowerCase().max(200) }), req.body);
+    const b = parse(z.object({ email: z.string().trim().toLowerCase().max(200), lang: z.enum(["pl", "uk", "en"]).optional() }), req.body);
     const u = (await q("SELECT * FROM users WHERE email=$1", [b.email]))[0];
     let devLink: string | undefined;
     if (u) {
       const token = newToken();
       await q("INSERT INTO password_resets(token_hash,user_id,expires_at) VALUES ($1,$2,now() + interval '1 hour')", [sha256(token), u.id]);
       const link = `${config.appUrl}/reset-hasla?token=${token}`;
-      const sent = await sendMail(u.email, "TutorTrack – ustaw nowe hasło",
-        `Cześć ${u.name}!\n\nAby ustawić nowe hasło do TutorTrack, otwórz link (ważny 1 godzinę):\n${link}\n\nJeśli to nie Ty, zignoruj tę wiadomość.`);
+      // the e-mail follows the language chosen in the account (or the one the page was shown in)
+      const lang = (u.settings?.lang || b.lang || "pl") as "pl" | "uk" | "en";
+      const M = {
+        pl: ["TutorTrack – ustaw nowe hasło", `Cześć ${u.name}!\n\nAby ustawić nowe hasło do TutorTrack, otwórz link (ważny 1 godzinę):\n${link}\n\nJeśli to nie Ty, zignoruj tę wiadomość.`],
+        uk: ["TutorTrack – встановіть новий пароль", `Привіт, ${u.name}!\n\nЩоб встановити новий пароль до TutorTrack, відкрийте посилання (дійсне 1 годину):\n${link}\n\nЯкщо це були не ви, просто проігноруйте цей лист.`],
+        en: ["TutorTrack – set a new password", `Hi ${u.name}!\n\nTo set a new TutorTrack password, open this link (valid for 1 hour):\n${link}\n\nIf this wasn't you, just ignore this e-mail.`],
+      }[lang] || [];
+      const sent = await sendMail(u.email, M[0], M[1]);
       if (!sent && !config.prod) devLink = link;
     }
     return { ok: true, ...(devLink ? { devLink } : {}) };
