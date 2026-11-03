@@ -473,3 +473,8 @@ body.stu .slogout{border-radius:18px;font-weight:800}
 .bexp .unr .lwho b{font-size:14px}
 .brow+.brow{border-top:6px solid var(--bg)}
 @media(max-width:600px){.bexp{padding-left:16px}}
+.bexp{background:#ebebf1}
+.brow:has(.bexp)>.strow{background:#ebebf1}
+body[data-th=dark] .bexp,body[data-th=graphite] .bexp,body[data-th=dark] .brow:has(.bexp)>.strow,body[data-th=graphite] .brow:has(.bexp)>.strow{background:color-mix(in srgb,var(--bg) 60%,#000)}
+body[data-th] .bexp{background:color-mix(in srgb,var(--bg) 88%,var(--tx))}
+body[data-th] .brow:has(.bexp)>.strow{background:color-mix(in srgb,var(--bg) 88%,var(--tx))}
