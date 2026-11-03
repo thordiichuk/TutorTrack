@@ -441,3 +441,8 @@ body[data-th=dark] .slogout,body[data-th=graphite] .slogout{border-color:var(--b
 .printbox{display:none}
 @media print{body.printing2>*:not(.printbox){display:none!important}body.printing2 .printbox{display:block;font-family:system-ui,sans-serif;color:#000}body.printing2 .printbox pre{white-space:pre-wrap;font:inherit;font-size:14px}body.printing2 .printbox h1{font-size:18px}}
 .sumc{display:flex;flex-direction:column;gap:12px}
+
+body.stu .sgrp{border:0;border-radius:22px;box-shadow:0 4px 18px rgba(42,37,64,.07)}
+body[data-th=dark].stu .sgrp,body[data-th=graphite].stu .sgrp{box-shadow:none;border:1px solid var(--bd)}
+body.stu .sitem b{font-weight:800}body.stu .sic{border-radius:11px}body.stu .sav{border-radius:14px}
+body.stu .slogout{border-radius:18px;font-weight:800}

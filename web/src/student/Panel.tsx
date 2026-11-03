@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { ReactNode, useCallback, useEffect, useState } from "react";
 import { api } from "../lib/api";
 import { Empty, Ic, Logo } from "../lib/icons";
 import { addDays, CancelRequest, copyText, download, fd, fm, printText, subjColor, fdt, fmtH, MSHORT, pd, pln, te, WDL, WDSHORT, ym, ymd } from "../lib/util";
@@ -271,7 +271,7 @@ export function StudentPanel() {
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}><span className="hint" id="usr">{user!.name}</span>{action}</div>
         </header>
         {err && <p className="banner">{err} <button className="lk" onClick={load}>Spróbuj ponownie</button></p>}
-        <main className="content">{!d ? <p className="hint">Ładowanie…</p> : tab === "dash" ? Dash() : tab === "plan" ? Plan() : tab === "graf" ? Graf() : tab === "hw" ? Hw() : tab === "sum" ? Sum() : tab === "kor" ? <KorTab d={d} load={load} run={run} /> : <KontoTab out={out} d={d} load={load} />}</main>
+        <main className="content">{!d ? <p className="hint">Ładowanie…</p> : tab === "dash" ? Dash() : tab === "plan" ? Plan() : tab === "graf" ? Graf() : tab === "hw" ? Hw() : tab === "sum" ? Sum() : tab === "kor" ? <KorTab d={d} load={load} run={run} /> : <KontoTab out={out} d={d} load={load} go={go} />}</main>
       </div>
     </div>
     <nav className="tabs fit" aria-label="Menu">{TABS.filter((x) => MAIN.includes(x[0])).map((x) => <button key={x[0]} className={tab === x[0] ? "on" : ""} aria-current={tab === x[0] ? "page" : undefined} onClick={() => go(x[0])}><Ic n={x[2]} s={22} />{x[3]}{x[0] === "hw" && nT > 0 && <i className="tbadge">{nT}</i>}</button>)}
@@ -336,16 +336,17 @@ function KorTab({ d, load, run }: { d: Data; load: () => Promise<void>; run: (fn
       <p className="hint" style={{ marginTop: 12 }}>Twoje lekcje widzisz tylko Ty i korepetytor, który je prowadzi. Wszystkie funkcje dla ucznia są bezpłatne.</p></>;
   }
 
-function KontoTab({ out, d, load }: { out: () => void; d: Data; load: () => Promise<void> }) {
+function KontoTab({ out, d, load, go }: { out: () => void; d: Data; load: () => Promise<void>; go: (t: string) => void }) {
   const ov = useOverlay();
   const { user, logout } = useAuth();
-    const [name, setName] = useState(user!.name), [e, setE] = useState("");
-    const { updateMe, setUser } = useAuth();
-    return <div className="grid" style={{ gap: 16 }}>
-      <ThemePicker />
-      <div className="card"><h2>Profil</h2><Field id="sn2" label="Imię" value={name} onChange={setName} error={e} /><p className="hint" style={{ margin: "4px 0 16px" }}>E-mail: {user!.email}</p>
-        <button className="btn p" onClick={async () => { if (!name.trim()) { setE("Podaj imię."); return; } try { await updateMe({ name: name.trim() }); setE(""); ov.toast("Profil zapisany."); } catch (x) { ov.toast(errMsg(x)); } }}>Zapisz profil</button></div>
-      <div className="card"><h2>Kopia grafiku</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>Zapisz własny grafik (szkoła, zajęcia dodatkowe) do pliku albo wczytaj go z pliku. Lekcje od korepetytorów są zawsze na koncie i nie trzeba ich kopiować.</p>
+  const [name, setName] = useState(user!.name), [e, setE] = useState("");
+  const { updateMe, setUser } = useAuth();
+  const [sec, setSec] = useState("");
+  const SEC: Record<string, ReactNode> = {
+    profil: <div className="card"><h2>Profil</h2><Field id="sn2" label="Imię" value={name} onChange={setName} error={e} /><p className="hint" style={{ margin: "4px 0 16px" }}>E-mail: {user!.email}</p>
+        <button className="btn p" onClick={async () => { if (!name.trim()) { setE("Podaj imię."); return; } try { await updateMe({ name: name.trim() }); setE(""); ov.toast("Profil zapisany."); } catch (x) { ov.toast(errMsg(x)); } }}>Zapisz profil</button></div>,
+    wyglad: <ThemePicker />,
+    kopia: <div className="card"><h2>Kopia grafiku</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>Zapisz własny grafik (szkoła, zajęcia dodatkowe) do pliku albo wczytaj go z pliku. Lekcje od korepetytorów są zawsze na koncie i nie trzeba ich kopiować.</p>
         <div className="acts"><button className="btn" onClick={() => download("tutortrack-grafik-" + ymd(new Date()) + ".json", JSON.stringify({ app: "TutorTrack", kind: "student-schedule", events: d.events.map(({ id, ...e }) => e) }, null, 1), "application/json")}>Eksportuj grafik</button>
           <button className="btn" onClick={() => {
             const f = document.createElement("input"); f.type = "file"; f.accept = ".json,application/json";
@@ -356,10 +357,25 @@ function KontoTab({ out, d, load }: { out: () => void; d: Data; load: () => Prom
                 onOk: async () => { try { await api("POST", "/api/student/import", { events: o.events }); await load(); ov.toast("Grafik wczytany."); } catch (x) { ov.toast(errMsg(x)); } } });
             }); };
             f.click();
-          }}>Importuj grafik</button></div></div>
-      <div className="card"><h2>Konto i bezpieczeństwo</h2><div className="acts"><button className="btn" onClick={() => ov.modal(<ChangePassword />)}>Zmień hasło</button><button className="btn" onClick={out}>Wyloguj się</button><button className="btn d" onClick={() => ov.modal(<DeleteAccount onDone={() => { setUser(null); logout(); }} />)}>Usuń konto</button></div></div>
-    </div>;
-  }
+          }}>Importuj grafik</button></div></div>,
+    haslo: <div className="card"><h2>Konto i bezpieczeństwo</h2><div className="acts"><button className="btn" onClick={() => ov.modal(<ChangePassword />)}>Zmień hasło</button><button className="btn d" onClick={() => ov.modal(<DeleteAccount onDone={() => { setUser(null); logout(); }} />)}>Usuń konto</button></div></div>,
+  };
+  if (sec && SEC[sec]) return <div className="ssec">
+    <button className="sback" onClick={() => { setSec(""); window.scrollTo(0, 0); }}><Ic n="chevl" s={16} />Ustawienia</button>{SEC[sec]}</div>;
+  const I = (k: string, t: string, ic: string, v?: string, fn?: () => void) => <button key={k} className="sitem" onClick={fn || (() => { setSec(k); window.scrollTo(0, 0); })}><span className="sic"><Ic n={ic} s={16} /></span><b>{t}</b>{v != null && <span className="sv">{v}</span>}<Ic n="chev" s={16} /></button>;
+  const thName: Record<string, string> = { light: "Jasny", auto: "Systemowy", dark: "Ciemny", graphite: "Grafit", blue: "Ocean", green: "Mięta", pink: "Róż", orange: "Zachód słońca", purple: "Lawenda" };
+  return <div className="slist">
+    <div className="sgrp"><button className="sitem sme" onClick={() => setSec("profil")}><span className="sav">{(user!.name || "?").charAt(0).toUpperCase()}</span><b>{user!.name}<small>Panel ucznia · {user!.email}</small></b><Ic n="chev" s={16} /></button></div>
+    <div className="sgt">Konto</div>
+    <div className="sgrp">{I("haslo", "Hasło i bezpieczeństwo", "lock")}{I("kor", "Korepetytorzy", "users", String(d.links.length), () => go("kor"))}</div>
+    <div className="sgt">Nauka</div>
+    <div className="sgrp">{I("sum", "Podsumowanie miesiąca", "chart", undefined, () => go("sum"))}{I("kopia", "Kopia grafiku", "download", d.events.length ? String(d.events.length) + " zajęć" : undefined)}</div>
+    <div className="sgt">Aplikacja</div>
+    <div className="sgrp">{I("wyglad", "Wygląd", "palette", thName[user!.settings.theme || "light"] || "Jasny")}</div>
+    {user!.isAdmin && <div className="sgrp" style={{ marginTop: 16 }}>{I("adm", "Panel administratora", "alert", undefined, () => navigate("/admin"))}</div>}
+    <button className="slogout" onClick={out}><Ic n="out" s={18} />Wyloguj się</button>
+  </div>;
+}
 
 function CancelRequestForm({ l, onSent }: { l: L; onSent: () => Promise<void> }) {
   const { close, toast } = useOverlay();
