@@ -22,7 +22,7 @@ const RED = { background: "var(--rdl)", borderLeft: "4px solid var(--rd)", paddi
 /** tabs shown in the phone's bottom bar; the rest live under "Więcej" */
 const MAIN = ["dash", "plan", "graf", "hw"];
 const TABS: [string, string, string, string][] = [
-  ["dash", "Pulpit", "home", "Pulpit"], ["plan", "Plan", "cal", "Plan"], ["graf", "Mój grafik", "book", "Grafik"], ["hw", "Zadania", "check", "Zadania"],
+  ["dash", "Pulpit", "home", "Pulpit"], ["plan", "Plan", "cal", "Plan"], ["graf", "Zajęcia", "book", "Zajęcia"], ["hw", "Zadania", "check", "Zadania"],
   ["sum", "Podsumowanie", "chart", "Miesiąc"], ["kor", "Korepetytorzy", "users", "Nauczyciele"], ["konto", "Ustawienia", "set", "Ustawienia"],
 ];
 
@@ -108,8 +108,8 @@ export function StudentPanel() {
         {l.cr?.status === "pending" && <button className="btn d" style={{ marginRight: "auto" }} onClick={() => { ov.close(); run(() => api("DELETE", `/api/student/lessons/${l.id}/cancel-request`), "Prośba o odwołanie wycofana."); }}>Wycofaj prośbę</button>}
         <button className="btn" onClick={ov.close}>Zamknij</button>{l.hw && <button className="btn p" onClick={() => toggleHw(l.id, true)}>{done.has(l.id) ? "Cofnij: niezrobione" : "Oznacz zadanie jako zrobione"}</button>}</div></>);
   };
-  const evForm = (e?: Ev) => ov.modal(<EvForm e={e} lessons={all} events={d!.events} onSave={(b) => run(() => (e ? api("PATCH", "/api/student/events/" + e.id, b) : api("POST", "/api/student/events", b)), e ? "Zapisano zmiany." : "Dodano zajęcia do grafiku.")}
-    onDel={e ? () => ov.confirm({ title: "Usunąć zajęcia?", text: "Zajęcia znikną z Twojego grafiku.", ok: "Usuń", danger: true, onOk: () => { run(() => api("DELETE", "/api/student/events/" + e.id), "Usunięto zajęcia."); } }) : undefined} />);
+  const evForm = (e?: Ev) => ov.modal(<EvForm e={e} lessons={all} events={d!.events} onSave={(b) => run(() => (e ? api("PATCH", "/api/student/events/" + e.id, b) : api("POST", "/api/student/events", b)), e ? "Zapisano zmiany." : "Dodano zajęcia.")}
+    onDel={e ? () => ov.confirm({ title: "Usunąć zajęcia?", text: "Zajęcia znikną z Twojej listy zajęć.", ok: "Usuń", danger: true, onOk: () => { run(() => api("DELETE", "/api/student/events/" + e.id), "Usunięto zajęcia."); } }) : undefined} />);
   const out = () => ov.confirm({ title: "Wylogować się?", text: "Twoje dane są bezpiecznie zapisane na koncie.", ok: "Wyloguj się", onOk: logout });
 
   /* ----- tabs ----- */
@@ -175,7 +175,7 @@ export function StudentPanel() {
           <span className="ptm">{x.s}–{x.e}</span><b>{x.ev!.title}</b>{x.bad && <span className="tag rd">Nakłada się</span>}</button>;
     return <>
       <div className="wkbar"><button className="btn s" onClick={() => { setWk(wk - 1); setSel(-1); }} aria-label="Poprzedni tydzień">‹</button><b>{mon.getDate()} {MSHORT[mon.getMonth()]} – {end.getDate()} {MSHORT[end.getMonth()]}</b><button className="btn s" onClick={() => { setWk(wk + 1); setSel(-1); }} aria-label="Następny tydzień">›</button>{wk !== 0 && <button className="btn s" onClick={() => { setWk(0); setSel(-1); }}>Dziś</button>}</div>
-      <div className="plegend"><span><i className="les" />Lekcje od korepetytorów</span><span><i className="own" />Mój grafik</span></div>
+      <div className="plegend"><span><i className="les" />Lekcje od korepetytorów</span><span><i className="own" />Moje zajęcia</span></div>
       {/* phone: day picker + agenda of one day */}
       <div className="dstrip" role="tablist" aria-label="Dzień tygodnia">{days.map((x, i) => <button key={x.ds} role="tab" aria-selected={i === cur} className={(i === cur ? "on" : "") + (x.ds === td ? " td" : "")} onClick={() => setSel(i)}>
         <small>{WDSHORT[x.day.getDay()].replace(".", "")}</small><b>{x.day.getDate()}</b><span className="dots">{x.it.some((y) => y.l && y.l.status !== "cancelled") && <i className="les" />}{x.it.some((y) => y.ev) && <i className="own" />}</span></button>)}</div>
@@ -346,18 +346,18 @@ function KontoTab({ out, d, load, go }: { out: () => void; d: Data; load: () => 
     profil: <div className="card"><h2>Profil</h2><Field id="sn2" label="Imię" value={name} onChange={setName} error={e} /><p className="hint" style={{ margin: "4px 0 16px" }}>E-mail: {user!.email}</p>
         <button className="btn p" onClick={async () => { if (!name.trim()) { setE("Podaj imię."); return; } try { await updateMe({ name: name.trim() }); setE(""); ov.toast("Profil zapisany."); } catch (x) { ov.toast(errMsg(x)); } }}>Zapisz profil</button></div>,
     wyglad: <ThemePicker />,
-    kopia: <div className="card"><h2>Kopia grafiku</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>Zapisz własny grafik (szkoła, zajęcia dodatkowe) do pliku albo wczytaj go z pliku. Lekcje od korepetytorów są zawsze na koncie i nie trzeba ich kopiować.</p>
-        <div className="acts"><button className="btn" onClick={() => download("tutortrack-grafik-" + ymd(new Date()) + ".json", JSON.stringify({ app: "TutorTrack", kind: "student-schedule", events: d.events.map(({ id, ...e }) => e) }, null, 1), "application/json")}>Eksportuj grafik</button>
+    kopia: <div className="card"><h2>Kopia zajęć</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>Zapisz swoje zajęcia (szkoła, zajęcia dodatkowe) do pliku albo wczytaj je z pliku. Lekcje od korepetytorów są zawsze na koncie i nie trzeba ich kopiować.</p>
+        <div className="acts"><button className="btn" onClick={() => download("tutortrack-zajecia-" + ymd(new Date()) + ".json", JSON.stringify({ app: "TutorTrack", kind: "student-schedule", events: d.events.map(({ id, ...e }) => e) }, null, 1), "application/json")}>Eksportuj zajęcia</button>
           <button className="btn" onClick={() => {
             const f = document.createElement("input"); f.type = "file"; f.accept = ".json,application/json";
             f.onchange = () => { const file = f.files?.[0]; if (!file) return; file.text().then((txt) => {
               let o: any = null; try { o = JSON.parse(txt); } catch { /* invalid */ }
-              if (!o || !Array.isArray(o.events)) { ov.toast("Nieprawidłowy plik grafiku."); return; }
-              ov.confirm({ title: "Wczytać grafik?", text: `Obecny grafik zostanie zastąpiony (${o.events.length} zajęć z pliku). Lekcje od korepetytorów się nie zmienią.`, ok: "Wczytaj", danger: true,
-                onOk: async () => { try { await api("POST", "/api/student/import", { events: o.events }); await load(); ov.toast("Grafik wczytany."); } catch (x) { ov.toast(errMsg(x)); } } });
+              if (!o || !Array.isArray(o.events)) { ov.toast("Nieprawidłowy plik z zajęciami."); return; }
+              ov.confirm({ title: "Wczytać zajęcia?", text: `Obecne zajęcia zostaną zastąpione (${o.events.length} zajęć z pliku). Lekcje od korepetytorów się nie zmienią.`, ok: "Wczytaj", danger: true,
+                onOk: async () => { try { await api("POST", "/api/student/import", { events: o.events }); await load(); ov.toast("Zajęcia wczytane."); } catch (x) { ov.toast(errMsg(x)); } } });
             }); };
             f.click();
-          }}>Importuj grafik</button></div></div>,
+          }}>Importuj zajęcia</button></div></div>,
     haslo: <div className="card"><h2>Konto i bezpieczeństwo</h2><div className="acts"><button className="btn" onClick={() => ov.modal(<ChangePassword />)}>Zmień hasło</button><button className="btn d" onClick={() => ov.modal(<DeleteAccount onDone={() => { setUser(null); logout(); }} />)}>Usuń konto</button></div></div>,
   };
   if (sec && SEC[sec]) return <div className="ssec">
@@ -369,7 +369,7 @@ function KontoTab({ out, d, load, go }: { out: () => void; d: Data; load: () => 
     <div className="sgt">Konto</div>
     <div className="sgrp">{I("haslo", "Hasło i bezpieczeństwo", "lock")}{I("kor", "Korepetytorzy", "users", String(d.links.length), () => go("kor"))}</div>
     <div className="sgt">Nauka</div>
-    <div className="sgrp">{I("sum", "Podsumowanie miesiąca", "chart", undefined, () => go("sum"))}{I("kopia", "Kopia grafiku", "download", d.events.length ? String(d.events.length) + " zajęć" : undefined)}</div>
+    <div className="sgrp">{I("sum", "Podsumowanie miesiąca", "chart", undefined, () => go("sum"))}{I("kopia", "Kopia zajęć", "download", d.events.length ? String(d.events.length) + " zajęć" : undefined)}</div>
     <div className="sgt">Aplikacja</div>
     <div className="sgrp">{I("wyglad", "Wygląd", "palette", thName[user!.settings.theme || "light"] || "Jasny")}</div>
     {user!.isAdmin && <div className="sgrp" style={{ marginTop: 16 }}>{I("adm", "Panel administratora", "alert", undefined, () => navigate("/admin"))}</div>}
