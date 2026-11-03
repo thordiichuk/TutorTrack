@@ -437,3 +437,7 @@ html,body{overflow-x:hidden;max-width:100%}
 .ov{overflow:hidden;touch-action:none}.ov .modal{touch-action:pan-y}
 .slogout{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:20px;padding:14px;border:1px solid #f3c7c2;border-radius:14px;background:var(--card);color:var(--rd);font:inherit;font-weight:700;font-size:15px;cursor:pointer}.slogout:hover{background:var(--rdl)}
 body[data-th=dark] .slogout,body[data-th=graphite] .slogout{border-color:var(--bd)}
+
+.printbox{display:none}
+@media print{body.printing2>*:not(.printbox){display:none!important}body.printing2 .printbox{display:block;font-family:system-ui,sans-serif;color:#000}body.printing2 .printbox pre{white-space:pre-wrap;font:inherit;font-size:14px}body.printing2 .printbox h1{font-size:18px}}
+.sumc{display:flex;flex-direction:column;gap:12px}

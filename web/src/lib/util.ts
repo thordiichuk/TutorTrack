@@ -99,3 +99,24 @@ export const subjRates = (s: Student) => { const l = subjList(s); return (l.leng
 const SUBJ_COLORS = ["#3b82c4", "#7b6fd6", "#d9783a", "#2f9e6a", "#c2862b", "#c2557a", "#4f8f9c", "#8a6bbf"];
 export function subjColor(sub: string) { let h = 0; for (const c of (sub || "").toLowerCase()) h = (h * 31 + c.charCodeAt(0)) >>> 0; return SUBJ_COLORS[h % SUBJ_COLORS.length]; }
 
+
+/** Print a plain-text document (e.g. a monthly summary). A separate window is used, so it also works on phones
+ *  where the app's overlay/scroll locking would otherwise get printed instead of the text. */
+export function printText(title: string, text: string) {
+  const esc = (x: string) => x.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]!));
+  const html = `<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title>
+<style>body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:32px;color:#111;line-height:1.55}pre{white-space:pre-wrap;font:inherit;font-size:14px}h1{font-size:18px;margin:0 0 16px}</style></head>
+<body><h1>${esc(title)}</h1><pre>${esc(text)}</pre></body></html>`;
+  const w = window.open("", "_blank");
+  if (w) {
+    w.document.open(); w.document.write(html); w.document.close();
+    const go = () => { try { w.focus(); w.print(); } catch { /* user can print from the menu */ } };
+    if (w.document.readyState === "complete") setTimeout(go, 250); else w.addEventListener("load", () => setTimeout(go, 100));
+    return;
+  }
+  // pop-ups blocked: print the current page with only the summary visible
+  const box = document.createElement("div"); box.className = "printbox"; box.innerHTML = "<h1>" + esc(title) + "</h1><pre>" + esc(text) + "</pre>";
+  document.body.appendChild(box); document.body.classList.add("printing2");
+  const done = () => { box.remove(); document.body.classList.remove("printing2"); removeEventListener("afterprint", done); };
+  addEventListener("afterprint", done); window.print(); setTimeout(() => { if (document.body.contains(box) && !matchMedia("print").matches) done(); }, 60000);
+}

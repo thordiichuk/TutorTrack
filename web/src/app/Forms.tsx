@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { api, isDemo } from "../lib/api";
 import {
-  FREE, calc, cancelFee, copyText, emailOk, fd, fm, gStr, Lesson, lev, MSHORT, overlap, pd, pln, rateFor, sortL, Student, subjList, toG, ymd, amt, billable, sumAmt, te,
+  printText, FREE, calc, cancelFee, copyText, emailOk, fd, fm, gStr, Lesson, lev, MSHORT, overlap, pd, pln, rateFor, sortL, Student, subjList, toG, ymd, amt, billable, sumAmt, te,
   subjRates,
 } from "../lib/util";
 import { useAuth, useTutor } from "../state";
@@ -373,7 +373,7 @@ export function SummaryModal({ id }: { id: string }) {
     <textarea rows={11} readOnly value={t} />
     <div className="pt">{t}</div>
     <div className="mf"><button className="btn" onClick={close}>Zamknij</button>
-      <button className="btn" onClick={() => { if (user?.plan !== "pro") { proUp("Wydruk i PDF podsumowania"); return; } document.body.classList.add("printing"); window.print(); document.body.classList.remove("printing"); }}>Drukuj / PDF{user?.plan !== "pro" && <> <span className="tag ac">Pro</span></>}</button>
+      <button className="btn" onClick={() => { if (user?.plan !== "pro") { proUp("Wydruk i PDF podsumowania"); return; } printText("Podsumowanie lekcji – " + s.name, t); }}>Drukuj / PDF{user?.plan !== "pro" && <> <span className="tag ac">Pro</span></>}</button>
       <button className="btn p" onClick={async () => toast((await copyText(t)) ? "Skopiowano." : "Zaznacz tekst i skopiuj go ręcznie.")}>Kopiuj</button></div>
   </>;
 }

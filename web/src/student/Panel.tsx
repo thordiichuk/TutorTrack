@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../lib/api";
 import { Empty, Ic, Logo } from "../lib/icons";
-import { addDays, CancelRequest, download, fd, fm, subjColor, fdt, fmtH, MSHORT, pd, pln, te, WDL, WDSHORT, ym, ymd } from "../lib/util";
+import { addDays, CancelRequest, copyText, download, fd, fm, printText, subjColor, fdt, fmtH, MSHORT, pd, pln, te, WDL, WDSHORT, ym, ymd } from "../lib/util";
 import { useAuth } from "../state";
 import { errMsg, Field, useOverlay } from "../ui/overlay";
 import { ChangePassword, DeleteAccount } from "../app/Views";
@@ -223,10 +223,26 @@ export function StudentPanel() {
     const shiftM = (k: number) => { const [y, mo] = m.split("-").map(Number); setM(ym(new Date(y, mo - 1 + k, 1))); };
     const mt = fm(m);
     const head = <div className="bar"><div className="mpick" role="group" aria-label="Miesiąc"><button type="button" aria-label="Poprzedni miesiąc" onClick={() => shiftM(-1)}>‹</button><span aria-live="polite">{mt.charAt(0).toUpperCase() + mt.slice(1)}</span><button type="button" aria-label="Następny miesiąc" onClick={() => shiftM(1)}>›</button></div></div>;
+    const summary = (tutor: string) => {
+      const ls = L.filter((l) => l.tutor === tutor && (l.status === "done" || l.status === "cancelled")).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+      const T = ["Podsumowanie lekcji – " + fm(m), "Korepetytor: " + tutor, "Uczeń: " + user!.name, ""];
+      ls.forEach((l) => { const d = pd(l.date); T.push("• " + d.getDate() + " " + MSHORT[d.getMonth()] + ", " + l.time + " – " + (l.subject ? l.subject + ": " : "") + (l.status === "cancelled" ? "odwołana lekcja" : l.topic || "lekcja") + " (" + l.min + " min): " + (l.status === "cancelled" && !l.amount ? "bez opłaty" : pln(l.amount)) + (l.paid ? " (opłacona)" : "")); });
+      const t = ls.reduce((x, l) => x + l.amount, 0), p = ls.reduce((x, l) => x + (l.paid ? l.amount : 0), 0);
+      T.push("", "Lekcje: " + ls.filter((l) => l.status === "done").length + " · czas nauki: " + fmtH(ls.filter((l) => l.status === "done").reduce((x, l) => x + l.min, 0)));
+      if (t > 0) T.push("Razem: " + pln(t), "Opłacone: " + pln(p), "Do zapłaty: " + pln(t - p));
+      const txt = T.join("\n");
+      ov.modal(<><h2>Podsumowanie – {fm(m)}</h2><p className="hint">Lekcje od: {tutor}. Możesz je skopiować, zapisać jako PDF albo wydrukować.</p>
+        <textarea rows={11} readOnly value={txt} />
+        <div className="mf"><button className="btn" onClick={ov.close}>Zamknij</button><button className="btn" onClick={() => printText("Podsumowanie lekcji – " + fm(m), txt)}>Drukuj / PDF</button>
+          <button className="btn p" onClick={async () => ov.toast((await copyText(txt)) ? "Skopiowano." : "Zaznacz tekst i skopiuj go ręcznie.")}>Kopiuj</button></div></>);
+    };
+    const tutors = [...new Set(L.filter((l) => l.status === "done" || l.status === "cancelled").map((l) => l.tutor))];
     if (!L.length) return <>{head}<div className="card"><Empty icon="chart" title="Brak lekcji w tym miesiącu" sub="Wybierz inny miesiąc albo dodaj kod od korepetytora." /></div></>;
     const byDate = (a: L, b: L) => (a.date + a.time).localeCompare(b.date + b.time);
     return <>{head}
-      <div className="grid g4"><div className="card stat"><div className="l">Lekcje</div><div className="v">{dn.length}</div></div><div className="card stat"><div className="l">Czas nauki</div><div className="v">{fmtH(min)}</div></div><div className="card stat"><div className="l">Odwołane</div><div className="v am">{cn.length}</div></div><div className="card stat"><div className="l">Zadania</div><div className="v">{hw.filter((l) => done.has(l.id)).length} / {hw.length}</div></div></div>
+      {tutors.length > 0 && <div className="card sumc" style={{ marginBottom: 16 }}><div><h2 style={{ margin: 0 }}>Podsumowanie przeprowadzonych lekcji</h2><span className="hint">Lista lekcji z tematami i kwotami – do skopiowania, PDF lub wydruku.</span></div>
+        <div className="acts">{tutors.map((t) => <button key={t} className="btn p" onClick={() => summary(t)}>{tutors.length > 1 ? "Od: " + t : "Pokaż podsumowanie"}</button>)}</div></div>}
+      <div className="grid g4 st2"><div className="card stat"><div className="l">Lekcje</div><div className="v">{dn.length}</div></div><div className="card stat"><div className="l">Czas nauki</div><div className="v">{fmtH(min)}</div></div><div className="card stat"><div className="l">Odwołane</div><div className="v am">{cn.length}</div></div><div className="card stat"><div className="l">Zadania</div><div className="v">{hw.filter((l) => done.has(l.id)).length} / {hw.length}</div></div></div>
       {tot > 0 && <div className="grid g4" style={{ gridTemplateColumns: "repeat(3,1fr)", marginTop: 16 }}><div className="card stat"><div className="l">Kwota</div><div className="v">{pln(tot)}</div></div><div className="card stat"><div className="l">Opłacone</div><div className="v gr">{pln(paid)}</div></div><div className="card stat"><div className="l">Do zapłaty</div><div className="v am">{pln(tot - paid)}</div></div></div>}
       <div className="grid g2" style={{ marginTop: 16 }}>
         <div className="card"><h2>Czas nauki według przedmiotu</h2>{e.length ? e.map((x) => <div className="bl" key={x[0]}><span>{x[0]}</span><b>{fmtH(x[1])}</b><div className="bb"><i style={{ width: Math.round(x[1] / mx * 100) + "%" }} /></div></div>) : <p className="hint">Brak danych w wybranym okresie.</p>}</div>
