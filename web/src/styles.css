@@ -432,3 +432,12 @@ body[data-th=dark] .rqbox,body[data-th=graphite] .rqbox{background:var(--aml);bo
 .mx:hover{color:var(--tx)}
 body.stu .mx{border-radius:12px}
 .modal>h2:first-child,.modal>.lsheet>.lsh,.modal>div>h2:first-child{padding-right:44px}
+/* windows never scroll sideways (iOS date/time inputs are wider than their box) */
+.modal{overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y}
+.modal *{max-width:100%}
+.f2>*,.f>*{min-width:0}
+input,select,textarea{max-width:100%;min-width:0}
+input[type=date],input[type=time],input[type=month]{-webkit-appearance:none;appearance:none;display:block;width:100%;min-height:42px;text-align:left}
+input[type=date]::-webkit-date-and-time-value,input[type=time]::-webkit-date-and-time-value{text-align:left}
+html,body{overflow-x:hidden;max-width:100%}
+.ov{overflow:hidden;touch-action:none}.ov .modal{touch-action:pan-y}
