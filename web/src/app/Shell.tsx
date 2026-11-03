@@ -48,7 +48,6 @@ export function TutorApp({ view: v0 }: { view: string }) {
           <div>{VIEWS.map((x) => <button key={x[0]} className={"nav" + (x[0] === view ? " on" : "")} onClick={() => navigate("/aplikacja/" + x[0])} aria-current={x[0] === view ? "page" : undefined}><Ic n={x[2]} />{x[1]}{x[0] === "dash" && pending > 0 && <span className="tag am" style={{ marginLeft: "auto" }}>{pending}</span>}</button>)}
             {user!.isAdmin && !demo && <button className="nav" onClick={() => navigate("/admin")}><Ic n="alert" />{tr("Panel administratora")}</button>}
             <button className="nav" onClick={out}><Ic n="out" />{demo ? tr("Wyjdź z dema") : tr("Wyloguj się")}</button></div>
-          <button className="planchip" style={{ textAlign: "left", background: "none", cursor: "pointer", font: "inherit" }} onClick={() => navigate("/aplikacja/plan")}>{tr("Plan:")}{" "}<b>{pro ? tr("Pro") : tr("Free")}</b><br />{tr("Aktywni uczniowie:")}{" "}{active}{pro ? "" : " / " + FREE}</button>
         </aside>
         <div className="main">
           <Top view={view} onOut={out} />

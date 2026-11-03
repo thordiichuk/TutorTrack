@@ -265,7 +265,6 @@ export function StudentPanel() {
         <div>{TABS.map((x) => <button key={x[0]} className={"nav" + (tab === x[0] ? " on" : "")} aria-current={tab === x[0] ? "page" : undefined} onClick={() => go(x[0])}><Ic n={x[2]} />{x[1]}{x[0] === "hw" && nT > 0 && <span className="tag am" style={{ marginLeft: "auto" }}>{nT}</span>}</button>)}
           {user!.isAdmin && <button className="nav" onClick={() => navigate("/admin")}><Ic n="alert" />{tr("Panel administratora")}</button>}
           <button className="nav" onClick={out}><Ic n="out" />{tr("Wyloguj się")}</button></div>
-        <div className="planchip">{tr("Panel ucznia:")}{" "}<b>{tr("bezpłatny")}</b><br />{user!.name}</div>
       </aside>
       <div className="main">
         <header className="top">
