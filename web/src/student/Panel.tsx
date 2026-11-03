@@ -1,7 +1,7 @@
 import { ReactNode, useCallback, useEffect, useState } from "react";
 import { api } from "../lib/api";
 import { Empty, Ic, Logo } from "../lib/icons";
-import { addDays, CancelRequest, copyText, download, fd, fm, printText, subjColor, fdt, fmtH, MSHORT, pd, pln, te, WDL, WDSHORT, ym, ymd } from "../lib/util";
+import { addDays, CancelRequest, copyText, download, fd, fm, printText, shareText, subjColor, fdt, fmtH, MSHORT, pd, pln, te, WDL, WDSHORT, ym, ymd } from "../lib/util";
 import { useAuth } from "../state";
 import { errMsg, Field, useOverlay } from "../ui/overlay";
 import { ChangePassword, DeleteAccount } from "../app/Views";
@@ -231,9 +231,9 @@ export function StudentPanel() {
       T.push("", "Lekcje: " + ls.filter((l) => l.status === "done").length + " · czas nauki: " + fmtH(ls.filter((l) => l.status === "done").reduce((x, l) => x + l.min, 0)));
       if (t > 0) T.push("Razem: " + pln(t), "Opłacone: " + pln(p), "Do zapłaty: " + pln(t - p));
       const txt = T.join("\n");
-      ov.modal(<><h2>Podsumowanie – {fm(m)}</h2><p className="hint">Lekcje od: {tutor}. Możesz je skopiować, zapisać jako PDF albo wydrukować.</p>
+      ov.modal(<><h2>Podsumowanie – {fm(m)}</h2><p className="hint">Lekcje od: {tutor}. Możesz je skopiować, udostępnić albo (na komputerze) wydrukować.</p>
         <textarea rows={11} readOnly value={txt} />
-        <div className="mf"><button className="btn" onClick={ov.close}>Zamknij</button><button className="btn" onClick={() => printText("Podsumowanie lekcji – " + fm(m), txt)}>Drukuj / PDF</button>
+        <div className="mf"><button className="btn" onClick={ov.close}>Zamknij</button><button className="btn only-m" onClick={() => shareText("Podsumowanie lekcji – " + fm(m), txt)}>Udostępnij</button><button className="btn no-m" onClick={() => printText("Podsumowanie lekcji – " + fm(m), txt)}>Drukuj / PDF</button>
           <button className="btn p" onClick={async () => ov.toast((await copyText(txt)) ? "Skopiowano." : "Zaznacz tekst i skopiuj go ręcznie.")}>Kopiuj</button></div></>);
     };
     const tutors = [...new Set(L.filter((l) => l.status === "done" || l.status === "cancelled").map((l) => l.tutor))];
@@ -247,7 +247,7 @@ export function StudentPanel() {
         <div className="card"><h2>Zaplanowane</h2>{pl.length ? pl.sort(byDate).map((l) => <button type="button" className="srow" key={l.id} onClick={() => lessonModal(l.id)}><span className="tm">{pd(l.date).getDate()} {MSHORT[pd(l.date).getMonth()]}<small>{l.time}</small></span><span className="sb" /><span className="m"><b>{l.subject || "Lekcja"}</b><span>{l.tutor}</span></span></button>) : <p className="hint">Brak zaplanowanych lekcji w tym miesiącu.</p>}</div>
       </div>
       <div className="card" style={{ marginTop: 16 }}><h2>Lekcje i notatki</h2>{[...dn, ...cn].sort(byDate).map((l) => <button type="button" className={"srow" + (l.status === "cancelled" ? " cx" : "")} key={l.id} onClick={() => lessonModal(l.id)}><span className="tm">{pd(l.date).getDate()} {MSHORT[pd(l.date).getMonth()]}<small>{l.time}</small></span><span className="sb" /><span className="m"><b>{l.subject || "Lekcja"}{l.topic ? " · " + l.topic : ""}</b><span>{l.notes || l.tutor}</span></span>{shortTag(l, false)}</button>)}</div>
-      {tutors.length > 0 && <div className="card sumc" style={{ marginTop: 16 }}><div><h2 style={{ margin: 0 }}>Podsumowanie przeprowadzonych lekcji</h2><span className="hint">Lista lekcji z tematami i kwotami – do skopiowania, PDF lub wydruku.</span></div>
+      {tutors.length > 0 && <div className="card sumc" style={{ marginTop: 16 }}><div><h2 style={{ margin: 0 }}>Podsumowanie przeprowadzonych lekcji</h2><span className="hint">Lista lekcji z tematami i kwotami – do skopiowania lub wysłania.</span></div>
         <div className="acts">{tutors.map((t) => <button key={t} className="btn p" onClick={() => summary(t)}>{tutors.length > 1 ? "Od: " + t : "Pokaż podsumowanie"}</button>)}</div></div>}
     </>;
   }

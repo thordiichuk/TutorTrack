@@ -446,3 +446,4 @@ body.stu .sgrp{border:0;border-radius:22px;box-shadow:0 4px 18px rgba(42,37,64,.
 body[data-th=dark].stu .sgrp,body[data-th=graphite].stu .sgrp{box-shadow:none;border:1px solid var(--bd)}
 body.stu .sitem b{font-weight:800}body.stu .sic{border-radius:11px}body.stu .sav{border-radius:14px}
 body.stu .slogout{border-radius:18px;font-weight:800}
+.only-m{display:none}@media(max-width:860px),(pointer:coarse){.only-m{display:inline-flex}.no-m{display:none!important}}

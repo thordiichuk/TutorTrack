@@ -120,3 +120,11 @@ export function printText(title: string, text: string) {
   const done = () => { box.remove(); document.body.classList.remove("printing2"); removeEventListener("afterprint", done); };
   addEventListener("afterprint", done); window.print(); setTimeout(() => { if (document.body.contains(box) && !matchMedia("print").matches) done(); }, 60000);
 }
+
+/** Share a text through the phone's share sheet; falls back to downloading a .txt file. */
+export async function shareText(title: string, text: string) {
+  const nav = navigator as Navigator & { share?: (d: { title?: string; text?: string }) => Promise<void> };
+  if (nav.share) { try { await nav.share({ title, text }); return "shared"; } catch (e) { if ((e as Error).name === "AbortError") return "cancelled"; } }
+  download(title.replace(/[^\p{L}\p{N} _-]+/gu, "").trim().replace(/\s+/g, "-") + ".txt", text, "text/plain;charset=utf-8");
+  return "downloaded";
+}
