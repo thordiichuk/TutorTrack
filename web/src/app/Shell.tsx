@@ -54,7 +54,7 @@ export function TutorApp({ view: v0 }: { view: string }) {
           <div>{demo && <p className="banner demo-b">TRYB DEMO – dane przykładowe, nic nie jest zapisywane. <button className="lk" onClick={logout} style={{ color: "#fff", textDecoration: "underline" }}>Wyjdź z dema</button></p>}</div>
           <main className="content" id="view" tabIndex={-1}>
             {view === "dash" ? <Dashboard /> : view === "students" ? <Students /> : view === "lessons" ? <Lessons /> : view === "billing" ? <Billing />
-              : view === "settings" ? <Settings key={anchor} group="konto" /> : <Welcome />}
+              : view === "settings" ? <Settings key={anchor} group={anchor === "plan" ? "plan" : ""} /> : <Welcome />}
           </main>
         </div>
       </div>

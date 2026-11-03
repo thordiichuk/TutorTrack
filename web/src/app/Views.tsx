@@ -10,7 +10,7 @@ import { useAuth, useTutor } from "../state";
 import { errMsg, Field, useOverlay } from "../ui/overlay";
 import { LessonItem, useData, useUi, useUpsell } from "./common";
 import { ThemePicker } from "../ui/themes";
-import { CancelRequestActions, LessonForm, ShareModal, StudentDetail, StudentForm, SummaryModal, summaryText } from "./Forms";
+import { CancelRequestActions, LessonForm, LessonSheet, ShareModal, StudentDetail, StudentForm, SummaryModal, summaryText } from "./Forms";
 
 /* ---------- small pieces ---------- */
 /** Month switcher: ‹ Listopad 2026 › – always in Polish, independent of the browser language. */
@@ -56,7 +56,10 @@ function SetupBar() {
 
 export function Dashboard() {
   const { user } = useAuth();
-  const { students, lessons } = useData();
+  const { students, lessons, stu } = useData();
+  const { modal, confirm } = useOverlay();
+  const { run } = useTutor();
+  const [allLate, setAllLate] = useState(false);
   const [ui, setUi] = useUi();
   const m = ui.month, done = monthDone(lessons, m), now = ymd(new Date()) + " " + new Date().toTimeString().slice(0, 5);
   const up = sortL(lessons.filter((l) => l.status === "planned" && l.date + " " + l.time >= now), 1).slice(0, 5);
@@ -65,26 +68,39 @@ export function Dashboard() {
   const late = user?.settings.late === false ? [] : sortL(lessons.filter((l) => l.status === "planned" && l.date + " " + l.time < now && l.cr?.status !== "pending"), 1);
   const goal = user?.plan === "pro" ? user.settings.goal || 0 : 0;
   const tot = sumAmt(done, () => true), pc = goal ? Math.min(100, Math.round(tot / goal * 100)) : 0;
+  const td = ymd(new Date());
+  const today = up.length ? lessons.filter((l) => l.date === td && l.status !== "cancelled").sort((a, b) => a.time.localeCompare(b.time)) : lessons.filter((l) => l.date === td && l.status !== "cancelled");
+  const next = sortL(lessons.filter((l) => l.status === "planned" && l.date > td), 1).slice(0, 4);
+  const unAll = lessons.filter((l) => billable(l) && !l.paid);
+  const bySt = [...new Set(unAll.map((l) => l.sid))].map((sid) => ({ sid, ls: unAll.filter((l) => l.sid === sid) })).sort((a, b) => sumAmt(b.ls, () => true) - sumAmt(a.ls, () => true)).slice(0, 5);
+  const wd = new Date(); const dateLabel = WDL[(wd.getDay() + 6) % 7].toLowerCase() + ", " + wd.getDate() + " " + MLONG_G[wd.getMonth()];
   return <>
     <SetupBar />
-    <div className="bar"><div><h2 style={{ fontSize: 22, margin: 0 }}>Cześć, {(user?.name || "korepetytorze").split(" ")[0]}!</h2><span className="hint">Podsumowanie za {fm(m)}</span></div><span className="sp" />
+    <div className="dhead"><div><div className="hint">{dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1)}</div><h2>Cześć, {(user?.name || "korepetytorze").split(" ")[0]}!</h2></div>
       <MonthInput v={m} on={(v) => setUi((u) => ({ ...u, month: v }))} /></div>
-    {reqs.length > 0 && <div className="card" style={{ marginBottom: 16, borderColor: "#f3dca8", background: "var(--aml)" }}><h2>Prośby uczniów ({reqs.length})</h2><p className="hint" style={{ margin: "-6px 0 6px" }}>Uczniowie poprosili o odwołanie lub przeniesienie tych lekcji. Potwierdź albo odrzuć – uczeń zobaczy Twoją decyzję w swoim panelu.</p>
-      {reqs.map((l) => <div key={l.id}><LessonItem l={l} quick={false} /><div className="acts" style={{ margin: "2px 0 10px 70px" }}><CancelRequestActions l={l} /></div></div>)}</div>}
-    <div className="grid g4 st2">
-      <div className="card stat"><div className="l">Aktywni uczniowie</div><div className="v">{students.filter((s) => s.active).length}</div></div>
+    {reqs.map((l) => { const s = stu(l.sid); return <div className="rq" key={l.id}><span className="rqd" />
+      <div className="rqm"><b>{l.cr!.kind === "move" ? "Prośba o przeniesienie" : "Prośba o odwołanie"}</b><span>{s ? s.name : ""} · {l.subject || (s ? subjList(s)[0] : "")}, {WDSHORT_L[pd(l.date).getDay()]} {l.time} · „{l.cr!.reason}”</span></div>
+      <button className="btn s" onClick={() => modal(<LessonSheet id={l.id} />)}>Rozpatrz</button></div>; })}
+    <div className="grid g4 st2 kst">
+      <div className="card stat"><div className="l">Do zapłaty</div><div className="v am">{pln(sumAmt(done, (l) => !l.paid)).replace(",00", "")}</div></div>
+      <div className="card stat"><div className="l">Opłacone</div><div className="v gr">{pln(sumAmt(done, (l) => l.paid)).replace(",00", "")}</div></div>
       <div className="card stat"><div className="l">Przeprowadzone lekcje</div><div className="v">{done.filter((l) => l.status === "done").length}</div></div>
-      <div className="card stat"><div className="l">Opłacone lekcje</div><div className="v gr">{pln(sumAmt(done, (l) => l.paid))}</div></div>
-      <div className="card stat"><div className="l">Do zapłaty</div><div className="v am">{pln(sumAmt(done, (l) => !l.paid))}</div></div>
+      <div className="card stat"><div className="l">Aktywni uczniowie</div><div className="v">{students.filter((s) => s.active).length}</div></div>
     </div>
-    {goal > 0 && <div className="card" style={{ marginTop: 16 }}><div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}><b>Cel miesięczny</b><span>{pln(tot)} z {pln(goal)} ({Math.round(tot / goal * 100)}%)</span></div><div className="pbar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pc} aria-label="Postęp celu miesięcznego" style={{ margin: "8px 0 0" }}><i style={{ width: pc + "%" }} /></div></div>}
-    {late.length > 0 && <div className="card" style={{ marginTop: 16, borderColor: "#f3dca8" }}><h2>Do potwierdzenia ({late.length})</h2><p className="hint" style={{ margin: "-6px 0 6px" }}>Te lekcje miały już się odbyć. Oznacz je jako przeprowadzone albo stuknij, aby odwołać.</p>{late.map((l) => <LessonItem key={l.id} l={l} />)}</div>}
-    <div className="grid g2" style={{ marginTop: 16 }}>
-      <div className="card"><h2>Najbliższe lekcje</h2>{up.length ? up.map((l) => <LessonItem key={l.id} l={l} quick={false} />) : <Empty icon="inbox" title="Brak zaplanowanych lekcji" sub="Dodaj lekcję, aby zobaczyć ją tutaj." />}</div>
-      <div className="card"><h2>Nieopłacone lekcje – {fm(m)}</h2>{un.length ? un.map((l) => <LessonItem key={l.id} l={l} quick={false} />) : <Empty icon="wallet" title="Wszystko opłacone" sub="W wybranym miesiącu nie ma zaległości." />}</div>
+    {goal > 0 && <div className="card" style={{ marginTop: 12 }}><div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}><b>Cel miesięczny</b><span>{pln(tot)} z {pln(goal)} ({Math.round(tot / goal * 100)}%)</span></div><div className="pbar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pc} aria-label="Postęp celu miesięcznego" style={{ margin: "8px 0 0" }}><i style={{ width: pc + "%" }} /></div></div>}
+    <div className="grid g2" style={{ marginTop: 12, gap: 12 }}>
+      <div className="card dcard"><div className="dch"><h2>Dziś</h2><a href="/aplikacja/lessons">Wszystkie lekcje</a></div>{today.length ? today.map((l) => <LessonItem key={l.id} l={l} nd quick={false} />) : <p className="hint" style={{ margin: "4px 0 8px" }}>Dziś nie masz lekcji.</p>}
+        {next.length > 0 && <><h2 style={{ marginTop: 14 }}>Najbliższe</h2>{next.map((l) => <LessonItem key={l.id} l={l} quick={false} />)}</>}</div>
+      <div className="card dcard"><h2>Nieopłacone</h2>{bySt.length ? bySt.map(({ sid, ls }) => { const s = stu(sid); return <div className="unr" key={sid}>
+          <div className="lwho"><b>{s ? s.name : "?"}</b><span>{ls.length === 1 ? fd(ls[0].date) : lekcje(ls.length)}</span></div><b>{pln(sumAmt(ls, () => true)).replace(",00", "")}</b>
+          <button className="btn s" onClick={() => confirm({ title: "Oznaczyć jako opłacone?", text: <>{s ? s.name : ""}: {lekcje(ls.length)} na kwotę <b>{pln(sumAmt(ls, () => true))}</b>. Możesz to później cofnąć.</>, ok: "Tak, opłacone", onOk: () => { run(() => api("POST", "/api/lessons/batch", { ids: ls.map((l) => l.id), patch: { paid: true } }), "Oznaczono jako opłacone."); } })}>Opłacone</button></div>; })
+        : <Empty icon="wallet" title="Wszystko opłacone" sub="Nie ma zaległych płatności." />}</div>
     </div>
+    {late.length > 0 && <div className="card dcard" style={{ marginTop: 12 }}><h2>Do potwierdzenia ({late.length})</h2><p className="hint" style={{ margin: "-6px 0 4px" }}>Te lekcje miały już się odbyć – oznacz je jako przeprowadzone.</p>{(allLate ? late : late.slice(-3)).map((l) => <LessonItem key={l.id} l={l} />)}
+      {late.length > 3 && <button className="more" style={{ margin: "8px 0" }} onClick={() => setAllLate(!allLate)}>{allLate ? "Pokaż mniej" : "Pokaż wszystkie (" + late.length + ")"}</button>}</div>}
   </>;
 }
+const WDSHORT_L = ["niedz.", "pon.", "wt.", "śr.", "czw.", "pt.", "sob."];
 
 /* ---------- students ---------- */
 export function Students() {
@@ -115,23 +131,21 @@ export function Students() {
     <div className="bar sbar"><input type="search" placeholder="Szukaj: imię, nazwisko, przedmiot" value={ui.q} aria-label="Szukaj ucznia" onChange={(e) => setUi((u) => ({ ...u, q: e.target.value }))} />
       <select aria-label="Status ucznia" value={ui.sf} onChange={(e) => setUi((u) => ({ ...u, sf: e.target.value as any }))}><option value="active">Aktywni</option><option value="arch">Zarchiwizowani</option><option value="all">Wszyscy</option></select>
       <select aria-label="Sortowanie uczniów" value={ui.so} onChange={(e) => setUi((u) => ({ ...u, so: e.target.value as any }))}><option value="az">Imię A–Z</option><option value="za">Imię Z–A</option><option value="ln">Nazwisko A–Z</option><option value="new">Kolejność dodania</option></select></div>
-    {subjects.length > 0 && <div className="bar" role="group" aria-label="Filtr po przedmiotach"><span className="hint">Przedmiot:</span>
-      <button className={"btn s" + (!subj ? " p" : "")} aria-pressed={!subj} onClick={() => setUi((u) => ({ ...u, subj: "" }))}>Wszystkie</button>
-      {subjects.map((x) => <button key={x} className={"btn s" + (subj === x ? " p" : "")} aria-pressed={subj === x} onClick={() => setUi((u) => ({ ...u, subj: x }))}>{x}</button>)}</div>}
-    {!list.length ? <div className="card"><Empty icon="users" title="Brak uczniów" sub="Zmień filtry lub dodaj pierwszego ucznia." /></div> :
-      <div className="scards">{list.map((s) => {
-        const ls = lessons.filter((l) => l.sid === s.id && l.status === "done"), due = sumAmt(lessons.filter((l) => l.sid === s.id && billable(l)), (l) => !l.paid);
-        const nx = sortL(lessons.filter((l) => l.sid === s.id && l.status === "planned" && l.date >= ymd(new Date())), 1)[0];
-        return <div className="card" key={s.id}>
-          <div style={{ display: "flex", gap: 12, alignItems: "center" }}><div className="av">{s.name.charAt(0).toUpperCase()}</div><div style={{ minWidth: 0 }}><b>{s.name}</b>{subjRates(s).map(([x, r]) => <div className="hint" key={x}>{x ? x + " · " : ""}{pln(r).replace(",00", "")}/h</div>)}</div></div>
-          <div style={{ margin: "12px 0", display: "flex", gap: 6, flexWrap: "wrap" }}><span className={"tag " + (s.active ? "gr" : "")}>{s.active ? "Aktywny" : "Zarchiwizowany"}</span><span className="tag">{lekcje(ls.length)}</span>{s.linked ? <span className="tag ac">Panel ucznia</span> : s.inviteCode ? <span className="tag">Kod wysłany</span> : null}{due > 0 && <span className="tag am">Do zapłaty: {pln(due)}</span>}</div>
-          {!s.active && <div className="hint" style={{ marginBottom: 6 }}>Przywrócisz lub usuniesz ucznia w oknie Edytuj.</div>}<div className="hint" style={{ marginBottom: 10 }}>{nx ? "Następna lekcja: " + fd(nx.date) + ", " + nx.time : "Brak zaplanowanych lekcji"}</div>
-          <div className="acts">
-            <button className="btn s" onClick={() => modal(<StudentDetail id={s.id} />, true)}>Szczegóły</button>
-            <button className="btn s" onClick={() => modal(<StudentForm s={s} />)}>Edytuj</button>
-            <button className="btn s" onClick={() => modal(<ShareModal id={s.id} />, true)}>{s.inviteCode ? "Kod ucznia" : "Udostępnij uczniowi"}</button>
-          </div></div>;
-      })}</div>}
+    {subjects.length > 0 && <div className="chips" role="group" aria-label="Filtr po przedmiotach" style={{ marginBottom: 12 }}>
+      <button className={"chip" + (!subj ? " on" : "")} aria-pressed={!subj} onClick={() => setUi((u) => ({ ...u, subj: "" }))}>Wszyscy · {list.length}</button>
+      {subjects.map((x) => <button key={x} className={"chip" + (subj === x ? " on" : "")} aria-pressed={subj === x} onClick={() => setUi((u) => ({ ...u, subj: x }))}>{x}</button>)}</div>}
+    {!list.length ? <div className="card"><Empty icon="users" title="Brak uczniów" sub="Zmień filtry lub dodaj pierwszego ucznia." /></div> : <>
+      <div className="slhd"><span>{({ az: "Imię A–Z", za: "Imię Z–A", ln: "Nazwisko A–Z", new: "Kolejność dodania" } as Record<string, string>)[ui.so]}</span><span>Do zapłaty</span></div>
+      <div className="dgl">{list.map((s) => {
+        const due = sumAmt(lessons.filter((l) => l.sid === s.id && billable(l)), (l) => !l.paid);
+        const rates = subjRates(s);
+        return <button key={s.id} className={"strow" + (s.active ? "" : " cx")} onClick={() => modal(<StudentDetail id={s.id} />, true)}>
+          <span className="sav2">{s.name.charAt(0).toUpperCase()}</span>
+          <span className="lwho"><b>{s.name}{s.linked && <i className="ptag">panel</i>}{!s.active && <i className="ptag gray">archiwum</i>}</b>
+            <span>{rates.length > 1 ? rates.map(([x, r]) => x + " " + pln(r).replace(",00", "")).join(" · ") : (rates[0][0] ? rates[0][0] + " · " : "") + pln(rates[0][1]).replace(",00", "") + "/h"}</span></span>
+          {due > 0 ? <b className="sdue">{pln(due).replace(",00", "")}</b> : <span className="sok">rozliczony</span>}
+        </button>;
+      })}</div></>}
   </>;
 }
 
@@ -273,24 +287,25 @@ export function Billing() {
         <button className="btn" onClick={() => { close(); if (!pro) { proUp("Eksport roku do CSV"); return; } const y = m.slice(0, 4); download("rozliczenie-" + y + ".csv", csvRows(lessons.filter((l) => billable(l) && l.date.slice(0, 4) === y), name), "text/csv"); }}>Rozliczenie całego roku – CSV {!pro && <span className="tag ac">Pro</span>}</button>
         <button className="btn" onClick={() => { close(); sumAll(); }}>Podsumowania dla wszystkich uczniów {!pro && <span className="tag ac">Pro</span>}</button>
       </div><div className="mf"><button className="btn" onClick={close}>Zamknij</button></div></>)}>Eksport</button></div>
-    <div className="grid g4 bst" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
-      <div className="card stat"><div className="l">Należności</div><div className="v">{pln(tot)}</div></div>
-      <div className="card stat"><div className="l">Opłacone</div><div className="v gr">{pln(paid)}</div></div>
-      <div className="card stat"><div className="l">Pozostało do zapłaty</div><div className="v am">{pln(tot - paid)}</div></div>
+    <div className="card bsum">
+      <div className="l">Należności · {fm(m)}</div><div className="bv">{pln(tot).replace(",00", "")}</div>
+      <div className="pbar" aria-hidden="true" style={{ margin: "10px 0 12px" }}><i style={{ width: (tot ? Math.round(paid / tot * 100) : 0) + "%", background: "var(--gr)" }} /></div>
+      <div className="bsr"><div><div className="l">Opłacone</div><b className="gr">{pln(paid).replace(",00", "")}</b></div><div><div className="l">Do zapłaty</div><b className="am">{pln(tot - paid).replace(",00", "")}</b></div><div><div className="l">Lekcje</div><b>{done.length}</b></div></div>
     </div>
-    {noFee > 0 && <div className="nt" style={{ marginTop: 14 }}>Odwołane lekcje bez naliczonej opłaty w tym miesiącu: {noFee}. Opłatę za odwołanie ustawisz w danych ucznia (Uczniowie → Edytuj).</div>}
-    <p className="hint">Podsumowania dotyczą dat lekcji, a nie dat otrzymania przelewów. To prosty dziennik rozliczeń – nie system księgowy ani narzędzie do faktur.</p>
-    {!ids.length ? <div className="card"><Empty icon="wallet" title="Brak przeprowadzonych lekcji" sub="W tym miesiącu nie ma lekcji do rozliczenia." /></div> : <div className="grid">{ids.map((id) => {
+    {noFee > 0 && <p className="hint" style={{ margin: "10px 2px 0" }}>Odwołane lekcje bez opłaty w tym miesiącu: {noFee}. Opłatę za odwołanie ustawisz w danych ucznia.</p>}
+    {!ids.length ? <div className="card" style={{ marginTop: 12 }}><Empty icon="wallet" title="Brak przeprowadzonych lekcji" sub="W tym miesiącu nie ma lekcji do rozliczenia." /></div> : <>
+      <div className="slhd" style={{ marginTop: 16 }}><span>Uczniowie</span><span>Do zapłaty</span></div>
+      <div className="dgl">{ids.map((id) => {
       const ls = done.filter((l) => l.sid === id), t = sumAmt(ls, () => true), p = sumAmt(ls, (l) => l.paid), un = ls.filter((l) => !l.paid), o = ui.open[id], due = t - p;
-      return <div className="card" key={id}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}><b>{name(id) || "?"}</b><span className="tag">{lekcje(ls.length)}</span></div>
-        <div style={{ display: "flex", gap: 18, flexWrap: "wrap", margin: "12px 0", fontSize: 13, color: "var(--mu)" }}><span>Należność<br /><b style={{ fontSize: 15, color: "var(--tx)" }}>{pln(t)}</b></span><span>Opłacone<br /><b style={{ fontSize: 15, color: "var(--gr)" }}>{pln(p)}</b></span><span>Do zapłaty<br /><b style={{ fontSize: 15, color: due ? "var(--am)" : "var(--tx)" }}>{pln(due)}</b></span></div>
-        <div className="acts">{un.length ? <button className="btn s" aria-expanded={!!o} onClick={() => setUi((u) => ({ ...u, open: { ...u.open, [id]: !u.open[id] } }))}>{o ? "Zwiń" : "Nieopłacone (" + un.length + ")"}</button> : <span className="tag gr">Rozliczone</span>}<button className="btn s" onClick={() => modal(<SummaryModal id={id} />)}>Podsumowanie</button></div>
-        {o && un.length > 0 && <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--bd)" }}>
-          <button className="btn s p" onClick={() => confirm({ title: "Oznaczyć wszystkie jako opłacone?", text: <>{un.length} lekcji na łączną kwotę <b>{pln(sumAmt(un, () => true))}</b> ({fm(m)}). Każdą możesz później cofnąć.</>, ok: "Tak, opłacone", onOk: () => { run(() => api("POST", "/api/lessons/batch", { ids: un.map((l) => l.id), patch: { paid: true } }), "Oznaczono jako opłacone: " + un.length + "."); } })}>Oznacz wszystkie jako opłacone</button>
-          {un.map((l) => <div className="row" key={l.id}><div className="m"><b>{l.topic || "Bez tematu"}</b><span>{fd(l.date)} · {l.min} min</span></div><div className="amt">{pln(amt(l))}</div><button className="btn s" onClick={() => run(() => api("PATCH", "/api/lessons/" + l.id, { paid: true }), "Lekcja oznaczona jako opłacona.")}>Oznacz jako opłaconą</button></div>)}
+      return <div key={id} className="brow">
+        <button className="strow" aria-expanded={!!o} onClick={() => setUi((u) => ({ ...u, open: { ...u.open, [id]: !u.open[id] } }))}>
+          <span className="lwho"><b>{name(id) || "?"}</b><span>{lekcje(ls.length)} · {pln(t).replace(",00", "")}</span></span>
+          {due > 0 ? <b className="sdue">{pln(due).replace(",00", "")}</b> : <span className="sok">rozliczony</span>}<Ic n={o ? "chevd" : "chev"} s={16} /></button>
+        {o && <div className="bexp">
+          <div className="acts" style={{ marginBottom: 6 }}>{un.length > 0 && <button className="btn s p" onClick={() => confirm({ title: "Oznaczyć wszystkie jako opłacone?", text: <>{lekcje(un.length)} na łączną kwotę <b>{pln(sumAmt(un, () => true))}</b> ({fm(m)}). Każdą możesz później cofnąć.</>, ok: "Tak, opłacone", onOk: () => { run(() => api("POST", "/api/lessons/batch", { ids: un.map((l) => l.id), patch: { paid: true } }), "Oznaczono jako opłacone: " + un.length + "."); } })}>Oznacz wszystkie jako opłacone</button>}<button className="btn s" onClick={() => modal(<SummaryModal id={id} />)}>Podsumowanie dla ucznia</button></div>
+          {un.map((l) => <div className="unr" key={l.id}><div className="lwho"><b>{l.topic || "Bez tematu"}</b><span>{fd(l.date)} · {l.min} min</span></div><b>{pln(amt(l)).replace(",00", "")}</b><button className="btn s" onClick={() => run(() => api("PATCH", "/api/lessons/" + l.id, { paid: true }), "Lekcja oznaczona jako opłacona.")}>Opłacona</button></div>)}
         </div>}
-      </div>; })}</div>}
+      </div>; })}</div></>}
     <RevenueChart />
     <h2 className="sect" id="stats">Statystyki</h2>
     <Stats />
@@ -383,8 +398,8 @@ function PlanCard() {
 }
 
 /* ---------- settings ---------- */
-export function Settings({ group = "konto" }: { group?: "konto" | "wyglad" | "lekcje" | "kosz" }) {
-  const [grp, setGrp] = useState(group);
+export function Settings({ group = "" }: { group?: string }) {
+  const [sec, setSec] = useState(group);
   const { user, setUser, updateMe, demo, logout } = useAuth();
   const { data, run, reload } = useTutor();
   const { modal, close, confirm, toast } = useOverlay();
@@ -412,22 +427,13 @@ export function Settings({ group = "konto" }: { group?: "konto" | "wyglad" | "le
     f.click();
   };
 
-  const G: [typeof grp, string, string][] = [["konto", "Konto", "👤"], ["wyglad", "Wygląd", "🎨"], ["lekcje", "Lekcje i dane", "📚"], ["kosz", "Kosz", "🗑️"]];
-  return <>
-    <div className="bar"><div className="seg sg" role="tablist" aria-label="Grupy ustawień">{G.map(([k, t, e]) => <button key={k} role="tab" aria-pressed={grp === k} aria-selected={grp === k} onClick={() => setGrp(k)}><span className="emo" aria-hidden="true">{e}</span>{t}{k === "kosz" && pr && data!.trash.length > 0 && <i className="tbadge" style={{ position: "static", marginLeft: 6 }}>{data!.trash.length}</i>}</button>)}</div></div>
-    {grp === "konto" && <div className="grid" style={{ gap: 16 }}>
-    <div className="card"><h2><span className="emo" aria-hidden="true">👤</span>Profil</h2>
+  const PROFIL = <div className="card"><h2>Profil</h2>
       <Field id="pfn" label="Imię lub imię i nazwisko" value={pf.name} onChange={(v) => setPf({ ...pf, name: v })} error={pf.err} />
       <Field id="pfb" label="Nazwa lub marka korepetytora" value={pf.brand} onChange={(v) => setPf({ ...pf, brand: v })} />
       <p className="hint" style={{ margin: "4px 0 16px" }}>E-mail: {user!.email}. Nazwa lub marka jest widoczna dla Twoich uczniów w panelu ucznia.</p>
-      <button className="btn p" disabled={demo} onClick={async () => { if (!pf.name.trim()) { setPf({ ...pf, err: "Podaj imię." }); return; } try { await updateMe({ name: pf.name.trim(), brand: pf.brand.trim() }); setPf({ ...pf, err: "" }); toast("Profil zapisany."); } catch (e) { toast(errMsg(e)); } }}>Zapisz profil</button></div>
-    <ContactCard />
-    <PlanCard />
-    <div className="card"><h2><span className="emo" aria-hidden="true">🔒</span>Konto i bezpieczeństwo</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>Hasło jest przechowywane wyłącznie jako zaszyfrowany skrót.</p><div className="acts"><button className="btn" disabled={demo} onClick={() => modal(<ChangePassword />)}>Zmień hasło</button>{user!.isAdmin && !demo && <button className="btn" onClick={() => navigate("/admin")}>Panel administratora</button>}<button className="btn" onClick={() => confirm({ title: demo ? "Wyjść z trybu demo?" : "Wylogować się?", text: demo ? "Dane przykładowe nie są zapisywane." : "Twoje dane są bezpiecznie zapisane na koncie.", ok: demo ? "Wyjdź" : "Wyloguj się", onOk: logout })}>{demo ? "Wyjdź z dema" : "Wyloguj się"}</button></div></div>
-    </div>}
-    {grp === "wyglad" && <div className="grid" style={{ gap: 16 }}><ThemePicker /></div>}
-    {grp === "lekcje" && <div className="grid" style={{ gap: 16 }}>
-    <div className="card"><h2><span className="emo" aria-hidden="true">⚙️</span>Domyślne wartości</h2>
+      <button className="btn p" disabled={demo} onClick={async () => { if (!pf.name.trim()) { setPf({ ...pf, err: "Podaj imię." }); return; } try { await updateMe({ name: pf.name.trim(), brand: pf.brand.trim() }); setPf({ ...pf, err: "" }); toast("Profil zapisany."); } catch (e) { toast(errMsg(e)); } }}>Zapisz profil</button></div>;
+  const HASLO = <div className="card"><h2>Konto i bezpieczeństwo</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>Hasło jest przechowywane wyłącznie jako zaszyfrowany skrót.</p><div className="acts"><button className="btn" disabled={demo} onClick={() => modal(<ChangePassword />)}>Zmień hasło</button>{user!.isAdmin && !demo && <button className="btn" onClick={() => navigate("/admin")}>Panel administratora</button>}<button className="btn" onClick={() => confirm({ title: demo ? "Wyjść z trybu demo?" : "Wylogować się?", text: demo ? "Dane przykładowe nie są zapisywane." : "Twoje dane są bezpiecznie zapisane na koncie.", ok: demo ? "Wyjdź" : "Wyloguj się", onOk: logout })}>{demo ? "Wyjdź z dema" : "Wyloguj się"}</button></div></div>;
+  const DOMYSLNE = <div className="card"><h2>Domyślne wartości</h2>
       <div className="f2">
         <div className="f"><label htmlFor="sd">Domyślny czas lekcji (min)</label><input id="sd" type="number" min={5} step={5} defaultValue={c.dur || 60} onBlur={(e) => { const v = Number(e.target.value); if (!(v > 0) || Math.round(v) !== v) { toast("Podaj dodatnią liczbę minut."); e.target.value = String(c.dur || 60); return; } if (v !== (c.dur || 60)) save({ dur: v }); }} /></div>
         <div className="f"><label htmlFor="st">Godzina nowej lekcji</label><input id="st" type="time" defaultValue={c.time || "16:00"} onBlur={(e) => { if (e.target.value && e.target.value !== (c.time || "16:00")) save({ time: e.target.value }); }} /></div>
@@ -436,23 +442,21 @@ export function Settings({ group = "konto" }: { group?: "konto" | "wyglad" | "le
         <div className="f"><label htmlFor="sr2">Stawka nowego ucznia (zł / 60 min)</label><input id="sr2" inputMode="decimal" defaultValue={gStr(c.rate || 10000)} onBlur={(e) => { const v = toG(e.target.value); if (isNaN(v) || v < 0) { toast("Podaj poprawną, nieujemną stawkę."); e.target.value = gStr(c.rate || 10000); return; } if (v !== (c.rate || 10000)) save({ rate: v }); }} /></div>
         <div className="f"><label htmlFor="sw">Początek tygodnia w kalendarzu</label><select id="sw" value={c.wk === "sun" ? "sun" : "mon"} onChange={(e) => save({ wk: e.target.value })}><option value="mon">Poniedziałek</option><option value="sun">Niedziela</option></select></div>
       </div>
-      <div className="chk" style={{ marginTop: 8 }}><input type="checkbox" id="sl" checked={c.late !== false} onChange={(e) => save({ late: e.target.checked })} /><label htmlFor="sl">Pokazuj na pulpicie lekcje do potwierdzenia</label></div></div>
-    <div className="card"><h2><span className="emo" aria-hidden="true">🎯</span>Cel miesięczny{tag}</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>Pasek postępu na pulpicie pokazuje, ile z celu osiągnąłeś w wybranym miesiącu. Zostaw puste, aby wyłączyć.</p>
-      <div className="f"><label htmlFor="sg">Cel (zł)</label><input id="sg" inputMode="decimal" value={goal} disabled={!pr} onChange={(e) => setGoal(e.target.value)} onBlur={() => { const v = goal.trim() === "" ? 0 : toG(goal); if (isNaN(v) || v < 0) { toast("Podaj poprawną, nieujemną kwotę."); return; } if (v !== (c.goal || 0)) save({ goal: v }); }} /></div>{up("Cel miesięczny")}</div>
-    <div className="card"><h2><span className="emo" aria-hidden="true">📝</span>Szablony notatek{tag}</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>Wstawiasz je w formularzu lekcji. Dostępne są 4 gotowe szablony i Twoje własne.</p>
+      <div className="chk" style={{ marginTop: 8 }}><input type="checkbox" id="sl" checked={c.late !== false} onChange={(e) => save({ late: e.target.checked })} /><label htmlFor="sl">Pokazuj na pulpicie lekcje do potwierdzenia</label></div></div>;
+  const CEL = <div className="card"><h2>Cel miesięczny{tag}</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>Pasek postępu na pulpicie pokazuje, ile z celu osiągnąłeś w wybranym miesiącu. Zostaw puste, aby wyłączyć.</p>
+      <div className="f"><label htmlFor="sg">Cel (zł)</label><input id="sg" inputMode="decimal" value={goal} disabled={!pr} onChange={(e) => setGoal(e.target.value)} onBlur={() => { const v = goal.trim() === "" ? 0 : toG(goal); if (isNaN(v) || v < 0) { toast("Podaj poprawną, nieujemną kwotę."); return; } if (v !== (c.goal || 0)) save({ goal: v }); }} /></div>{up("Cel miesięczny")}</div>;
+  const SZABLONY = <div className="card"><h2>Szablony notatek{tag}</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>Wstawiasz je w formularzu lekcji. Dostępne są 4 gotowe szablony i Twoje własne.</p>
       {(c.tpl || []).map((x, i) => <div className="row" key={i}><div className="m"><b>{x.n}</b><span>{x.t}</span></div><button className="btn s d" disabled={!pr} onClick={() => save({ tpl: (c.tpl || []).filter((_, j) => j !== i) }, "Usunięto szablon.")}>Usuń</button></div>)}
       <div className="f" style={{ marginTop: 12 }}><label htmlFor="tn">Nazwa szablonu</label><input id="tn" disabled={!pr} value={tpl.n} onChange={(e) => setTpl({ ...tpl, n: e.target.value })} /></div>
       <div className="f"><label htmlFor="tt">Treść</label><textarea id="tt" rows={3} disabled={!pr} value={tpl.t} onChange={(e) => setTpl({ ...tpl, t: e.target.value })} /></div>
-      {pr ? <button className="btn" onClick={async () => { if (!tpl.n.trim() || !tpl.t.trim()) { toast("Podaj nazwę i treść szablonu."); return; } await save({ tpl: [...(c.tpl || []), { n: tpl.n.trim(), t: tpl.t.trim() }] }, "Dodano szablon."); setTpl({ n: "", t: "" }); }}>Dodaj szablon</button> : up("Szablony notatek")}</div>
-    <div className="card"><h2><span className="emo" aria-hidden="true">💾</span>Dane</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>Kopia danych zawiera dane uczniów – przechowuj ją bezpiecznie.</p>
+      {pr ? <button className="btn" onClick={async () => { if (!tpl.n.trim() || !tpl.t.trim()) { toast("Podaj nazwę i treść szablonu."); return; } await save({ tpl: [...(c.tpl || []), { n: tpl.n.trim(), t: tpl.t.trim() }] }, "Dodano szablon."); setTpl({ n: "", t: "" }); }}>Dodaj szablon</button> : up("Szablony notatek")}</div>;
+  const DANE = <div className="card"><h2>Dane</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>Kopia danych zawiera dane uczniów – przechowuj ją bezpiecznie.</p>
       <div className="acts">
         <button className="btn" onClick={async () => { try { const d = await api("GET", "/api/export"); download("tutortrack-kopia-" + ymd(new Date()) + ".json", JSON.stringify(d, null, 1), "application/json"); toast("Kopia zapisana."); } catch (e) { toast(errMsg(e)); } }}>Eksportuj kopię danych</button>
         <button className="btn" disabled={demo} onClick={importFile}>Importuj kopię danych</button>
         <button className="btn d" disabled={demo} onClick={() => modal(<DeleteAccount onDone={() => { setUser(null); logout(); }} />)}>Usuń konto i dane</button>
-      </div></div>
-    </div>}
-    {grp === "kosz" && <div className="grid" style={{ gap: 16 }}>
-    <div className="card"><h2><span className="emo" aria-hidden="true">🗑️</span>Kosz{tag}</h2>
+      </div></div>;
+  const KOSZ = <div className="card"><h2>Kosz{tag}</h2>
       {!pr ? <><p className="hint">W planie Pro usunięte lekcje i uczniowie trafiają do kosza na 30 dni i można je przywrócić.</p>{up("Kosz z przywracaniem")}</> : <>
         <p className="hint" style={{ margin: "-6px 0 12px" }}>Usunięte lekcje i uczniowie trafiają tu na 30 dni.</p>
         {data!.trash.length ? <>{data!.trash.map((x) => { const d = Math.max(0, 30 - Math.floor((Date.now() - x.deletedAt) / 864e5)); const nm = x.kind === "student" ? `Uczeń: ${x.name} (${x.lessons} lekcji)` : `Lekcja: ${x.name || "usunięty uczeń"} · ${fd(x.date!)}, ${x.time}`;
@@ -460,9 +464,34 @@ export function Settings({ group = "konto" }: { group?: "konto" | "wyglad" | "le
             <button className="btn s" onClick={() => run(() => api("POST", `/api/trash/${x.kind}/${x.id}/restore`), "Przywrócono.")}>Przywróć</button>
             <button className="btn s d" onClick={() => confirm({ title: "Usunąć na stałe?", text: "Tej operacji nie można cofnąć.", ok: "Usuń na stałe", danger: true, onOk: () => { run(() => api("DELETE", `/api/trash/${x.kind}/${x.id}`)); } })}>Usuń na stałe</button></div></div>; })}
           <div style={{ marginTop: 12 }}><button className="btn d" onClick={() => confirm({ title: "Opróżnić kosz?", text: "Wszystkie elementy zostaną trwale usunięte.", ok: "Opróżnij", danger: true, onOk: () => { run(() => api("DELETE", "/api/trash"), "Kosz opróżniony."); } })}>Opróżnij kosz</button></div></>
-          : <p className="hint">Kosz jest pusty.</p>}</>}</div>
-    </div>}
-  </>;
+          : <p className="hint">Kosz jest pusty.</p>}</>}</div>;
+
+  const I = (k: string, t: string, ic: string, v?: ReactNode) => <button key={k} className="sitem" onClick={() => { setSec(k); window.scrollTo(0, 0); }}><span className="sic"><Ic n={ic} s={16} /></span><b>{t}</b>{v != null && <span className="sv">{v}</span>}<Ic n="chev" s={16} /></button>;
+  const SEC: Record<string, [string, ReactNode]> = {
+    profil: ["Profil", PROFIL],
+    kontakt: ["Kontakt dla uczniów", <ContactCard />],
+    haslo: ["Hasło i bezpieczeństwo", HASLO],
+    plan: ["Plan", <PlanCard />],
+    domyslne: ["Domyślne wartości lekcji", DOMYSLNE],
+    szablony: ["Szablony notatek", SZABLONY],
+    cel: ["Cel miesięczny", CEL],
+    wyglad: ["Wygląd", <ThemePicker />],
+    dane: ["Kopia danych", DANE],
+    kosz: ["Kosz", KOSZ],
+  };
+  if (sec && SEC[sec]) return <div className="ssec">
+    <button className="sback" onClick={() => { setSec(""); window.scrollTo(0, 0); }}><Ic n="chevl" s={16} />Ustawienia</button>
+    {SEC[sec][1]}</div>;
+  const thName: Record<string, string> = { light: "Jasny", auto: "Systemowy", dark: "Ciemny", graphite: "Grafit", blue: "Ocean", green: "Mięta", pink: "Róż", orange: "Zachód słońca", purple: "Lawenda" };
+  return <div className="slist">
+    <div className="sgrp"><button className="sitem sme" onClick={() => setSec("profil")}><span className="sav">{(user!.name || "?").charAt(0).toUpperCase()}</span><b>{user!.name}<small>{pr ? "Plan Pro" : "Plan Free"} · {user!.email}</small></b><Ic n="chev" s={16} /></button></div>
+    <div className="sgt">Konto</div>
+    <div className="sgrp">{I("kontakt", "Kontakt dla uczniów", "mail", c.showEmail || c.showPhone ? "widoczny" : "ukryty")}{I("haslo", "Hasło i bezpieczeństwo", "lock")}{I("plan", "Plan", "star", pr ? "Pro" : "Free")}</div>
+    <div className="sgt">Praca</div>
+    <div className="sgrp">{I("domyslne", "Domyślne wartości lekcji", "clock", (c.dur || 60) + " min · " + (c.time || "16:00"))}{I("szablony", "Szablony notatek", "note", pr ? String(4 + (c.tpl || []).length) : "Pro")}{I("cel", "Cel miesięczny", "target", pr ? (c.goal ? pln(c.goal).replace(",00", "") : "wyłączony") : "Pro")}</div>
+    <div className="sgt">Aplikacja</div>
+    <div className="sgrp">{I("wyglad", "Wygląd", "palette", thName[th] || "Jasny")}{I("dane", "Kopia danych", "download")}{I("kosz", "Kosz", "trash", pr ? (data!.trash.length ? String(data!.trash.length) : "pusty") : "Pro")}</div>
+  </div>;
 }
 
 /** Contact details visible to linked students – the tutor decides what is shown. */

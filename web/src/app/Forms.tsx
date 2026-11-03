@@ -6,7 +6,7 @@ import {
 } from "../lib/util";
 import { useAuth, useTutor } from "../state";
 import { errMsg, Field, useOverlay } from "../ui/overlay";
-import { Empty } from "../lib/icons";
+import { Empty, Ic } from "../lib/icons";
 import { LessonItem, LessonTags, registerLessonUi, useData, useUi, useUpsell } from "./common";
 
 const APP_URL = typeof location !== "undefined" ? location.origin : "";
@@ -276,7 +276,7 @@ export function LessonActions({ l }: { l: Lesson }) {
   return <div className="acts">
     <CancelRequestActions l={l} />
     {!pendingCr && l.status === "planned" && <>
-      <button className="btn s" onClick={() => modal(<DoneModal l={l} />)}>Przeprowadzona</button>
+      <button className="btn s p" onClick={() => modal(<DoneModal l={l} />)}>Przeprowadzona</button>
       <button className="btn s" onClick={() => confirm({ title: "Odwołać lekcję?", text: <>{l.topic || "Bez tematu"} · {fd(l.date)}<br />{fee > 0 ? <>Zostanie naliczona opłata: <b>{pln(fee)}</b>.</> : "Odwołana lekcja nie jest płatna."}</>, ok: "Odwołaj lekcję",
         onOk: () => { run(() => api("PATCH", "/api/lessons/" + l.id, { status: "cancelled", fee, paid: false }), "Lekcja odwołana."); } })}>Odwołana</button>
     </>}
@@ -315,7 +315,7 @@ export function StudentDetail({ id }: { id: string }) {
     <div className="grid g2" style={{ marginBottom: 12 }}><div className="card stat"><div className="l">Przeprowadzone lekcje</div><div className="v">{dn.length}</div></div><div className="card stat"><div className="l">Do zapłaty</div><div className="v am">{pln(sumAmt(ls.filter(billable), (l) => !l.paid))}</div></div></div>
     <h2>Historia lekcji</h2>
     {ls.length ? ls.map((l) => <LessonItem key={l.id} l={l} quick={false} />) : <Empty icon="book" title="Brak lekcji" sub="Dodaj pierwszą lekcję dla tego ucznia." />}
-    <div className="mf"><button className="btn" onClick={close}>Zamknij</button><button className="btn p" onClick={() => modal(<LessonForm pre={id} />)}>Dodaj lekcję</button></div>
+    <div className="mf"><button className="btn" onClick={() => modal(<StudentForm s={s} />)}>Edytuj</button><button className="btn" onClick={() => modal(<ShareModal id={id} />, true)}>{s.inviteCode ? "Kod ucznia" : "Udostępnij uczniowi"}</button><span style={{ flex: 1 }} /><button className="btn" onClick={close}>Zamknij</button><button className="btn p" onClick={() => modal(<LessonForm pre={id} />)}>Dodaj lekcję</button></div>
   </>;
 }
 
@@ -387,20 +387,21 @@ export function LessonSheet({ id }: { id: string }) {
   const l = lessons.find((x) => x.id === id);
   if (!l) return <><h2>Lekcja</h2><p className="hint">Ta lekcja została usunięta.</p><div className="mf"><button className="btn" onClick={close}>Zamknij</button></div></>;
   const s = stu(l.sid), sub = l.subject || (s ? subjList(s)[0] : "");
-  return <>
-    <h2>{s ? s.name : "Lekcja"}{sub ? " · " + sub : ""}</h2>
-    <p className="hint" style={{ margin: "-6px 0 10px" }}>{fd(l.date)}, {l.time}–{te(l.time, l.min)} ({l.min} min) · {l.status === "cancelled" ? (l.fee > 0 ? "opłata " + pln(l.fee) : "bez opłaty") : pln(l.amount)}</p>
-    <div style={{ marginBottom: 12 }}><LessonTags l={l} lessons={lessons} /></div>
-    {l.topic && <p style={{ margin: "0 0 8px" }}><b>Temat:</b> {l.topic}</p>}
-    {l.prep && <p className="pre" style={{ margin: "0 0 8px" }}><b>Przed zajęciami:</b> {l.prep}</p>}
-    {l.notes && <p className="pre" style={{ margin: "0 0 8px" }}><b>Po zajęciach:</b> {l.notes}</p>}
-    {l.hw && <p className="pre" style={{ margin: "0 0 8px" }}><b>Praca domowa:</b> {l.hw}{l.hd ? " (termin: " + fd(l.hd) + ")" : ""}</p>}
-    {l.cr?.status === "pending" && <div className="nt">{l.cr.kind === "move" ? "Uczeń prosi o przeniesienie lekcji na następny tydzień" : "Uczeń prosi o odwołanie"}: {l.cr.reason}</div>}
+  const st = l.status === "done" ? "przeprowadzona" : l.status === "cancelled" ? "odwołana" : "zaplanowana";
+  const pay = l.status === "cancelled" ? (l.fee > 0 ? pln(l.fee) + " (opłata) · " + (l.paid ? "opłacona" : "nieopłacona") : "bez opłaty") : pln(l.amount) + " · " + (l.paid ? "opłacona" : "nieopłacona");
+  return <div className="lsheet">
+    <div className="lsh"><div><h2>{s ? s.name : "Lekcja"}{sub ? " · " + sub : ""}</h2><div className="hint">{fd(l.date)} · {st}</div></div><button className="xbtn" aria-label="Zamknij" onClick={close}><Ic n="x" s={16} /></button></div>
+    <div className="kv"><span>Godzina</span><b>{l.time}–{te(l.time, l.min)} ({l.min} min)</b></div>
+    {l.topic && <div className="kv"><span>Temat</span><b>{l.topic}</b></div>}
+    <div className="kv"><span>Kwota</span><b>{pay}</b></div>
+    {l.prep && <div className="kvb"><span>Przed zajęciami</span><p className="pre">{l.prep}</p></div>}
+    {l.notes && <div className="kvb"><span>Po zajęciach</span><p className="pre">{l.notes}</p></div>}
+    {l.hw && <div className="kvb"><span>Praca domowa{l.hd ? " · termin " + fd(l.hd) : ""}</span><p className="pre">{l.hw}</p></div>}
+    {l.cr?.status === "pending" && <div className="rqbox"><b>{l.cr.kind === "move" ? "Prośba o przeniesienie na następny tydzień" : "Prośba o odwołanie"}</b><span>Przyczyna: „{l.cr.reason}”</span></div>}
     {l.cr?.status === "accepted" && l.status === "cancelled" && <p className="hint">{l.cr.kind === "move" ? "Uczeń prosił o przeniesienie – lekcja odwołana" : "Odwołana na prośbę ucznia"}: {l.cr.reason}{l.cr.note ? <><br />Twój komentarz: {l.cr.note}</> : null}</p>}
     {l.cr?.status === "moved" && <p className="hint">Przeniesiona na prośbę ucznia{l.cr.note ? " z " + fd(l.cr.note) : ""}. Przyczyna: {l.cr.reason}</p>}
-    <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--bd)" }}><LessonActions l={l} /></div>
-    <div className="mf"><button className="btn" onClick={close}>Zamknij</button></div>
-  </>;
+    <LessonActions l={l} />
+  </div>;
 }
 
 /** One-tap "done" for planned lessons that already took place (today or earlier). */
