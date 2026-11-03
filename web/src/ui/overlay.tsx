@@ -1,4 +1,5 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { tr } from "../lib/i18n";
 
 type ModalSpec = { node: ReactNode; wide?: boolean };
 type Ctx = {
@@ -74,7 +75,7 @@ export function ModalHost() {
   return (
     <div className="ov" onMouseDown={(e) => { if (e.target === e.currentTarget) close(); }}>
       <div ref={box} className={"modal" + (m.wide ? " w" : "")} role="dialog" aria-modal="true" tabIndex={-1}>{m.node}
-        <button type="button" className="mx" aria-label="Zamknij" onClick={close}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg></button></div>
+        <button type="button" className="mx" aria-label={tr("Zamknij")} onClick={close}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg></button></div>
     </div>
   );
 }
@@ -87,7 +88,7 @@ function Confirm({ title, text, ok, danger, onOk }: { title: string; text: React
       <h2>{title}</h2>
       <p>{text}</p>
       <div className="mf">
-        <button className="btn" onClick={close}>Anuluj</button>
+        <button className="btn" onClick={close}>{tr("Anuluj")}</button>
         <button className="btn p" disabled={busy} style={danger ? { background: "var(--rd)", borderColor: "var(--rd)" } : undefined}
           onClick={async () => { setBusy(true); close(); await onOk(); }}>{ok}</button>
       </div>
@@ -108,4 +109,4 @@ export function Field({ id, label, value, onChange, type = "text", error, ...res
   );
 }
 
-export function errMsg(e: unknown) { return e instanceof Error ? e.message : "Wystąpił błąd."; }
+export function errMsg(e: unknown) { return e instanceof Error ? tr(e.message) : tr("Wystąpił błąd."); }

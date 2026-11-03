@@ -6,6 +6,7 @@ const P: Record<string, ReactNode> = {
   book: <><path d="M4 4h12a4 4 0 0 1 4 4v12H8a4 4 0 0 1-4-4z" /><path d="M8 8h8M8 12h8" /></>,
   wallet: <><rect x="3" y="6" width="18" height="14" rx="3" /><path d="M3 10h18M16 15h2" /></>,
   star: <path d="m12 3 2.8 5.8 6.2.9-4.5 4.4 1.1 6.2L12 17.4 6.4 20.3l1.1-6.2L3 9.7l6.2-.9z" />,
+  globe: <><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" /></>,
   chev: <path d="m9 6 6 6-6 6" />,
   chevd: <path d="m6 9 6 6 6-6" />,
   chevl: <path d="m15 6-6 6 6 6" />,

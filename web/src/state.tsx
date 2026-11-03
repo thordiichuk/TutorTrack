@@ -3,6 +3,7 @@ import { api, ApiError, demoUser, isDemo, startDemo, stopDemo } from "./lib/api"
 import { navigate } from "./lib/router";
 import { Settings, TutorData, User } from "./lib/util";
 import { errMsg, useOverlay } from "./ui/overlay";
+import { tr } from "./lib/i18n";
 
 /* ---------- session ---------- */
 type AuthCtx = {
@@ -70,7 +71,7 @@ export function TutorProvider({ children }: { children: ReactNode }) {
     try { await fn(); await reload(); if (ok) toast(ok); return true; }
     catch (e) {
       if (e instanceof ApiError && e.status === 402) {
-        modal(<><h2>Limit planu Free został osiągnięty</h2><p>{e.message}</p><div className="mf"><button className="btn" onClick={close}>Zamknij</button><button className="btn p" onClick={() => { close(); navigate("/aplikacja/plan"); }}>Zobacz plan Pro</button></div></>);
+        modal(<><h2>{tr("Limit planu Free został osiągnięty")}</h2><p>{e.message}</p><div className="mf"><button className="btn" onClick={close}>{tr("Zamknij")}</button><button className="btn p" onClick={() => { close(); navigate("/aplikacja/plan"); }}>{tr("Zobacz plan Pro")}</button></div></>);
       } else toast(errMsg(e));
       await reload(); return false;
     }

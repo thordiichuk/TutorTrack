@@ -1,3 +1,4 @@
+import { LANG } from "./i18n";
 /* Shared types and pure helpers (ported 1:1 from the original single-file app). */
 
 export type Role = "tutor" | "student";
@@ -5,7 +6,7 @@ export type Settings = {
   theme?: "light" | "auto" | "dark" | "graphite" | "blue" | "green" | "pink" | "orange" | "purple";
   dur?: number; time?: string; rate?: number; wk?: "mon" | "sun"; late?: boolean; goal?: number;
   tpl?: { n: string; t: string }[]; onbBilling?: boolean; welcomeSkipped?: boolean;
-  cEmail?: string; cPhone?: string; showEmail?: boolean; showPhone?: boolean;
+  cEmail?: string; cPhone?: string; showEmail?: boolean; showPhone?: boolean; lang?: "pl" | "uk" | "en";
 };
 export type User = { id: string; email: string; role: Role; name: string; brand: string; plan: "free" | "pro"; settings: Settings; isAdmin?: boolean };
 export type Student = {
@@ -31,11 +32,38 @@ export const ymd = (d: Date) => d.getFullYear() + "-" + pad(d.getMonth() + 1) + 
 export const ym = (d: Date) => d.getFullYear() + "-" + pad(d.getMonth() + 1);
 export function addDays(n: number) { const d = new Date(); d.setDate(d.getDate() + n); return ymd(d); }
 export function pd(s: string) { const p = s.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
-export const WDSHORT = ["niedz.", "pon.", "wt.", "śr.", "czw.", "pt.", "sob."];
-export const MSHORT = ["sty", "lut", "mar", "kwi", "maj", "cze", "lip", "sie", "wrz", "paź", "lis", "gru"];
-export const MLONG = ["styczeń", "luty", "marzec", "kwiecień", "maj", "czerwiec", "lipiec", "sierpień", "wrzesień", "październik", "listopad", "grudzień"];
-export const WDL = ["Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek", "Sobota", "Niedziela"];
-export function fd(s: string) { const d = pd(s); return WDSHORT[d.getDay()] + ", " + d.getDate() + " " + MSHORT[d.getMonth()] + " " + d.getFullYear(); }
+const L10N = {
+  pl: {
+    wds: ["niedz.", "pon.", "wt.", "śr.", "czw.", "pt.", "sob."],
+    ms: ["sty", "lut", "mar", "kwi", "maj", "cze", "lip", "sie", "wrz", "paź", "lis", "gru"],
+    ml: ["styczeń", "luty", "marzec", "kwiecień", "maj", "czerwiec", "lipiec", "sierpień", "wrzesień", "październik", "listopad", "grudzień"],
+    mg: ["stycznia", "lutego", "marca", "kwietnia", "maja", "czerwca", "lipca", "sierpnia", "września", "października", "listopada", "grudnia"],
+    wdl: ["Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek", "Sobota", "Niedziela"],
+  },
+  uk: {
+    wds: ["нд", "пн", "вт", "ср", "чт", "пт", "сб"],
+    ms: ["січ", "лют", "бер", "кві", "тра", "чер", "лип", "сер", "вер", "жов", "лис", "гру"],
+    ml: ["січень", "лютий", "березень", "квітень", "травень", "червень", "липень", "серпень", "вересень", "жовтень", "листопад", "грудень"],
+    mg: ["січня", "лютого", "березня", "квітня", "травня", "червня", "липня", "серпня", "вересня", "жовтня", "листопада", "грудня"],
+    wdl: ["Понеділок", "Вівторок", "Середа", "Четвер", "П’ятниця", "Субота", "Неділя"],
+  },
+  en: {
+    wds: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    ms: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+    ml: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+    mg: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+    wdl: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+  },
+}[LANG];
+/** Short weekday names, Sunday first (Date.getDay order). */
+export const WDSHORT = L10N.wds;
+export const MSHORT = L10N.ms;
+export const MLONG = L10N.ml;
+/** Month names in the genitive ("3 listopada"). */
+export const MGEN = L10N.mg;
+/** Long weekday names, Monday first. */
+export const WDL = L10N.wdl;
+export function fd(s: string) { const d = pd(s); return LANG === "en" ? WDSHORT[d.getDay()] + ", " + d.getDate() + " " + MSHORT[d.getMonth()] + " " + d.getFullYear() : WDSHORT[d.getDay()] + ", " + d.getDate() + " " + MSHORT[d.getMonth()] + " " + d.getFullYear(); }
 export function fm(m: string) { const p = m.split("-"); return MLONG[+p[1] - 1] + " " + p[0]; }
 export const pln = (g: number) => (g / 100).toLocaleString("pl-PL", { style: "currency", currency: "PLN" });
 export function toG(v: string | number) {
@@ -46,7 +74,7 @@ export function toG(v: string | number) {
 export const gStr = (g: number) => (g / 100).toFixed(2).replace(".", ",");
 export const calc = (rate: number, min: number) => Math.round(rate * min / 60);
 export function te(time: string, min: number) { const a = +time.slice(0, 2) * 60 + +time.slice(3, 5) + min; return pad(Math.floor(a / 60) % 24) + ":" + pad(a % 60); }
-export const fmtH = (min: number) => (min / 60).toLocaleString("pl-PL", { maximumFractionDigits: 1 }) + " h";
+export const fmtH = (min: number) => (min / 60).toLocaleString(LANG === "en" ? "en-GB" : LANG === "uk" ? "uk-UA" : "pl-PL", { maximumFractionDigits: 1 }) + (LANG === "uk" ? " год" : " h");
 export function fdt(ts: number) { const d = new Date(ts); return fd(ymd(d)) + ", " + pad(d.getHours()) + ":" + pad(d.getMinutes()); }
 export const uid = () => "x" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
@@ -92,7 +120,9 @@ export async function copyText(t: string) {
   try { await navigator.clipboard.writeText(t); return true; } catch { return false; }
 }
 /** Polish plural for "lekcja": 1 lekcja, 2–4 lekcje, 5+ lekcji. */
-export function lekcje(n: number) { const d = n % 10, h = n % 100; return n + " " + (n === 1 ? "lekcja" : d >= 2 && d <= 4 && (h < 12 || h > 14) ? "lekcje" : "lekcji"); }
+/** Plural of "lesson" in the interface language: 1 lekcja, 2–4 lekcje, 5+ lekcji (uk alike, en 1 lesson / n lessons). */
+export function plural(n: number, one: string, few: string, many: string) { const d = n % 10, h = n % 100; return n === 1 ? one : d >= 2 && d <= 4 && (h < 12 || h > 14) ? few : (LANG === "uk" && d === 1 && h !== 11 ? one : many); }
+export function lekcje(n: number) { return n + " " + (LANG === "en" ? (n === 1 ? "lesson" : "lessons") : LANG === "uk" ? plural(n, "урок", "уроки", "уроків") : plural(n, "lekcja", "lekcje", "lekcji")); }
 /** Each subject with its own hourly rate, e.g. [["Fizyka", 13000], ["Matematyka", 12000]]. */
 export const subjRates = (s: Student) => { const l = subjList(s); return (l.length ? l : [""]).map((x) => [x, rateFor(s, x)] as [string, number]); };
 /** Stable colour per subject (same in tutor and student panel). */

@@ -8,6 +8,7 @@ import { useAuth, useTutor } from "../state";
 import { errMsg, Field, useOverlay } from "../ui/overlay";
 import { Empty, Ic } from "../lib/icons";
 import { LessonItem, LessonTags, registerLessonUi, useData, useUi, useUpsell } from "./common";
+import { tr } from "../lib/i18n";
 
 const APP_URL = typeof location !== "undefined" ? location.origin : "";
 
@@ -33,12 +34,12 @@ export function StudentForm({ s, onSaved }: { s?: Student; onSaved?: () => void 
     const sl = sub.split(",").map((x) => x.trim().toLowerCase()).filter(Boolean), dup = sl.find((x, i) => sl.indexOf(x) !== i);
     const cp = Number(f.cp), cx = toG(f.cx);
     const er: Record<string, string> = {
-      name: n ? "" : "Podaj imię i nazwisko.",
-      subject: !sub ? "Podaj przedmiot." : dup ? `Przedmiot „${dup}” powtarza się na liście.` : "",
-      rate: isNaN(r) || r < 0 ? "Podaj poprawną, nieujemną stawkę." : "",
-      email: em && !emailOk(em) ? "Niepoprawny adres e-mail." : "",
-      cp: f.cm === "percent" && !(cp >= 0 && cp <= 100) ? "Podaj liczbę od 0 do 100." : "",
-      cx: f.cm === "fixed" && (isNaN(cx) || cx < 0) ? "Podaj poprawną, nieujemną kwotę." : "",
+      name: n ? "" : tr("Podaj imię i nazwisko."),
+      subject: !sub ? tr("Podaj przedmiot.") : dup ? tr("Przedmiot „{0}” powtarza się na liście.", dup) : "",
+      rate: isNaN(r) || r < 0 ? tr("Podaj poprawną, nieujemną stawkę.") : "",
+      email: em && !emailOk(em) ? tr("Niepoprawny adres e-mail.") : "",
+      cp: f.cm === "percent" && !(cp >= 0 && cp <= 100) ? tr("Podaj liczbę od 0 do 100.") : "",
+      cx: f.cm === "fixed" && (isNaN(cx) || cx < 0) ? tr("Podaj poprawną, nieujemną kwotę.") : "",
     };
     const known: Record<string, string> = {};
     students.forEach((o) => { if (o.id !== s?.id) subjList(o).forEach((x) => { known[x.toLowerCase()] = x; }); });
@@ -46,14 +47,14 @@ export function StudentForm({ s, onSaved }: { s?: Student; onSaved?: () => void 
     let near: [string, string] | null = null;
     orig.forEach((x) => { if (near || known[x.toLowerCase()] || x.length < 4) return; Object.keys(known).forEach((k) => { if (!near && lev(x.toLowerCase(), k) <= 1) near = [x, known[k]]; }); });
     if (!Object.values(er).some(Boolean) && near && warned !== sub) {
-      setWarned(sub); setE({ subject: `Przedmiot „${near[0]}” jest podobny do istniejącego „${near[1]}”. Popraw pisownię lub zapisz ponownie, jeśli to inny przedmiot.` });
+      setWarned(sub); setE({ subject: tr("Przedmiot „{0}” jest podobny do istniejącego „{1}”. Popraw pisownię lub zapisz ponownie, jeśli to inny przedmiot.", near[0], near[1]) });
       document.getElementById("ss")?.focus(); return;
     }
     const rr: Record<string, number> = {};
     for (const [k, v] of Object.entries(rates)) {
       if (!v.trim()) continue;
       const g = toG(v);
-      if (isNaN(g) || g < 0) er.rates = "Popraw stawki przedmiotów – podaj kwoty nieujemne.";
+      if (isNaN(g) || g < 0) er.rates = tr("Popraw stawki przedmiotów – podaj kwoty nieujemne.");
       else { const i = orig.indexOf(k); const key = i >= 0 ? cn[i] : k; if (cn.includes(key)) rr[key] = g; }
     }
     setE(er);
@@ -68,42 +69,42 @@ export function StudentForm({ s, onSaved }: { s?: Student; onSaved?: () => void 
         const fix = lessons.filter((l) => l.sid === s.id && l.status === "cancelled" && !l.paid && !l.fee && cancelFee(st, l.amount) > 0);
         for (const l of fix) await api("PATCH", "/api/lessons/" + l.id, { fee: cancelFee(st, l.amount) });
       } else await api("POST", "/api/students", body);
-    }, s ? "Zapisano zmiany ucznia." : "Dodano ucznia.");
+    }, s ? tr("Zapisano zmiany ucznia.") : tr("Dodano ucznia."));
     if (ok) { close(); onSaved?.(); }
   }
 
   return <>
-    <h2>{s ? "Edytuj ucznia" : "Dodaj ucznia"}</h2>
-    <Field id="sn" label="Imię i nazwisko *" value={f.name} onChange={set("name")} error={e.name} autoComplete="off" />
+    <h2>{s ? tr("Edytuj ucznia") : tr("Dodaj ucznia")}</h2>
+    <Field id="sn" label={tr("Imię i nazwisko *")} value={f.name} onChange={set("name")} error={e.name} autoComplete="off" />
     <div className="f2">
-      <Field id="ss" label="Przedmioty * (kilka po przecinku)" value={f.subject} onChange={set("subject")} error={e.subject} />
-      <Field id="sr" label="Stawka za 60 min (zł) *" value={f.rate} onChange={set("rate")} error={e.rate} inputMode="decimal" />
+      <Field id="ss" label={tr("Przedmioty * (kilka po przecinku)")} value={f.subject} onChange={set("subject")} error={e.subject} />
+      <Field id="sr" label={tr("Stawka za 60 min (zł) *")} value={f.rate} onChange={set("rate")} error={e.rate} inputMode="decimal" />
     </div>
-    {subs.length > 1 && <div><div className="hint" style={{ marginBottom: 6 }}>Osobne stawki dla przedmiotów (puste pole = stawka podstawowa):</div>
-      {subs.map((x) => <div className="f" key={x}><label>Stawka: {x} (zł / 60 min)</label><input value={rates[x] || ""} placeholder={f.rate} inputMode="decimal" onChange={(ev) => setRates({ ...rates, [x]: ev.target.value })} /></div>)}
+    {subs.length > 1 && <div><div className="hint" style={{ marginBottom: 6 }}>{tr("Osobne stawki dla przedmiotów (puste pole = stawka podstawowa):")}</div>
+      {subs.map((x) => <div className="f" key={x}><label>{tr("Stawka:")}{" "}{x}{" "}{tr("(zł / 60 min)")}</label><input value={rates[x] || ""} placeholder={f.rate} inputMode="decimal" onChange={(ev) => setRates({ ...rates, [x]: ev.target.value })} /></div>)}
       {e.rates && <div className="er" role="alert" style={{ color: "var(--rd)", fontSize: 12, marginBottom: 8 }}>{e.rates}</div>}</div>}
     <div className="f2">
-      <Field id="se" label="E-mail (opcjonalnie)" type="email" value={f.email} onChange={set("email")} error={e.email} />
-      <Field id="sp" label="Telefon (opcjonalnie)" type="tel" value={f.phone} onChange={set("phone")} />
+      <Field id="se" label={tr("E-mail (opcjonalnie)")} type="email" value={f.email} onChange={set("email")} error={e.email} />
+      <Field id="sp" label={tr("Telefon (opcjonalnie)")} type="tel" value={f.phone} onChange={set("phone")} />
     </div>
-    <fieldset className="cfs"><legend>Odwołane lekcje</legend>
-      <div className="f"><label htmlFor="scm">Opłata za odwołanie</label><select id="scm" value={f.cm} onChange={(ev) => setF({ ...f, cm: ev.target.value as Student["cancelMode"] })}><option value="off">Brak opłaty</option><option value="percent">Procent ceny lekcji</option><option value="fixed">Stała kwota</option></select></div>
-      {f.cm === "percent" && <Field id="scp" label="Procent ceny lekcji (%)" type="number" min={0} max={100} step={5} value={f.cp} onChange={set("cp")} error={e.cp} />}
-      {f.cm === "fixed" && <Field id="scx" label="Stała kwota (zł)" value={f.cx} onChange={set("cx")} error={e.cx} inputMode="decimal" />}
+    <fieldset className="cfs"><legend>{tr("Odwołane lekcje")}</legend>
+      <div className="f"><label htmlFor="scm">{tr("Opłata za odwołanie")}</label><select id="scm" value={f.cm} onChange={(ev) => setF({ ...f, cm: ev.target.value as Student["cancelMode"] })}><option value="off">{tr("Brak opłaty")}</option><option value="percent">{tr("Procent ceny lekcji")}</option><option value="fixed">{tr("Stała kwota")}</option></select></div>
+      {f.cm === "percent" && <Field id="scp" label={tr("Procent ceny lekcji (%)")} type="number" min={0} max={100} step={5} value={f.cp} onChange={set("cp")} error={e.cp} />}
+      {f.cm === "fixed" && <Field id="scx" label={tr("Stała kwota (zł)")} value={f.cx} onChange={set("cx")} error={e.cx} inputMode="decimal" />}
     </fieldset>
-    <div className="f"><label htmlFor="sno">Notatka</label><textarea id="sno" rows={3} value={f.note} onChange={(ev) => setF({ ...f, note: ev.target.value })} /></div>
-    <div className="mf">{s && <ArchiveActions s={s} />}<button className="btn" onClick={close}>Anuluj</button><button className="btn p" onClick={save}>Zapisz ucznia</button></div>
+    <div className="f"><label htmlFor="sno">{tr("Notatka")}</label><textarea id="sno" rows={3} value={f.note} onChange={(ev) => setF({ ...f, note: ev.target.value })} /></div>
+    <div className="mf">{s && <ArchiveActions s={s} />}<button className="btn" onClick={close}>{tr("Anuluj")}</button><button className="btn p" onClick={save}>{tr("Zapisz ucznia")}</button></div>
   </>;
 }
 
 /* ---------- note templates (Pro) ---------- */
-const TPL: [string, string][] = [["Plan lekcji", "Plan lekcji:\n1. \n2. \n3. "], ["Zadanie domowe", "Zadanie domowe: "], ["Podsumowanie lekcji", "Omówione: \nTrudności: \nNa następną lekcję: "], ["Do powtórzenia", "Do powtórzenia: "]];
+const TPL: [string, string][] = [[tr("Plan lekcji"), tr("Plan lekcji:\n1. \n2. \n3. ")], [tr("Zadanie domowe"), tr("Zadanie domowe: ")], [tr("Podsumowanie lekcji"), tr("Omówione: \nTrudności: \nNa następną lekcję: ")], [tr("Do powtórzenia"), tr("Do powtórzenia: ")]];
 function TplSel({ onPick }: { onPick: (t: string) => void }) {
   const { user } = useAuth();
   if (user?.plan !== "pro") return null;
   const all = TPL.concat((user.settings.tpl || []).map((x) => [x.n, x.t] as [string, string]));
-  return <select aria-label="Wstaw szablon" style={{ marginBottom: 6 }} value="" onChange={(e) => { if (e.target.value !== "") onPick(all[+e.target.value][1]); }}>
-    <option value="">Wstaw szablon…</option>{all.map((x, i) => <option key={i} value={i}>{x[0]}</option>)}</select>;
+  return <select aria-label={tr("Wstaw szablon")} style={{ marginBottom: 6 }} value="" onChange={(e) => { if (e.target.value !== "") onPick(all[+e.target.value][1]); }}>
+    <option value="">{tr("Wstaw szablon…")}</option>{all.map((x, i) => <option key={i} value={i}>{x[0]}</option>)}</select>;
 }
 
 /* ---------- lesson form ---------- */
@@ -134,10 +135,10 @@ export function LessonForm({ l, pre, draft }: { l?: Lesson; pre?: string; draft?
   async function save() {
     const m = Number(d.minS), a = toG(d.amtS), fe = toG(d.feeS);
     const er = {
-      date: d.date ? "" : "Wybierz datę.", time: d.time ? "" : "Wybierz godzinę.",
-      min: !(m > 0) || Math.round(m) !== m ? "Czas trwania musi być dodatnią liczbą minut." : "",
-      amount: isNaN(a) || a < 0 ? "Podaj poprawną, nieujemną kwotę." : "",
-      fee: d.status === "cancelled" && (isNaN(fe) || fe < 0) ? "Podaj poprawną, nieujemną kwotę." : "",
+      date: d.date ? "" : tr("Wybierz datę."), time: d.time ? "" : tr("Wybierz godzinę."),
+      min: !(m > 0) || Math.round(m) !== m ? tr("Czas trwania musi być dodatnią liczbą minut.") : "",
+      amount: isNaN(a) || a < 0 ? tr("Podaj poprawną, nieujemną kwotę.") : "",
+      fee: d.status === "cancelled" && (isNaN(fe) || fe < 0) ? tr("Podaj poprawną, nieujemną kwotę.") : "",
     };
     setE(er); if (Object.values(er).some(Boolean)) return;
     const rec = {
@@ -149,38 +150,38 @@ export function LessonForm({ l, pre, draft }: { l?: Lesson; pre?: string; draft?
     };
     if (rec.status === "cancelled" && !rec.fee) rec.paid = false;
     const commit = async () => {
-      const ok = await run(() => (l ? api("PATCH", "/api/lessons/" + l.id, rec) : api("POST", "/api/lessons", rec)), l ? "Zapisano zmiany lekcji." : "Dodano lekcję.");
+      const ok = await run(() => (l ? api("PATCH", "/api/lessons/" + l.id, rec) : api("POST", "/api/lessons", rec)), l ? tr("Zapisano zmiany lekcji.") : tr("Dodano lekcję."));
       if (ok) close();
     };
     const ov = rec.status === "cancelled" ? [] : overlap(lessons, rec.date, rec.time, m, l?.id);
     if (ov.length) {
       const x = ov[0], s = stu(x.sid);
-      modal(<><h2>Nakładające się terminy</h2><p>W tym czasie masz już lekcję: <b>{s ? s.name : ""}</b>, {fd(x.date)}, {x.time} ({x.min} min). Czy na pewno zapisać obie?</p>
-        <div className="mf"><button className="btn" onClick={() => modal(<LessonForm l={l} draft={{ ...rec }} />)}>Wróć do edycji</button><button className="btn p" onClick={commit}>Zapisz mimo to</button></div></>);
+      modal(<><h2>{tr("Nakładające się terminy")}</h2><p>{tr("W tym czasie masz już lekcję:")}{" "}<b>{s ? s.name : ""}</b>, {fd(x.date)}, {x.time} ({x.min}{" "}{tr("min). Czy na pewno zapisać obie?")}</p>
+        <div className="mf"><button className="btn" onClick={() => modal(<LessonForm l={l} draft={{ ...rec }} />)}>{tr("Wróć do edycji")}</button><button className="btn p" onClick={commit}>{tr("Zapisz mimo to")}</button></div></>);
     } else await commit();
   }
 
   return <>
-    <h2>{l ? "Edytuj lekcję" : "Dodaj lekcję"}</h2>
-    <div className="f"><label htmlFor="lst">Uczeń *</label><select id="lst" value={d.sid} onChange={(ev) => { const s = stu(ev.target.value); setManual(false); upd({ sid: ev.target.value, subject: s ? subjList(s)[0] || "" : "" }, true); }}>
-      {act.map((s) => <option key={s.id} value={s.id}>{s.name}{s.active ? "" : " (zarchiwizowany)"}</option>)}</select></div>
-    {subOpts.length > 1 && <div className="f"><label htmlFor="lsu">Przedmiot</label><select id="lsu" value={d.subject} onChange={(ev) => { setManual(false); upd({ subject: ev.target.value }, true); }}>{subOpts.map((x) => <option key={x}>{x}</option>)}</select></div>}
-    <div className="f2"><Field id="ld" label="Data *" type="date" value={d.date} onChange={(v) => upd({ date: v })} error={e.date} /><Field id="lt" label="Godzina *" type="time" value={d.time} onChange={(v) => upd({ time: v })} error={e.time} /></div>
-    <Field id="lto" label="Temat lekcji" value={d.topic} onChange={(v) => upd({ topic: v })} />
-    <div className="f2"><Field id="lm" label="Czas trwania (min) *" type="number" min={1} step={5} value={d.minS} onChange={(v) => upd({ minS: v })} error={e.min} /><Field id="la" label="Kwota (zł) *" value={d.amtS} onChange={(v) => { setManual(true); upd({ amtS: v }, false); }} error={e.amount} inputMode="decimal" /></div>
-    {(d.status === "planned" || !!d.prep) && <div className="f"><label htmlFor="lpn">Notatka przed zajęciami</label><TplSel onPick={(t) => upd({ prep: (d.prep ? d.prep + "\n" : "") + t })} /><textarea id="lpn" rows={2} placeholder="Plan lekcji, materiały – widzisz ją tylko Ty" value={d.prep} onChange={(ev) => upd({ prep: ev.target.value })} /></div>}
+    <h2>{l ? tr("Edytuj lekcję") : tr("Dodaj lekcję")}</h2>
+    <div className="f"><label htmlFor="lst">{tr("Uczeń *")}</label><select id="lst" value={d.sid} onChange={(ev) => { const s = stu(ev.target.value); setManual(false); upd({ sid: ev.target.value, subject: s ? subjList(s)[0] || "" : "" }, true); }}>
+      {act.map((s) => <option key={s.id} value={s.id}>{s.name}{s.active ? "" : tr(" (zarchiwizowany)")}</option>)}</select></div>
+    {subOpts.length > 1 && <div className="f"><label htmlFor="lsu">{tr("Przedmiot")}</label><select id="lsu" value={d.subject} onChange={(ev) => { setManual(false); upd({ subject: ev.target.value }, true); }}>{subOpts.map((x) => <option key={x}>{x}</option>)}</select></div>}
+    <div className="f2"><Field id="ld" label={tr("Data *")} type="date" value={d.date} onChange={(v) => upd({ date: v })} error={e.date} /><Field id="lt" label={tr("Godzina *")} type="time" value={d.time} onChange={(v) => upd({ time: v })} error={e.time} /></div>
+    <Field id="lto" label={tr("Temat lekcji")} value={d.topic} onChange={(v) => upd({ topic: v })} />
+    <div className="f2"><Field id="lm" label={tr("Czas trwania (min) *")} type="number" min={1} step={5} value={d.minS} onChange={(v) => upd({ minS: v })} error={e.min} /><Field id="la" label={tr("Kwota (zł) *")} value={d.amtS} onChange={(v) => { setManual(true); upd({ amtS: v }, false); }} error={e.amount} inputMode="decimal" /></div>
+    {(d.status === "planned" || !!d.prep) && <div className="f"><label htmlFor="lpn">{tr("Notatka przed zajęciami")}</label><TplSel onPick={(t) => upd({ prep: (d.prep ? d.prep + "\n" : "") + t })} /><textarea id="lpn" rows={2} placeholder={tr("Plan lekcji, materiały – widzisz ją tylko Ty")} value={d.prep} onChange={(ev) => upd({ prep: ev.target.value })} /></div>}
     <div className="f2">
-      <div className="f"><label htmlFor="lss">Status lekcji</label><select id="lss" value={d.status} onChange={(ev) => upd({ status: ev.target.value as Lesson["status"] }, false)}><option value="planned">Zaplanowana</option><option value="done">Przeprowadzona</option><option value="cancelled">Odwołana</option></select></div>
-      <div className="f"><label htmlFor="lps">Status płatności</label><select id="lps" value={d.paid ? "1" : "0"} onChange={(ev) => upd({ paid: ev.target.value === "1" }, false)}><option value="0">Nieopłacona</option><option value="1">Opłacona</option></select></div>
+      <div className="f"><label htmlFor="lss">{tr("Status lekcji")}</label><select id="lss" value={d.status} onChange={(ev) => upd({ status: ev.target.value as Lesson["status"] }, false)}><option value="planned">{tr("Zaplanowana")}</option><option value="done">{tr("Przeprowadzona")}</option><option value="cancelled">{tr("Odwołana")}</option></select></div>
+      <div className="f"><label htmlFor="lps">{tr("Status płatności")}</label><select id="lps" value={d.paid ? "1" : "0"} onChange={(ev) => upd({ paid: ev.target.value === "1" }, false)}><option value="0">{tr("Nieopłacona")}</option><option value="1">{tr("Opłacona")}</option></select></div>
     </div>
     {d.status === "done" ? <>
-      <div className="f"><label htmlFor="lno">Notatka po zajęciach</label><TplSel onPick={(t) => upd({ notes: (d.notes ? d.notes + "\n" : "") + t })} /><textarea id="lno" rows={3} value={d.notes} onChange={(ev) => upd({ notes: ev.target.value })} /></div>
-      <div className="f2"><div className="f"><label htmlFor="lhw">Praca domowa</label><textarea id="lhw" rows={2} placeholder="Np. zad. 3–7, str. 52" value={d.hw} onChange={(ev) => upd({ hw: ev.target.value })} /></div><Field id="lhd" label="Termin pracy domowej" type="date" value={d.hd} onChange={(v) => upd({ hd: v })} /></div>
-      <p className="hint" style={{ margin: "-6px 0 10px" }}>Notatka po zajęciach i praca domowa są widoczne w panelu ucznia, jeśli uczeń jest połączony z Tobą kodem. Notatka przed zajęciami zostaje prywatna.</p>
-    </> : d.status === "planned" && <p className="hint" style={{ margin: "-6px 0 10px" }}>Notatkę po zajęciach i pracę domową dodasz, gdy oznaczysz lekcję jako przeprowadzoną.</p>}
-    {d.status === "cancelled" && <Field id="lfe" label="Opłata za odwołanie (zł)" value={d.feeS} onChange={(v) => { setFeeManual(true); setD({ ...d, feeS: v }); }} error={e.fee} inputMode="decimal" />}
-    {d.status === "cancelled" && <p className="hint">Odwołana lekcja jest płatna tylko wtedy, gdy w danych ucznia ustawiono opłatę za odwołanie.</p>}
-    <div className="mf"><button className="btn" onClick={close}>Anuluj</button><button className="btn p" onClick={save}>Zapisz lekcję</button></div>
+      <div className="f"><label htmlFor="lno">{tr("Notatka po zajęciach")}</label><TplSel onPick={(t) => upd({ notes: (d.notes ? d.notes + "\n" : "") + t })} /><textarea id="lno" rows={3} value={d.notes} onChange={(ev) => upd({ notes: ev.target.value })} /></div>
+      <div className="f2"><div className="f"><label htmlFor="lhw">{tr("Praca domowa")}</label><textarea id="lhw" rows={2} placeholder={tr("Np. zad. 3–7, str. 52")} value={d.hw} onChange={(ev) => upd({ hw: ev.target.value })} /></div><Field id="lhd" label={tr("Termin pracy domowej")} type="date" value={d.hd} onChange={(v) => upd({ hd: v })} /></div>
+      <p className="hint" style={{ margin: "-6px 0 10px" }}>{tr("Notatka po zajęciach i praca domowa są widoczne w panelu ucznia, jeśli uczeń jest połączony z Tobą kodem. Notatka przed zajęciami zostaje prywatna.")}</p>
+    </> : d.status === "planned" && <p className="hint" style={{ margin: "-6px 0 10px" }}>{tr("Notatkę po zajęciach i pracę domową dodasz, gdy oznaczysz lekcję jako przeprowadzoną.")}</p>}
+    {d.status === "cancelled" && <Field id="lfe" label={tr("Opłata za odwołanie (zł)")} value={d.feeS} onChange={(v) => { setFeeManual(true); setD({ ...d, feeS: v }); }} error={e.fee} inputMode="decimal" />}
+    {d.status === "cancelled" && <p className="hint">{tr("Odwołana lekcja jest płatna tylko wtedy, gdy w danych ucznia ustawiono opłatę za odwołanie.")}</p>}
+    <div className="mf"><button className="btn" onClick={close}>{tr("Anuluj")}</button><button className="btn p" onClick={save}>{tr("Zapisz lekcję")}</button></div>
   </>;
 }
 
@@ -192,15 +193,15 @@ function DoneModal({ l }: { l: Lesson }) {
   const [n, setN] = useState(l.notes), [hw, setHw] = useState(l.hw), [hd, setHd] = useState(l.hd);
   const s = stu(l.sid);
   return <>
-    <h2>Oznaczyć lekcję jako przeprowadzoną?</h2>
-    <p className="hint">{l.topic || "Bez tematu"} · {s ? s.name : ""} · {fd(l.date)}, {l.time}</p>
-    <div className="f"><label htmlFor="dn">Notatka podsumowująca (opcjonalnie)</label><textarea id="dn" rows={4} placeholder="Co omówiliście? Co warto powtórzyć na następnej lekcji?" value={n} onChange={(e) => setN(e.target.value)} /></div>
-    <div className="f2"><div className="f"><label htmlFor="dhw">Praca domowa (opcjonalnie)</label><textarea id="dhw" rows={2} placeholder="Np. zad. 3–7, str. 52" value={hw} onChange={(e) => setHw(e.target.value)} /></div><Field id="dhd" label="Termin pracy domowej" type="date" value={hd} onChange={setHd} /></div>
-    <p className="hint">Po potwierdzeniu lekcja trafi do rozliczeń jako przeprowadzona.</p>
-    <div className="mf"><button className="btn" onClick={close}>Anuluj</button><button className="btn p" onClick={async () => {
+    <h2>{tr("Oznaczyć lekcję jako przeprowadzoną?")}</h2>
+    <p className="hint">{l.topic || tr("Bez tematu")} · {s ? s.name : ""} · {fd(l.date)}, {l.time}</p>
+    <div className="f"><label htmlFor="dn">{tr("Notatka podsumowująca (opcjonalnie)")}</label><textarea id="dn" rows={4} placeholder={tr("Co omówiliście? Co warto powtórzyć na następnej lekcji?")} value={n} onChange={(e) => setN(e.target.value)} /></div>
+    <div className="f2"><div className="f"><label htmlFor="dhw">{tr("Praca domowa (opcjonalnie)")}</label><textarea id="dhw" rows={2} placeholder={tr("Np. zad. 3–7, str. 52")} value={hw} onChange={(e) => setHw(e.target.value)} /></div><Field id="dhd" label={tr("Termin pracy domowej")} type="date" value={hd} onChange={setHd} /></div>
+    <p className="hint">{tr("Po potwierdzeniu lekcja trafi do rozliczeń jako przeprowadzona.")}</p>
+    <div className="mf"><button className="btn" onClick={close}>{tr("Anuluj")}</button><button className="btn p" onClick={async () => {
       close();
       await run(() => api("PATCH", "/api/lessons/" + l.id, { status: "done", notes: n.trim() || l.notes, hw: hw.trim(), hd: hw.trim() ? hd : "" }), n.trim() ? "Lekcja przeprowadzona, notatka zapisana." : "Lekcja oznaczona jako przeprowadzona.");
-    }}>Potwierdź</button></div>
+    }}>{tr("Potwierdź")}</button></div>
   </>;
 }
 
@@ -219,19 +220,19 @@ export function CancelRequestActions({ l }: { l: Lesson }) {
     return <>
       <button className="btn s p" onClick={async () => {
         const ok = await run(() => api("POST", `/api/lessons/${l.id}/cancel-request/move`), "Lekcja przeniesiona na " + fd(nd) + ".");
-        if (ok && overlap(lessons, nd, l.time, l.min, l.id).length) modal(<><h2>Uwaga: nakładające się terminy</h2><p>Lekcja została przeniesiona na {fd(nd)}, {l.time}, ale nakłada się na inną lekcję. Jeśli to pomyłka, zmień termin w edycji.</p><DoneBtn /></>);
-      }}>Przenieś na {fd(nd).replace(/ \d{4}$/, "")}</button>
-      <button className="btn s" onClick={() => modal(<CancelInstead l={l} nd={nd} />)}>Odwołaj zamiast przenosić</button>
-      <button className="btn s" onClick={() => modal(<RejectRequest l={l} />)}>Odrzuć prośbę</button>
+        if (ok && overlap(lessons, nd, l.time, l.min, l.id).length) modal(<><h2>{tr("Uwaga: nakładające się terminy")}</h2><p>{tr("Lekcja została przeniesiona na")}{" "}{fd(nd)}, {l.time}{tr(", ale nakłada się na inną lekcję. Jeśli to pomyłka, zmień termin w edycji.")}</p><DoneBtn /></>);
+      }}>{tr("Przenieś na")}{" "}{fd(nd).replace(/ \d{4}$/, "")}</button>
+      <button className="btn s" onClick={() => modal(<CancelInstead l={l} nd={nd} />)}>{tr("Odwołaj zamiast przenosić")}</button>
+      <button className="btn s" onClick={() => modal(<RejectRequest l={l} />)}>{tr("Odrzuć prośbę")}</button>
     </>;
   }
   return <>
     <button className="btn s p" onClick={() => confirm({
       title: "Potwierdzić odwołanie lekcji?", ok: "Potwierdź odwołanie",
-      text: <>{s ? s.name : ""} · {fd(l.date)}, {l.time}<br />Przyczyna: {l.cr!.reason}<br />{fee > 0 ? <>Zostanie naliczona opłata za odwołanie: <b>{pln(fee)}</b>.</> : "Odwołana lekcja nie będzie płatna."}</>,
+      text: <>{s ? s.name : ""} · {fd(l.date)}, {l.time}<br />{tr("Przyczyna:")}{" "}{l.cr!.reason}<br />{fee > 0 ? <>{tr("Zostanie naliczona opłata za odwołanie:")}{" "}<b>{pln(fee)}</b>.</> : "Odwołana lekcja nie będzie płatna."}</>,
       onOk: () => { run(() => api("POST", `/api/lessons/${l.id}/cancel-request/accept`, { fee }), "Lekcja odwołana. Uczeń zobaczy potwierdzenie."); },
-    })}>Potwierdź odwołanie</button>
-    <button className="btn s" onClick={() => modal(<RejectRequest l={l} />)}>Odrzuć prośbę</button>
+    })}>{tr("Potwierdź odwołanie")}</button>
+    <button className="btn s" onClick={() => modal(<RejectRequest l={l} />)}>{tr("Odrzuć prośbę")}</button>
   </>;
 }
 /** Student asked to move the lesson, but the tutor cancels it instead and tells the student why. */
@@ -240,15 +241,15 @@ function CancelInstead({ l, nd }: { l: Lesson; nd: string }) {
   const { close } = useOverlay();
   const [note, setNote] = useState(""), [err, setErr] = useState("");
   return <>
-    <h2>Odwołać lekcję zamiast przenosić?</h2>
-    <p className="hint">Uczeń prosił o przeniesienie na {fd(nd)}, {l.time}. Przyczyna ucznia: {l.cr?.reason}</p>
-    <div className="f"><label htmlFor="cin">Komentarz dla ucznia *</label><textarea id="cin" rows={3} maxLength={500} placeholder="Np. W tym terminie nie mogę – napisz, proszę, jaki inny dzień Ci pasuje." value={note} onChange={(e) => setNote(e.target.value)} aria-describedby="e_cin" />
+    <h2>{tr("Odwołać lekcję zamiast przenosić?")}</h2>
+    <p className="hint">{tr("Uczeń prosił o przeniesienie na")}{" "}{fd(nd)}, {l.time}{tr(". Przyczyna ucznia:")}{" "}{l.cr?.reason}</p>
+    <div className="f"><label htmlFor="cin">{tr("Komentarz dla ucznia *")}</label><textarea id="cin" rows={3} maxLength={500} placeholder={tr("Np. W tym terminie nie mogę – napisz, proszę, jaki inny dzień Ci pasuje.")} value={note} onChange={(e) => setNote(e.target.value)} aria-describedby="e_cin" />
       <div className="er" id="e_cin" role="alert" style={{ color: "var(--rd)", fontSize: 12 }}>{err}</div></div>
-    <p className="hint">Lekcja zostanie odwołana bez opłaty. Uczeń zobaczy Twój komentarz w swoim panelu.</p>
-    <div className="mf"><button className="btn" onClick={close}>Anuluj</button><button className="btn p" onClick={async () => {
+    <p className="hint">{tr("Lekcja zostanie odwołana bez opłaty. Uczeń zobaczy Twój komentarz w swoim panelu.")}</p>
+    <div className="mf"><button className="btn" onClick={close}>{tr("Anuluj")}</button><button className="btn p" onClick={async () => {
       if (note.trim().length < 3) { setErr("Napisz krótki komentarz dla ucznia."); return; }
       if (await run(() => api("POST", `/api/lessons/${l.id}/cancel-request/accept`, { fee: 0, note: note.trim() }), "Lekcja odwołana. Uczeń zobaczy Twój komentarz.")) close();
-    }}>Odwołaj lekcję</button></div>
+    }}>{tr("Odwołaj lekcję")}</button></div>
   </>;
 }
 function RejectRequest({ l }: { l: Lesson }) {
@@ -256,11 +257,11 @@ function RejectRequest({ l }: { l: Lesson }) {
   const { close } = useOverlay();
   const [note, setNote] = useState("");
   return <>
-    <h2>{l.cr?.kind === "move" ? "Odrzucić prośbę o przeniesienie?" : "Odrzucić prośbę o odwołanie?"}</h2>
-    <p className="hint">Przyczyna podana przez ucznia: {l.cr?.reason}</p>
-    <div className="f"><label htmlFor="rjn">Komentarz dla ucznia (opcjonalnie)</label><textarea id="rjn" rows={3} maxLength={500} placeholder="Np. Odwołanie jest możliwe najpóźniej 24 godziny przed lekcją." value={note} onChange={(e) => setNote(e.target.value)} /></div>
-    <p className="hint">Lekcja zostanie zaplanowana bez zmian. Uczeń zobaczy Twoją decyzję i komentarz.</p>
-    <div className="mf"><button className="btn" onClick={close}>Anuluj</button><button className="btn p" onClick={async () => { if (await run(() => api("POST", `/api/lessons/${l.id}/cancel-request/reject`, { note: note.trim() }), "Prośba odrzucona.")) close(); }}>Odrzuć prośbę</button></div>
+    <h2>{l.cr?.kind === "move" ? tr("Odrzucić prośbę o przeniesienie?") : tr("Odrzucić prośbę o odwołanie?")}</h2>
+    <p className="hint">{tr("Przyczyna podana przez ucznia:")}{" "}{l.cr?.reason}</p>
+    <div className="f"><label htmlFor="rjn">{tr("Komentarz dla ucznia (opcjonalnie)")}</label><textarea id="rjn" rows={3} maxLength={500} placeholder={tr("Np. Odwołanie jest możliwe najpóźniej 24 godziny przed lekcją.")} value={note} onChange={(e) => setNote(e.target.value)} /></div>
+    <p className="hint">{tr("Lekcja zostanie zaplanowana bez zmian. Uczeń zobaczy Twoją decyzję i komentarz.")}</p>
+    <div className="mf"><button className="btn" onClick={close}>{tr("Anuluj")}</button><button className="btn p" onClick={async () => { if (await run(() => api("POST", `/api/lessons/${l.id}/cancel-request/reject`, { note: note.trim() }), "Prośba odrzucona.")) close(); }}>{tr("Odrzuć prośbę")}</button></div>
   </>;
 }
 
@@ -276,30 +277,30 @@ export function LessonActions({ l }: { l: Lesson }) {
   return <div className="acts">
     <CancelRequestActions l={l} />
     {!pendingCr && l.status === "planned" && <>
-      <button className="btn s p" onClick={() => modal(<DoneModal l={l} />)}>Przeprowadzona</button>
-      <button className="btn s" onClick={() => confirm({ title: "Odwołać lekcję?", text: <>{l.topic || "Bez tematu"} · {fd(l.date)}<br />{fee > 0 ? <>Zostanie naliczona opłata: <b>{pln(fee)}</b>.</> : "Odwołana lekcja nie jest płatna."}</>, ok: "Odwołaj lekcję",
-        onOk: () => { run(() => api("PATCH", "/api/lessons/" + l.id, { status: "cancelled", fee, paid: false }), "Lekcja odwołana."); } })}>Odwołana</button>
+      <button className="btn s p" onClick={() => modal(<DoneModal l={l} />)}>{tr("Przeprowadzona")}</button>
+      <button className="btn s" onClick={() => confirm({ title: "Odwołać lekcję?", text: <>{l.topic || "Bez tematu"} · {fd(l.date)}<br />{fee > 0 ? <>{tr("Zostanie naliczona opłata:")}{" "}<b>{pln(fee)}</b>.</> : "Odwołana lekcja nie jest płatna."}</>, ok: "Odwołaj lekcję",
+        onOk: () => { run(() => api("PATCH", "/api/lessons/" + l.id, { status: "cancelled", fee, paid: false }), "Lekcja odwołana."); } })}>{tr("Odwołana")}</button>
     </>}
     {!pendingCr && (l.status !== "cancelled" || l.fee > 0) && <button className="btn s" onClick={() => {
       if (l.paid) run(() => api("PATCH", "/api/lessons/" + l.id, { paid: false }), "Cofnięto oznaczenie płatności.");
-      else confirm({ title: "Czy na pewno lekcja została opłacona?", text: <>{l.topic || "Bez tematu"} · {s ? s.name : ""} · {fd(l.date)}{l.status === "cancelled" ? <><br />Odwołana lekcja – opłata za odwołanie: </> : <br />}<b>{pln(amt(l))}</b>. Możesz to później cofnąć.</>, ok: "Tak, opłacona",
+      else confirm({ title: "Czy na pewno lekcja została opłacona?", text: <>{l.topic || "Bez tematu"} · {s ? s.name : ""} · {fd(l.date)}{l.status === "cancelled" ? <><br />{tr("Odwołana lekcja – opłata za odwołanie:")}{" "}</> : <br />}<b>{pln(amt(l))}</b>{tr(". Możesz to później cofnąć.")}</>, ok: "Tak, opłacona",
         onOk: () => { run(() => api("PATCH", "/api/lessons/" + l.id, { paid: true }), "Lekcja oznaczona jako opłacona."); } });
-    }}>{l.paid ? "Cofnij płatność" : "Opłacona"}</button>}
-    {l.status === "cancelled" && !l.fee && fee > 0 && <button className="btn s p" onClick={() => run(() => api("PATCH", "/api/lessons/" + l.id, { fee }), "Naliczono opłatę: " + pln(fee) + ".")}>Nalicz opłatę</button>}
+    }}>{l.paid ? tr("Cofnij płatność") : tr("Opłacona")}</button>}
+    {l.status === "cancelled" && !l.fee && fee > 0 && <button className="btn s p" onClick={() => run(() => api("PATCH", "/api/lessons/" + l.id, { fee }), "Naliczono opłatę: " + pln(fee) + ".")}>{tr("Nalicz opłatę")}</button>}
     {!pendingCr && <button className="btn s" onClick={async () => {
       const d = pd(l.date); d.setDate(d.getDate() + 7);
       const n = { sid: l.sid, subject: l.subject, date: ymd(d), time: l.time, min: l.min, topic: l.topic, status: "planned", paid: false, amount: l.amount, fee: 0 };
       const ok = await run(() => api("POST", "/api/lessons", n));
       if (!ok) return;
-      if (overlap(lessons, n.date, n.time, n.min).length) modal(<><h2>Uwaga: nakładające się terminy</h2><p>Dodano lekcję na {fd(n.date)}, ale nakłada się ona na inną lekcję. Jeśli to pomyłka, zmień termin w edycji.</p><DoneBtn /></>);
-      else modal(<><h2>Dodano lekcję</h2><p>Nowa lekcja: {fd(n.date)}, {n.time}.</p><DoneBtn /></>);
-    }}>Powtórz za tydzień</button>}
-    <button className="btn s" onClick={() => modal(<LessonForm l={l} />)}>Edytuj</button>
+      if (overlap(lessons, n.date, n.time, n.min).length) modal(<><h2>{tr("Uwaga: nakładające się terminy")}</h2><p>{tr("Dodano lekcję na")}{" "}{fd(n.date)}{tr(", ale nakłada się ona na inną lekcję. Jeśli to pomyłka, zmień termin w edycji.")}</p><DoneBtn /></>);
+      else modal(<><h2>{tr("Dodano lekcję")}</h2><p>{tr("Nowa lekcja:")}{" "}{fd(n.date)}, {n.time}.</p><DoneBtn /></>);
+    }}>{tr("Powtórz za tydzień")}</button>}
+    <button className="btn s" onClick={() => modal(<LessonForm l={l} />)}>{tr("Edytuj")}</button>
     <button className="btn s d" onClick={() => confirm({ title: "Usunąć lekcję?", text: pro ? "Lekcja trafi do kosza na 30 dni." : "Tej operacji nie można cofnąć. W planie Pro usunięte lekcje trafiają do kosza.", ok: "Usuń lekcję", danger: true,
-      onOk: () => { run(() => api("DELETE", "/api/lessons/" + l.id), pro ? "Lekcja w koszu." : "Lekcja usunięta."); } })}>Usuń</button>
+      onOk: () => { run(() => api("DELETE", "/api/lessons/" + l.id), pro ? "Lekcja w koszu." : "Lekcja usunięta."); } })}>{tr("Usuń")}</button>
   </div>;
 }
-function DoneBtn() { const { close } = useOverlay(); return <div className="mf"><button className="btn p" onClick={close}>Rozumiem</button></div>; }
+function DoneBtn() { const { close } = useOverlay(); return <div className="mf"><button className="btn p" onClick={close}>{tr("Rozumiem")}</button></div>; }
 
 /* ---------- student detail ---------- */
 export function StudentDetail({ id }: { id: string }) {
@@ -309,13 +310,13 @@ export function StudentDetail({ id }: { id: string }) {
   if (!s) return null;
   const ls = sortL(lessons.filter((l) => l.sid === id), -1), dn = ls.filter((l) => l.status === "done");
   return <>
-    <h2>{s.name} <span className={"tag " + (s.active ? "gr" : "")}>{s.active ? "Aktywny" : "Zarchiwizowany"}</span></h2>
-    <div className="rates">{subjRates(s).map(([x, r]) => <span key={x} className="rate">{x && <b>{x}</b>}{pln(r)} / 60 min</span>)}</div>
-    <p>E-mail: {s.email || "brak"}<br />Telefon: {s.phone || "brak"}{s.note && <><br />Notatka: {s.note}</>}</p>
-    <div className="grid g2" style={{ marginBottom: 12 }}><div className="card stat"><div className="l">Przeprowadzone lekcje</div><div className="v">{dn.length}</div></div><div className="card stat"><div className="l">Do zapłaty</div><div className="v am">{pln(sumAmt(ls.filter(billable), (l) => !l.paid))}</div></div></div>
-    <h2>Historia lekcji</h2>
-    {ls.length ? ls.map((l) => <LessonItem key={l.id} l={l} quick={false} />) : <Empty icon="book" title="Brak lekcji" sub="Dodaj pierwszą lekcję dla tego ucznia." />}
-    <div className="mf"><button className="btn" onClick={() => modal(<StudentForm s={s} />)}>Edytuj</button><button className="btn" onClick={() => modal(<ShareModal id={id} />, true)}>{s.inviteCode ? "Kod ucznia" : "Udostępnij uczniowi"}</button><span style={{ flex: 1 }} /><button className="btn" onClick={close}>Zamknij</button><button className="btn p" onClick={() => modal(<LessonForm pre={id} />)}>Dodaj lekcję</button></div>
+    <h2>{s.name} <span className={"tag " + (s.active ? "gr" : "")}>{s.active ? tr("Aktywny") : tr("Zarchiwizowany")}</span></h2>
+    <div className="rates">{subjRates(s).map(([x, r]) => <span key={x} className="rate">{x && <b>{x}</b>}{pln(r)}{" "}{tr("/ 60 min")}</span>)}</div>
+    <p>{tr("E-mail:")}{" "}{s.email || tr("brak")}<br />{tr("Telefon:")}{" "}{s.phone || tr("brak")}{s.note && <><br />{tr("Notatka:")}{" "}{s.note}</>}</p>
+    <div className="grid g2" style={{ marginBottom: 12 }}><div className="card stat"><div className="l">{tr("Przeprowadzone lekcje")}</div><div className="v">{dn.length}</div></div><div className="card stat"><div className="l">{tr("Do zapłaty")}</div><div className="v am">{pln(sumAmt(ls.filter(billable), (l) => !l.paid))}</div></div></div>
+    <h2>{tr("Historia lekcji")}</h2>
+    {ls.length ? ls.map((l) => <LessonItem key={l.id} l={l} quick={false} />) : <Empty icon="book" title={tr("Brak lekcji")} sub={tr("Dodaj pierwszą lekcję dla tego ucznia.")} />}
+    <div className="mf"><button className="btn" onClick={() => modal(<StudentForm s={s} />)}>{tr("Edytuj")}</button><button className="btn" onClick={() => modal(<ShareModal id={id} />, true)}>{s.inviteCode ? tr("Kod ucznia") : tr("Udostępnij uczniowi")}</button><span style={{ flex: 1 }} /><button className="btn" onClick={close}>{tr("Zamknij")}</button><button className="btn p" onClick={() => modal(<LessonForm pre={id} />)}>{tr("Dodaj lekcję")}</button></div>
   </>;
 }
 
@@ -326,26 +327,26 @@ export function ShareModal({ id }: { id: string }) {
   const { close, confirm, toast, modal } = useOverlay();
   const s = stu(id);
   if (!s) return null;
-  if (isDemo()) return <><h2>Panel ucznia</h2><p>W trybie demo nie można udostępniać danych uczniom. Załóż konto, aby korzystać z panelu ucznia.</p><div className="mf"><button className="btn" onClick={close}>Zamknij</button></div></>;
+  if (isDemo()) return <><h2>{tr("Panel ucznia")}</h2><p>{tr("W trybie demo nie można udostępniać danych uczniom. Załóż konto, aby korzystać z panelu ucznia.")}</p><div className="mf"><button className="btn" onClick={close}>{tr("Zamknij")}</button></div></>;
   const create = () => run(() => api("POST", `/api/students/${id}/invite`)).then((ok) => { if (ok) modal(<ShareModal id={id} />); });
   if (!s.inviteCode) return <>
-    <h2>Udostępnij panel ucznia</h2>
-    <p>{s.name} założy bezpłatne konto ucznia i wpisze kod – zobaczy swoje lekcje, notatki po zajęciach i prace domowe. Wszystko aktualizuje się samo po każdej zmianie w dzienniku.</p>
-    <p className="hint">Uczeń widzi: terminy, przedmioty, tematy, statusy i kwoty swoich lekcji, notatki po zajęciach oraz prace domowe. Notatki przed zajęciami i dane innych uczniów zostają prywatne.</p>
-    <div className="mf"><button className="btn" onClick={close}>Anuluj</button><button className="btn p" onClick={create}>Utwórz kod dostępu</button></div>
+    <h2>{tr("Udostępnij panel ucznia")}</h2>
+    <p>{s.name}{" "}{tr("założy bezpłatne konto ucznia i wpisze kod – zobaczy swoje lekcje, notatki po zajęciach i prace domowe. Wszystko aktualizuje się samo po każdej zmianie w dzienniku.")}</p>
+    <p className="hint">{tr("Uczeń widzi: terminy, przedmioty, tematy, statusy i kwoty swoich lekcji, notatki po zajęciach oraz prace domowe. Notatki przed zajęciami i dane innych uczniów zostają prywatne.")}</p>
+    <div className="mf"><button className="btn" onClick={close}>{tr("Anuluj")}</button><button className="btn p" onClick={create}>{tr("Utwórz kod dostępu")}</button></div>
   </>;
-  const msg = `Cześć! Twoje lekcje, notatki i prace domowe znajdziesz w panelu ucznia TutorTrack.\n1. Załóż bezpłatne konto: ${APP_URL}/uczen/rejestracja\n2. Wpisz kod od korepetytora: ${s.inviteCode}`;
+  const msg = tr("Cześć! Twoje lekcje, notatki i prace domowe znajdziesz w panelu ucznia TutorTrack.\n1. Załóż bezpłatne konto: {0}/uczen/rejestracja\n2. Wpisz kod od korepetytora: {1}", APP_URL, s.inviteCode);
   return <>
-    <h2>Panel ucznia – {s.name}</h2>
-    <p className="hint" style={{ margin: "0 0 4px" }}>Kod dostępu</p>
+    <h2>{tr("Panel ucznia –")}{" "}{s.name}</h2>
+    <p className="hint" style={{ margin: "0 0 4px" }}>{tr("Kod dostępu")}</p>
     <div className="code">{s.inviteCode}</div>
-    <p className="hint" aria-live="polite">{s.linked ? <span className="tag gr">Uczeń jest połączony</span> : "Uczeń jeszcze nie wpisał kodu."} Zmiany w dzienniku są widoczne u ucznia od razu.</p>
-    <div className="f"><label htmlFor="shm">Wiadomość dla ucznia</label><textarea id="shm" rows={5} readOnly value={msg} /></div>
-    <p className="hint">Kod działa dla jednego konta ucznia. Jeśli wycieknie, utwórz nowy – stary przestanie działać, a uczeń zostanie odłączony.</p>
+    <p className="hint" aria-live="polite">{s.linked ? <span className="tag gr">{tr("Uczeń jest połączony")}</span> : tr("Uczeń jeszcze nie wpisał kodu.")}{" "}{tr("Zmiany w dzienniku są widoczne u ucznia od razu.")}</p>
+    <div className="f"><label htmlFor="shm">{tr("Wiadomość dla ucznia")}</label><textarea id="shm" rows={5} readOnly value={msg} /></div>
+    <p className="hint">{tr("Kod działa dla jednego konta ucznia. Jeśli wycieknie, utwórz nowy – stary przestanie działać, a uczeń zostanie odłączony.")}</p>
     <div className="mf">
-      <button className="btn d" onClick={() => confirm({ title: "Wyłączyć dostęp ucznia?", text: "Uczeń przestanie widzieć lekcje w panelu ucznia. Twój dziennik się nie zmieni.", ok: "Wyłącz dostęp", danger: true, onOk: () => { run(() => api("DELETE", `/api/students/${id}/invite`), "Dostęp ucznia wyłączony."); } })}>Wyłącz dostęp</button>
-      <button className="btn" onClick={() => confirm({ title: "Utworzyć nowy kod?", text: "Stary kod przestanie działać, a połączone konto ucznia zostanie odłączone.", ok: "Utwórz nowy kod", onOk: create })}>Nowy kod</button>
-      <button className="btn p" onClick={async () => { toast((await copyText(msg)) ? "Skopiowano." : "Zaznacz tekst i skopiuj go ręcznie."); }}>Kopiuj wiadomość</button>
+      <button className="btn d" onClick={() => confirm({ title: "Wyłączyć dostęp ucznia?", text: "Uczeń przestanie widzieć lekcje w panelu ucznia. Twój dziennik się nie zmieni.", ok: "Wyłącz dostęp", danger: true, onOk: () => { run(() => api("DELETE", `/api/students/${id}/invite`), "Dostęp ucznia wyłączony."); } })}>{tr("Wyłącz dostęp")}</button>
+      <button className="btn" onClick={() => confirm({ title: "Utworzyć nowy kod?", text: "Stary kod przestanie działać, a połączone konto ucznia zostanie odłączone.", ok: "Utwórz nowy kod", onOk: create })}>{tr("Nowy kod")}</button>
+      <button className="btn p" onClick={async () => { toast((await copyText(msg)) ? "Skopiowano." : "Zaznacz tekst i skopiuj go ręcznie."); }}>{tr("Kopiuj wiadomość")}</button>
     </div>
   </>;
 }
@@ -353,10 +354,10 @@ export function ShareModal({ id }: { id: string }) {
 /* ---------- monthly summary text ---------- */
 export function summaryText(s: Student, lessons: Lesson[], m: string, brand: string) {
   const ls = sortL(lessons.filter((l) => l.sid === s.id && (l.status === "done" || l.status === "cancelled") && l.date.slice(0, 7) === m), 1);
-  const L = ["Podsumowanie lekcji – " + fm(m), ...(brand ? ["Korepetytor: " + brand] : []), "Uczeń: " + s.name, ""];
-  ls.forEach((l) => { const d = pd(l.date); L.push("• " + d.getDate() + " " + MSHORT[d.getMonth()] + ", " + l.time + " – " + (l.status === "cancelled" ? "odwołana lekcja" : l.topic || "lekcja") + " (" + l.min + " min): " + (l.status === "cancelled" && !l.fee ? "bez opłaty" : pln(amt(l))) + (l.paid ? " (opłacona)" : "")); });
+  const L = [tr("Podsumowanie lekcji – ") + fm(m), ...(brand ? [tr("Korepetytor: ") + brand] : []), tr("Uczeń: ") + s.name, ""];
+  ls.forEach((l) => { const d = pd(l.date); L.push("• " + d.getDate() + " " + MSHORT[d.getMonth()] + ", " + l.time + " – " + (l.status === "cancelled" ? tr("odwołana lekcja") : l.topic || tr("lekcja")) + " (" + l.min + tr(" min): ") + (l.status === "cancelled" && !l.fee ? tr("bez opłaty") : pln(amt(l))) + (l.paid ? tr(" (opłacona)") : "")); });
   const t = sumAmt(ls, () => true), p = sumAmt(ls, (l) => l.paid);
-  L.push("", "Razem: " + pln(t), "Opłacone: " + pln(p), "Do zapłaty: " + pln(t - p));
+  L.push("", tr("Razem: ") + pln(t), tr("Opłacone: ") + pln(p), tr("Do zapłaty: ") + pln(t - p));
   return L.join("\n");
 }
 
@@ -369,13 +370,13 @@ export function SummaryModal({ id }: { id: string }) {
   const s = stu(id)!;
   const t = summaryText(s, lessons, ui.bm, user?.brand || "");
   return <>
-    <h2>Podsumowanie dla ucznia</h2><p className="hint">Skopiuj i wyślij uczniowi lub rodzicowi.</p>
+    <h2>{tr("Podsumowanie dla ucznia")}</h2><p className="hint">{tr("Skopiuj i wyślij uczniowi lub rodzicowi.")}</p>
     <textarea rows={11} readOnly value={t} />
     <div className="pt">{t}</div>
-    <div className="mf"><button className="btn" onClick={close}>Zamknij</button>
-      <button className="btn only-m" onClick={() => shareText("Podsumowanie lekcji – " + s.name, t)}>Udostępnij</button>
-      <button className="btn no-m" onClick={() => { if (user?.plan !== "pro") { proUp("Wydruk i PDF podsumowania"); return; } printText("Podsumowanie lekcji – " + s.name, t); }}>Drukuj / PDF{user?.plan !== "pro" && <> <span className="tag ac">Pro</span></>}</button>
-      <button className="btn p" onClick={async () => toast((await copyText(t)) ? "Skopiowano." : "Zaznacz tekst i skopiuj go ręcznie.")}>Kopiuj</button></div>
+    <div className="mf"><button className="btn" onClick={close}>{tr("Zamknij")}</button>
+      <button className="btn only-m" onClick={() => shareText("Podsumowanie lekcji – " + s.name, t)}>{tr("Udostępnij")}</button>
+      <button className="btn no-m" onClick={() => { if (user?.plan !== "pro") { proUp("Wydruk i PDF podsumowania"); return; } printText("Podsumowanie lekcji – " + s.name, t); }}>{tr("Drukuj / PDF")}{user?.plan !== "pro" && <> <span className="tag ac">{tr("Pro")}</span></>}</button>
+      <button className="btn p" onClick={async () => toast((await copyText(t)) ? "Skopiowano." : "Zaznacz tekst i skopiuj go ręcznie.")}>{tr("Kopiuj")}</button></div>
   </>;
 }
 
@@ -386,21 +387,21 @@ export function LessonSheet({ id }: { id: string }) {
   const { lessons, stu } = useData();
   const { close } = useOverlay();
   const l = lessons.find((x) => x.id === id);
-  if (!l) return <><h2>Lekcja</h2><p className="hint">Ta lekcja została usunięta.</p><div className="mf"><button className="btn" onClick={close}>Zamknij</button></div></>;
+  if (!l) return <><h2>{tr("Lekcja")}</h2><p className="hint">{tr("Ta lekcja została usunięta.")}</p><div className="mf"><button className="btn" onClick={close}>{tr("Zamknij")}</button></div></>;
   const s = stu(l.sid), sub = l.subject || (s ? subjList(s)[0] : "");
-  const st = l.status === "done" ? "przeprowadzona" : l.status === "cancelled" ? "odwołana" : "zaplanowana";
-  const pay = l.status === "cancelled" ? (l.fee > 0 ? pln(l.fee) + " (opłata) · " + (l.paid ? "opłacona" : "nieopłacona") : "bez opłaty") : pln(l.amount) + " · " + (l.paid ? "opłacona" : "nieopłacona");
+  const st = l.status === "done" ? tr("przeprowadzona") : l.status === "cancelled" ? tr("odwołana") : tr("zaplanowana");
+  const pay = l.status === "cancelled" ? (l.fee > 0 ? pln(l.fee) + tr(" (opłata) · ") + (l.paid ? tr("opłacona") : tr("nieopłacona")) : tr("bez opłaty")) : pln(l.amount) + " · " + (l.paid ? tr("opłacona") : tr("nieopłacona"));
   return <div className="lsheet">
-    <div className="lsh"><div><h2>{s ? s.name : "Lekcja"}{sub ? " · " + sub : ""}</h2><div className="hint">{fd(l.date)} · {st}</div></div></div>
-    <div className="kv"><span>Godzina</span><b>{l.time}–{te(l.time, l.min)} ({l.min} min)</b></div>
-    {l.topic && <div className="kv"><span>Temat</span><b>{l.topic}</b></div>}
-    <div className="kv"><span>Kwota</span><b>{pay}</b></div>
-    {l.prep && <div className="kvb"><span>Przed zajęciami</span><p className="pre">{l.prep}</p></div>}
-    {l.notes && <div className="kvb"><span>Po zajęciach</span><p className="pre">{l.notes}</p></div>}
-    {l.hw && <div className="kvb"><span>Praca domowa{l.hd ? " · termin " + fd(l.hd) : ""}</span><p className="pre">{l.hw}</p></div>}
-    {l.cr?.status === "pending" && <div className="rqbox"><b>{l.cr.kind === "move" ? "Prośba o przeniesienie na następny tydzień" : "Prośba o odwołanie"}</b><span>Przyczyna: „{l.cr.reason}”</span></div>}
-    {l.cr?.status === "accepted" && l.status === "cancelled" && <p className="hint">{l.cr.kind === "move" ? "Uczeń prosił o przeniesienie – lekcja odwołana" : "Odwołana na prośbę ucznia"}: {l.cr.reason}{l.cr.note ? <><br />Twój komentarz: {l.cr.note}</> : null}</p>}
-    {l.cr?.status === "moved" && <p className="hint">Przeniesiona na prośbę ucznia{l.cr.note ? " z " + fd(l.cr.note) : ""}. Przyczyna: {l.cr.reason}</p>}
+    <div className="lsh"><div><h2>{s ? s.name : tr("Lekcja")}{sub ? " · " + sub : ""}</h2><div className="hint">{fd(l.date)} · {st}</div></div></div>
+    <div className="kv"><span>{tr("Godzina")}</span><b>{l.time}–{te(l.time, l.min)} ({l.min}{" "}{tr("min)")}</b></div>
+    {l.topic && <div className="kv"><span>{tr("Temat")}</span><b>{l.topic}</b></div>}
+    <div className="kv"><span>{tr("Kwota")}</span><b>{pay}</b></div>
+    {l.prep && <div className="kvb"><span>{tr("Przed zajęciami")}</span><p className="pre">{l.prep}</p></div>}
+    {l.notes && <div className="kvb"><span>{tr("Po zajęciach")}</span><p className="pre">{l.notes}</p></div>}
+    {l.hw && <div className="kvb"><span>{tr("Praca domowa")}{l.hd ? tr(" · termin ") + fd(l.hd) : ""}</span><p className="pre">{l.hw}</p></div>}
+    {l.cr?.status === "pending" && <div className="rqbox"><b>{l.cr.kind === "move" ? tr("Prośba o przeniesienie na następny tydzień") : tr("Prośba o odwołanie")}</b><span>{tr("Przyczyna: „")}{l.cr.reason}”</span></div>}
+    {l.cr?.status === "accepted" && l.status === "cancelled" && <p className="hint">{l.cr.kind === "move" ? tr("Uczeń prosił o przeniesienie – lekcja odwołana") : tr("Odwołana na prośbę ucznia")}: {l.cr.reason}{l.cr.note ? <><br />{tr("Twój komentarz:")}{" "}{l.cr.note}</> : null}</p>}
+    {l.cr?.status === "moved" && <p className="hint">{tr("Przeniesiona na prośbę ucznia")}{l.cr.note ? tr(" z ") + fd(l.cr.note) : ""}{tr(". Przyczyna:")}{" "}{l.cr.reason}</p>}
     <LessonActions l={l} />
   </div>;
 }
@@ -409,7 +410,7 @@ export function LessonSheet({ id }: { id: string }) {
 export function QuickDone({ l }: { l: Lesson }) {
   const { modal } = useOverlay();
   if (l.status !== "planned" || l.date > ymd(new Date()) || l.cr?.status === "pending") return null;
-  return <button className="btn s qd" title="Oznacz jako przeprowadzoną" onClick={(e) => { e.stopPropagation(); modal(<DoneModal l={l} />); }}>Przeprowadzona</button>;
+  return <button className="btn s qd" title={tr("Oznacz jako przeprowadzoną")} onClick={(e) => { e.stopPropagation(); modal(<DoneModal l={l} />); }}>{tr("Przeprowadzona")}</button>;
 }
 registerLessonUi((p) => <LessonSheet {...p} />, (p) => <QuickDone {...p} />);
 
@@ -421,9 +422,9 @@ function ArchiveActions({ s }: { s: Student }) {
   const { confirm, close } = useOverlay();
   const { upsell } = useUpsell();
   const pro = user?.plan === "pro";
-  if (s.active) return <button className="btn" style={{ marginRight: "auto" }} onClick={() => confirm({ title: "Zarchiwizować ucznia?", text: "Historia lekcji i rozliczenia zostaną zachowane. Ucznia możesz przywrócić w każdej chwili.", ok: "Archiwizuj", onOk: () => { run(() => api("PATCH", "/api/students/" + s.id, { active: false }), "Uczeń zarchiwizowany."); } })}>Archiwizuj</button>;
+  if (s.active) return <button className="btn" style={{ marginRight: "auto" }} onClick={() => confirm({ title: "Zarchiwizować ucznia?", text: "Historia lekcji i rozliczenia zostaną zachowane. Ucznia możesz przywrócić w każdej chwili.", ok: "Archiwizuj", onOk: () => { run(() => api("PATCH", "/api/students/" + s.id, { active: false }), "Uczeń zarchiwizowany."); } })}>{tr("Archiwizuj")}</button>;
   return <span style={{ marginRight: "auto", display: "flex", gap: 8, flexWrap: "wrap" }}>
-    <button className="btn" onClick={() => { if (user?.plan === "free" && students.filter((x) => x.active).length >= FREE) { upsell(); return; } close(); run(() => api("PATCH", "/api/students/" + s.id, { active: true }), "Uczeń przywrócony."); }}>Przywróć</button>
-    <button className="btn d" onClick={() => confirm({ title: "Usunąć ucznia?", text: `${s.name} i jego lekcje (${lessons.filter((l) => l.sid === s.id).length}) ${pro ? "trafią do kosza na 30 dni." : "zostaną trwale usunięte. W planie Pro można je przywrócić z kosza."}`, ok: "Usuń ucznia", danger: true, onOk: () => { run(() => api("DELETE", "/api/students/" + s.id), pro ? "Uczeń w koszu." : "Uczeń usunięty."); } })}>Usuń</button>
+    <button className="btn" onClick={() => { if (user?.plan === "free" && students.filter((x) => x.active).length >= FREE) { upsell(); return; } close(); run(() => api("PATCH", "/api/students/" + s.id, { active: true }), "Uczeń przywrócony."); }}>{tr("Przywróć")}</button>
+    <button className="btn d" onClick={() => confirm({ title: "Usunąć ucznia?", text: `${s.name} i jego lekcje (${lessons.filter((l) => l.sid === s.id).length}) ${pro ? "trafią do kosza na 30 dni." : "zostaną trwale usunięte. W planie Pro można je przywrócić z kosza."}`, ok: "Usuń ucznia", danger: true, onOk: () => { run(() => api("DELETE", "/api/students/" + s.id), pro ? "Uczeń w koszu." : "Uczeń usunięty."); } })}>{tr("Usuń")}</button>
   </span>;
 }

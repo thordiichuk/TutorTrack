@@ -77,6 +77,7 @@ const settingsIn = z.object({
   cPhone: str(40),
   showEmail: z.boolean(),
   showPhone: z.boolean(),
+  lang: z.enum(["pl", "uk", "en"]),
 }).partial();
 const eventIn = z.object({
   title: str(120).min(1),

@@ -447,3 +447,10 @@ body[data-th=dark].stu .sgrp,body[data-th=graphite].stu .sgrp{box-shadow:none;bo
 body.stu .sitem b{font-weight:800}body.stu .sic{border-radius:11px}body.stu .sav{border-radius:14px}
 body.stu .slogout{border-radius:18px;font-weight:800}
 .only-m{display:none}@media(max-width:860px),(pointer:coarse){.only-m{display:inline-flex}.no-m{display:none!important}}
+
+/* language picker */
+.langs{display:grid;gap:8px}
+.langb{display:flex;align-items:center;gap:12px;width:100%;border:1px solid var(--bd);border-radius:12px;background:var(--card);padding:12px 14px;font:inherit;font-weight:600;color:var(--tx);cursor:pointer;text-align:left}
+.langb.on{border-color:var(--ac);background:var(--acl)}.langb .lok{margin-left:auto;color:var(--ac);font-weight:800}
+.lflag{width:34px;height:24px;border-radius:6px;background:var(--bg);display:grid;place-items:center;font-size:11px;font-weight:800;color:var(--mu)}
+.lsel{width:auto;padding:4px 8px;font-size:13px;color:var(--mu);background:transparent}

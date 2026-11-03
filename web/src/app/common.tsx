@@ -3,6 +3,7 @@ import { navigate } from "../lib/router";
 import { amt, billable, Lesson, MSHORT, overlap, pd, pln, PRO_PLN, FREE, Student, subjList, fd, ymd, addDays, ym, te, subjColor } from "../lib/util";
 import { useOverlay } from "../ui/overlay";
 import { useTutor } from "../state";
+import { tr } from "../lib/i18n";
 
 /* ---------- per-session UI state shared by tutor views (filters, months) ---------- */
 export type Ui = {
@@ -29,8 +30,8 @@ export function useUpsell() {
   const { modal, close } = useOverlay();
   const go = () => { close(); navigate("/aplikacja/plan"); };
   return {
-    upsell: () => modal(<><h2>Limit planu Free został osiągnięty</h2><p>Plan Free pozwala mieć do {FREE} aktywnych uczniów. Zarchiwizuj jednego z uczniów lub przetestuj Pro, aby dodawać bez limitu.</p><div className="mf"><button className="btn" onClick={close}>Zamknij</button><button className="btn p" onClick={go}>Zobacz plan Pro</button></div></>),
-    proUp: (f: string) => modal(<><h2>Funkcja planu Pro</h2><p>{f} jest dostępna w planie Pro ({pln(PRO_PLN).replace(",00", "")} miesięcznie). Możesz włączyć Pro w trybie testowym – żadna płatność nie zostanie pobrana.</p><div className="mf"><button className="btn" onClick={close}>Zamknij</button><button className="btn p" onClick={go}>Zobacz plan Pro</button></div></>),
+    upsell: () => modal(<><h2>{tr("Limit planu Free został osiągnięty")}</h2><p>{tr("Plan Free pozwala mieć do")}{" "}{FREE}{" "}{tr("aktywnych uczniów. Zarchiwizuj jednego z uczniów lub przetestuj Pro, aby dodawać bez limitu.")}</p><div className="mf"><button className="btn" onClick={close}>{tr("Zamknij")}</button><button className="btn p" onClick={go}>{tr("Zobacz plan Pro")}</button></div></>),
+    proUp: (f: string) => modal(<><h2>{tr("Funkcja planu Pro")}</h2><p>{f}{" "}{tr("jest dostępna w planie Pro (")}{pln(PRO_PLN).replace(",00", "")}{" "}{tr("miesięcznie). Możesz włączyć Pro w trybie testowym – żadna płatność nie zostanie pobrana.")}</p><div className="mf"><button className="btn" onClick={close}>{tr("Zamknij")}</button><button className="btn p" onClick={go}>{tr("Zobacz plan Pro")}</button></div></>),
   };
 }
 
@@ -39,25 +40,25 @@ export function useUpsell() {
 export function LessonTags({ l, lessons, nd }: { l: Lesson; lessons: Lesson[]; nd?: boolean }) {
   const td = ymd(new Date());
   const tags: [string, string][] = [];
-  if (l.status !== "cancelled" && overlap(lessons, l.date, l.time, l.min, l.id).length > 0) tags.push(["Nakłada się", "rd"]);
-  if (!nd && l.status === "planned" && l.date === td) tags.push(["Dziś", "ac"]);
-  if (!nd && l.status === "planned" && l.date === addDays(1)) tags.push(["Jutro", ""]);
-  if (l.cr?.status === "pending") tags.push([l.cr.kind === "move" ? "Prośba o przeniesienie" : "Prośba o odwołanie", "am"]);
-  if (l.status === "done") tags.push(["Przeprowadzona", "gr"]);
-  if (l.status === "cancelled") tags.push(["Odwołana", "rd"]);
-  if (billable(l)) tags.push(l.paid ? ["Opłacona", "gr"] : ["Nieopłacona", "am"]);
-  else if (l.paid) tags.push(["Opłacona z góry", "gr"]);
+  if (l.status !== "cancelled" && overlap(lessons, l.date, l.time, l.min, l.id).length > 0) tags.push([tr("Nakłada się"), "rd"]);
+  if (!nd && l.status === "planned" && l.date === td) tags.push([tr("Dziś"), "ac"]);
+  if (!nd && l.status === "planned" && l.date === addDays(1)) tags.push([tr("Jutro"), ""]);
+  if (l.cr?.status === "pending") tags.push([l.cr.kind === "move" ? tr("Prośba o przeniesienie") : tr("Prośba o odwołanie"), "am"]);
+  if (l.status === "done") tags.push([tr("Przeprowadzona"), "gr"]);
+  if (l.status === "cancelled") tags.push([tr("Odwołana"), "rd"]);
+  if (billable(l)) tags.push(l.paid ? [tr("Opłacona"), "gr"] : [tr("Nieopłacona"), "am"]);
+  else if (l.paid) tags.push([tr("Opłacona z góry"), "gr"]);
   return <>{tags.map(([t, c]) => <span key={t} className={"tag " + c} style={{ marginRight: 4 }}>{t}</span>)}</>;
 }
 
 /** The single most important status of a lesson, shown under the amount. */
 function lessonChip(l: Lesson, ov: boolean): [string, string] | null {
-  if (l.cr?.status === "pending") return [l.cr.kind === "move" ? "prośba o przeniesienie" : "prośba o odwołanie", "am"];
-  if (ov) return ["nakłada się", "rd"];
-  if (l.status === "cancelled") return [l.fee > 0 ? (l.paid ? "opłata · opłacona" : "opłata za odwołanie") : "odwołana", l.fee > 0 && !l.paid ? "am" : ""];
-  if (l.status === "done") return l.paid ? ["opłacona", "gr"] : ["nieopłacona", "am"];
-  if (l.paid) return ["z góry", "gr"];
-  if (l.date < ymd(new Date())) return ["do potwierdzenia", "am"];
+  if (l.cr?.status === "pending") return [l.cr.kind === "move" ? tr("prośba o przeniesienie") : tr("prośba o odwołanie"), "am"];
+  if (ov) return [tr("nakłada się"), "rd"];
+  if (l.status === "cancelled") return [l.fee > 0 ? (l.paid ? tr("opłata · opłacona") : tr("opłata za odwołanie")) : tr("odwołana"), l.fee > 0 && !l.paid ? "am" : ""];
+  if (l.status === "done") return l.paid ? [tr("opłacona"), "gr"] : [tr("nieopłacona"), "am"];
+  if (l.paid) return [tr("z góry"), "gr"];
+  if (l.date < ymd(new Date())) return [tr("do potwierdzenia"), "am"];
   return null;
 }
 
@@ -87,7 +88,7 @@ export function LessonItem({ l, nd, quick = true }: { l: Lesson; nd?: boolean; q
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(e); } }}>
       <span className="lbar" style={{ background: l.status === "cancelled" ? "var(--bd)" : subjColor(sub) }} />
       <span className="ltm">{nd ? <>{l.time}<small>{te(l.time, l.min)}</small></> : <>{d.getDate()} {MSHORT[d.getMonth()]}<small>{l.time}</small></>}</span>
-      <span className="lwho"><b>{s ? s.name : "?"}</b><span>{[sub, l.topic || (l.status === "cancelled" ? "" : "bez tematu")].filter(Boolean).join(" · ")}{l.cr?.status === "pending" ? " · „" + l.cr.reason + "”" : ""}</span></span>
+      <span className="lwho"><b>{s ? s.name : "?"}</b><span>{[sub, l.topic || (l.status === "cancelled" ? "" : tr("bez tematu"))].filter(Boolean).join(" · ")}{l.cr?.status === "pending" ? " · „" + l.cr.reason + "”" : ""}</span></span>
       <span className="lrt"><b>{money.replace(",00", "")}</b>{chip && <span className={"lchip " + chip[1]}>{chip[0]}</span>}</span>
       {quick && <QuickDone l={l} />}
     </div>
@@ -108,13 +109,13 @@ export function LessonRow({ l, full, nd, actions }: { l: Lesson; full?: boolean;
       <div className="m">
         <b>{nd ? "" : fd(l.date) + ", "}{l.time}</b>
         <span style={{ display: "block", color: "var(--tx)" }}>{s ? s.name : "?"}{sub ? " · " + sub : ""}</span>
-        <span style={{ display: "block", color: "var(--tx)" }}>{l.min} min · {l.status === "cancelled" ? (l.fee > 0 ? pln(l.fee) + " (opłata)" : "bez opłaty") : pln(l.amount)}</span>
-        <span style={{ display: "block" }}>Temat: {l.topic || "Bez tematu"}</span>
-        {l.prep && <span style={{ display: "block" }}>Przed zajęciami: {l.prep}</span>}
-        {l.notes && <span style={{ display: "block" }}>Po zajęciach: {l.notes}</span>}
-        {l.hw && <span style={{ display: "block" }}>Praca domowa: {l.hw}{l.hd ? " (termin: " + fd(l.hd) + ")" : ""}</span>}
-        {l.cr?.status === "pending" && <span style={{ display: "block", color: "var(--am)" }}>{l.cr.kind === "move" ? "Uczeń prosi o przeniesienie" : "Uczeń prosi o odwołanie"}: {l.cr.reason}</span>}
-        {l.cr?.status === "accepted" && l.status === "cancelled" && <span style={{ display: "block" }}>Odwołana na prośbę ucznia: {l.cr.reason}</span>}
+        <span style={{ display: "block", color: "var(--tx)" }}>{l.min}{" "}{tr("min ·")}{" "}{l.status === "cancelled" ? (l.fee > 0 ? pln(l.fee) + tr(" (opłata)") : tr("bez opłaty")) : pln(l.amount)}</span>
+        <span style={{ display: "block" }}>{tr("Temat:")}{" "}{l.topic || tr("Bez tematu")}</span>
+        {l.prep && <span style={{ display: "block" }}>{tr("Przed zajęciami:")}{" "}{l.prep}</span>}
+        {l.notes && <span style={{ display: "block" }}>{tr("Po zajęciach:")}{" "}{l.notes}</span>}
+        {l.hw && <span style={{ display: "block" }}>{tr("Praca domowa:")}{" "}{l.hw}{l.hd ? tr(" (termin: ") + fd(l.hd) + ")" : ""}</span>}
+        {l.cr?.status === "pending" && <span style={{ display: "block", color: "var(--am)" }}>{l.cr.kind === "move" ? tr("Uczeń prosi o przeniesienie") : tr("Uczeń prosi o odwołanie")}: {l.cr.reason}</span>}
+        {l.cr?.status === "accepted" && l.status === "cancelled" && <span style={{ display: "block" }}>{tr("Odwołana na prośbę ucznia:")}{" "}{l.cr.reason}</span>}
       </div>
       <div><LessonTags l={l} lessons={lessons} nd={nd} /></div>
       {full && actions}
