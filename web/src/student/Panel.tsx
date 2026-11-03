@@ -367,7 +367,7 @@ function KontoTab({ out, d, load, go }: { out: () => void; d: Data; load: () => 
   return <div className="slist">
     <div className="sgrp"><button className="sitem sme" onClick={() => setSec("profil")}><span className="sav">{(user!.name || "?").charAt(0).toUpperCase()}</span><b>{user!.name}<small>Panel ucznia · {user!.email}</small></b><Ic n="chev" s={16} /></button></div>
     <div className="sgt">Konto</div>
-    <div className="sgrp">{I("haslo", "Hasło i bezpieczeństwo", "lock")}{I("kor", "Korepetytorzy", "users", String(d.links.length), () => go("kor"))}</div>
+    <div className="sgrp">{I("haslo", "Hasło i bezpieczeństwo", "lock")}</div>
     <div className="sgt">Nauka</div>
     <div className="sgrp">{I("sum", "Podsumowanie miesiąca", "chart", undefined, () => go("sum"))}{I("kopia", "Kopia zajęć", "download", d.events.length ? String(d.events.length) + " zajęć" : undefined)}</div>
     <div className="sgt">Aplikacja</div>
