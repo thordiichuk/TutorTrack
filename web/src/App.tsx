@@ -34,8 +34,10 @@ function Routes({ path }: { path: string }) {
   useApplyTheme(inPanel && user && !demo ? user.settings.theme || "light" : "");
   useEffect(() => {
     document.body.classList.toggle("demo", demo && inApp);
+    document.body.classList.toggle("stu", path === "/uczen/panel");
+    document.body.classList.toggle("pubp", !inPanel);
     if (TITLES[path]) document.title = TITLES[path];
-  }, [path, demo, inApp]);
+  }, [path, demo, inApp, inPanel]);
   useEffect(() => { if (!location.hash) window.scrollTo(0, 0); }, [path]);
 
   if (loading) return null;

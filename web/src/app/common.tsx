@@ -1,17 +1,17 @@
 import { createContext, Dispatch, ReactNode, SetStateAction, useContext } from "react";
 import { navigate } from "../lib/router";
-import { amt, billable, Lesson, MSHORT, overlap, pd, pln, PRO_PLN, FREE, Student, subjList, fd, ymd, addDays, ym } from "../lib/util";
+import { amt, billable, Lesson, MSHORT, overlap, pd, pln, PRO_PLN, FREE, Student, subjList, fd, ymd, addDays, ym, te, subjColor } from "../lib/util";
 import { useOverlay } from "../ui/overlay";
 import { useTutor } from "../state";
 
 /* ---------- per-session UI state shared by tutor views (filters, months) ---------- */
 export type Ui = {
   q: string; sf: "active" | "arch" | "all"; so: "az" | "za" | "ln" | "new"; subj: string;
-  lf: { st: string; sb: string; mo: string; ls: string; ps: string; q: string; o: "desc" | "asc" };
+  lf: { m: "up" | "pay" | "past" | "all"; st: string; sb: string; mo: string; ls: string; ps: string; q: string; o: "desc" | "asc" };
   month: string; bm: string; open: Record<string, boolean>; lv: "list" | "cal"; cm: string; cd: string; sr: string;
 };
 export const initialUi = (): Ui => ({
-  q: "", sf: "active", so: "az", subj: "", lf: { st: "", sb: "", mo: "", ls: "", ps: "", q: "", o: "desc" },
+  q: "", sf: "active", so: "az", subj: "", lf: { m: "up", st: "", sb: "", mo: "", ls: "", ps: "", q: "", o: "desc" },
   month: ym(new Date()), bm: ym(new Date()), open: {}, lv: "list", cm: ym(new Date()), cd: "", sr: "6",
 });
 export const UiCtx = createContext<[Ui, Dispatch<SetStateAction<Ui>>]>(null as any);
@@ -50,6 +50,17 @@ export function LessonTags({ l, lessons, nd }: { l: Lesson; lessons: Lesson[]; n
   return <>{tags.map(([t, c]) => <span key={t} className={"tag " + c} style={{ marginRight: 4 }}>{t}</span>)}</>;
 }
 
+/** The single most important status of a lesson, shown under the amount. */
+function lessonChip(l: Lesson, ov: boolean): [string, string] | null {
+  if (l.cr?.status === "pending") return [l.cr.kind === "move" ? "prośba o przeniesienie" : "prośba o odwołanie", "am"];
+  if (ov) return ["nakłada się", "rd"];
+  if (l.status === "cancelled") return [l.fee > 0 ? (l.paid ? "opłata · opłacona" : "opłata za odwołanie") : "odwołana", l.fee > 0 && !l.paid ? "am" : ""];
+  if (l.status === "done") return l.paid ? ["opłacona", "gr"] : ["nieopłacona", "am"];
+  if (l.paid) return ["z góry", "gr"];
+  if (l.date < ymd(new Date())) return ["do potwierdzenia", "am"];
+  return null;
+}
+
 /** Compact, tappable lesson row. Tapping opens the lesson window with all actions. */
 export function LessonItem({ l, nd, quick = true }: { l: Lesson; nd?: boolean; quick?: boolean }) {
   const { lessons, stu } = useData();
@@ -59,13 +70,15 @@ export function LessonItem({ l, nd, quick = true }: { l: Lesson; nd?: boolean; q
   const ov = l.status !== "cancelled" && overlap(lessons, l.date, l.time, l.min, l.id).length > 0;
   const open = () => modal(<LessonSheetLazy id={l.id} />);
   const d = pd(l.date);
+  const chip = lessonChip(l, ov);
+  const money = l.status === "cancelled" ? (l.fee > 0 ? pln(l.fee) : "–") : pln(l.amount);
   return (
-    <div role="button" tabIndex={0} className={"srow lrow" + (ov ? " clash" : "") + (l.status === "cancelled" ? " cx" : "")} onClick={open}
+    <div role="button" tabIndex={0} className={"lrow2" + (ov ? " clash" : "") + (l.status === "cancelled" ? " cx" : "")} onClick={open}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } }}>
-      <span className="tm">{nd ? <>{l.time}<small>{l.min} min</small></> : <>{d.getDate()} {MSHORT[d.getMonth()]}<small>{l.time}</small></>}</span>
-      <span className={"sb" + (l.status === "done" ? " ok" : "")} />
-      <span className="m"><b>{s ? s.name : "?"}{sub ? " · " + sub : ""}</b><span>{l.topic || (l.status === "cancelled" ? "Lekcja odwołana" : "Bez tematu")}{l.cr?.status === "pending" ? " · prośba: " + l.cr.reason : ""}</span></span>
-      <span className="ltags"><LessonTags l={l} lessons={lessons} nd={nd} /></span>
+      <span className="lbar" style={{ background: l.status === "cancelled" ? "var(--bd)" : subjColor(sub) }} />
+      <span className="ltm">{nd ? <>{l.time}<small>{te(l.time, l.min)}</small></> : <>{d.getDate()} {MSHORT[d.getMonth()]}<small>{l.time}</small></>}</span>
+      <span className="lwho"><b>{s ? s.name : "?"}</b><span>{[sub, l.topic || (l.status === "cancelled" ? "" : "bez tematu")].filter(Boolean).join(" · ")}{l.cr?.status === "pending" ? " · „" + l.cr.reason + "”" : ""}</span></span>
+      <span className="lrt"><b>{money.replace(",00", "")}</b>{chip && <span className={"lchip " + chip[1]}>{chip[0]}</span>}</span>
       {quick && <QuickDone l={l} />}
     </div>
   );

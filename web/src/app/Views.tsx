@@ -4,7 +4,7 @@ import { Empty, Ic } from "../lib/icons";
 import { navigate } from "../lib/router";
 import {
   amt, billable, cq, download, fd, fm, FREE, gStr, Lesson, MSHORT, pad, pd, pln, PRO_PLN, sortL, subjList, sumAmt, te, toG, ym, ymd, pwOk, copyText, subjRates,
-  lekcje,
+  lekcje, addDays, WDL,
 } from "../lib/util";
 import { useAuth, useTutor } from "../state";
 import { errMsg, Field, useOverlay } from "../ui/overlay";
@@ -136,16 +136,25 @@ export function Students() {
 }
 
 /* ---------- lessons ---------- */
+function dayTitle(d: string) {
+  const td = ymd(new Date());
+  if (d === td) return "Dziś";
+  if (d === addDays(1)) return "Jutro";
+  if (d === addDays(-1)) return "Wczoraj";
+  const n = WDL[(pd(d).getDay() + 6) % 7]; return n;
+}
 function DayGroups({ list, dir }: { list: Lesson[]; dir: number }) {
   const m: Record<string, Lesson[]> = {};
   list.forEach((l) => { (m[l.date] = m[l.date] || []).push(l); });
   const ds = Object.keys(m).sort((a, b) => dir * a.localeCompare(b)), td = ymd(new Date());
   // the day closest to today (today itself if it has lessons)
   const target = ds.reduce((b, d) => (b === "" || Math.abs(pd(d).getTime() - pd(td).getTime()) < Math.abs(pd(b).getTime() - pd(td).getTime()) ? d : b), "");
-  return <><div className="card">{ds.map((d) => <div className="sday" key={d} data-day={d}><div className={"dayh" + (d === td ? " td" : "")}><span>{fd(d)}</span>{d === td && <span className="tag ac">Dziś</span>}</div>
-    {m[d].sort((a, b) => a.time.localeCompare(b.time)).map((l) => <LessonItem key={l.id} l={l} nd />)}</div>)}</div>
+  return <><div className="days">{ds.map((d) => { const x = pd(d); const n = m[d].length; return <section className="dgrp" key={d} data-day={d}>
+    <div className={"dgh" + (d === td ? " td" : "")}><b>{dayTitle(d)}</b><span>{x.getDate()} {MLONG_G[x.getMonth()]}{x.getFullYear() !== new Date().getFullYear() ? " " + x.getFullYear() : ""} · {n} {n === 1 ? "lekcja" : n < 5 ? "lekcje" : "lekcji"}</span></div>
+    <div className="dgl">{m[d].sort((a, b) => a.time.localeCompare(b.time)).map((l) => <LessonItem key={l.id} l={l} nd />)}</div></section>; })}</div>
     {target && <TodayJump day={target} has={target === td} />}</>;
 }
+const MLONG_G = ["stycznia", "lutego", "marca", "kwietnia", "maja", "czerwca", "lipca", "sierpnia", "września", "października", "listopada", "grudnia"];
 
 /** Floating "Przejdź do dzisiaj" arrow – shown only when today's (or the nearest) day is off screen. */
 function TodayJump({ day, has }: { day: string; has: boolean }) {
@@ -169,29 +178,34 @@ function LessonsList() {
   const { students, lessons, stu } = useData();
   const [ui, setUi] = useUi();
   const f = ui.lf;
+  const td = ymd(new Date());
   const subOf = (l: Lesson) => l.subject || subjList(stu(l.sid) || { subject: "" })[0] || "";
   const subs = [...new Set(students.flatMap((s) => subjList(s)).concat(lessons.map(subOf)).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pl"));
   const months = [...new Set(lessons.map((l) => l.date.slice(0, 7)))].sort().reverse();
   const setF = (p: Partial<typeof f>) => setUi((u) => ({ ...u, lf: { ...u.lf, ...p } }));
   const [open, setOpen] = useState(false);
-  const nf = [f.st, f.sb, f.mo, f.ls, f.ps].filter(Boolean).length + (f.o === "asc" ? 1 : 0);
-  const list = sortL(lessons.filter((l) => (!f.st || l.sid === f.st) && (!f.sb || subOf(l) === f.sb) && (!f.mo || l.date.slice(0, 7) === f.mo) && (!f.ls || l.status === f.ls)
-    && (!f.ps || ((l.status !== "cancelled" || l.fee > 0) && (f.ps === "paid") === l.paid)) && (!f.q || (l.topic + " " + l.notes).toLowerCase().includes(f.q.toLowerCase()))), f.o === "asc" ? 1 : -1);
+  const nf = [f.st, f.sb, f.mo, f.q].filter(Boolean).length;
+  const unpaid = (l: Lesson) => billable(l) && !l.paid;
+  const nPay = lessons.filter(unpaid).length;
+  const MODES: [typeof f.m, string][] = [["up", "Nadchodzące"], ["pay", "Do opłacenia" + (nPay ? " · " + nPay : "")], ["past", "Minione"], ["all", "Wszystkie"]];
+  const inMode = (l: Lesson) => f.m === "up" ? l.status === "planned" && l.date >= td : f.m === "pay" ? unpaid(l) : f.m === "past" ? l.date < td : true;
+  const dir = f.m === "up" ? 1 : -1;
+  const list = sortL(lessons.filter((l) => inMode(l) && (!f.st || l.sid === f.st) && (!f.sb || subOf(l) === f.sb) && (!f.mo || l.date.slice(0, 7) === f.mo)
+    && (!f.q || (l.topic + " " + l.notes).toLowerCase().includes(f.q.toLowerCase()))), dir);
+  const empty: Record<string, [string, string]> = { up: ["Brak zaplanowanych lekcji", "Dodaj lekcję przyciskiem „+”."], pay: ["Wszystko opłacone", "Nie ma lekcji czekających na płatność."], past: ["Brak minionych lekcji", "Tu pojawią się lekcje, które już się odbyły."], all: ["Brak lekcji", "Żadna lekcja nie pasuje do filtrów."] };
   return <>
-    <div className="bar">
-      <input type="search" placeholder="Szukaj w temacie i notatkach" value={f.q} aria-label="Szukaj w lekcjach" onChange={(e) => setF({ q: e.target.value })} />
-      <button className={"btn" + (nf ? " p" : "")} aria-expanded={open} onClick={() => setOpen(!open)}>Filtry{nf ? ` (${nf})` : ""}</button>
+    <div className="lbar2">
+      <div className="chips" role="group" aria-label="Pokaż lekcje">{MODES.map(([k, t]) => <button key={k} className={"chip" + (f.m === k ? " on" : "")} aria-pressed={f.m === k} onClick={() => setF({ m: k })}>{t}</button>)}</div>
+      <button className={"btn s" + (nf ? " p" : "")} aria-expanded={open} onClick={() => setOpen(!open)}>Filtry{nf ? ` · ${nf}` : ""}</button>
     </div>
     {open && <div className="fpanel">
+      <input type="search" placeholder="Szukaj w temacie i notatkach" value={f.q} aria-label="Szukaj w lekcjach" onChange={(e) => setF({ q: e.target.value })} />
       <select aria-label="Uczeń" value={f.st} onChange={(e) => setF({ st: e.target.value })}><option value="">Wszyscy uczniowie</option>{students.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select>
       {subs.length > 1 && <select aria-label="Przedmiot" value={f.sb} onChange={(e) => setF({ sb: e.target.value })}><option value="">Wszystkie przedmioty</option>{subs.map((x) => <option key={x} value={x}>{x}</option>)}</select>}
       <select aria-label="Miesiąc" value={f.mo} onChange={(e) => setF({ mo: e.target.value })}><option value="">Każdy miesiąc</option>{months.map((x) => { const t = fm(x); return <option key={x} value={x}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>; })}</select>
-      <select aria-label="Status lekcji" value={f.ls} onChange={(e) => setF({ ls: e.target.value })}><option value="">Każdy status lekcji</option><option value="planned">Zaplanowana</option><option value="done">Przeprowadzona</option><option value="cancelled">Odwołana</option></select>
-      <select aria-label="Status płatności" value={f.ps} onChange={(e) => setF({ ps: e.target.value })}><option value="">Każda płatność</option><option value="unpaid">Nieopłacona</option><option value="paid">Opłacona</option></select>
-      <select aria-label="Sortowanie według daty" value={f.o} onChange={(e) => setF({ o: e.target.value as any })}><option value="desc">Od najnowszych</option><option value="asc">Od najstarszych</option></select>
-      {nf > 0 && <button className="btn" onClick={() => setUi((u) => ({ ...u, lf: { st: "", sb: "", mo: "", ls: "", ps: "", q: u.lf.q, o: "desc" } }))}>Wyczyść filtry</button>}
+      {nf > 0 && <button className="btn" onClick={() => setUi((u) => ({ ...u, lf: { ...u.lf, st: "", sb: "", mo: "", q: "" } }))}>Wyczyść filtry</button>}
     </div>}
-    {list.length ? <DayGroups list={list} dir={f.o === "asc" ? 1 : -1} /> : <div className="card"><Empty icon="book" title="Brak lekcji" sub="Żadna lekcja nie pasuje do filtrów." /></div>}
+    {list.length ? <DayGroups list={list} dir={dir} /> : <div className="card"><Empty icon="book" title={empty[f.m][0]} sub={empty[f.m][1]} /></div>}
   </>;
 }
 

@@ -95,3 +95,7 @@ export async function copyText(t: string) {
 export function lekcje(n: number) { const d = n % 10, h = n % 100; return n + " " + (n === 1 ? "lekcja" : d >= 2 && d <= 4 && (h < 12 || h > 14) ? "lekcje" : "lekcji"); }
 /** Each subject with its own hourly rate, e.g. [["Fizyka", 13000], ["Matematyka", 12000]]. */
 export const subjRates = (s: Student) => { const l = subjList(s); return (l.length ? l : [""]).map((x) => [x, rateFor(s, x)] as [string, number]); };
+/** Stable colour per subject (same in tutor and student panel). */
+const SUBJ_COLORS = ["#3b82c4", "#7b6fd6", "#d9783a", "#2f9e6a", "#c2862b", "#c2557a", "#4f8f9c", "#8a6bbf"];
+export function subjColor(sub: string) { let h = 0; for (const c of (sub || "").toLowerCase()) h = (h * 31 + c.charCodeAt(0)) >>> 0; return SUBJ_COLORS[h % SUBJ_COLORS.length]; }
+
