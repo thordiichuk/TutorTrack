@@ -73,7 +73,8 @@ export function ModalHost() {
   if (!m) return null;
   return (
     <div className="ov" onMouseDown={(e) => { if (e.target === e.currentTarget) close(); }}>
-      <div ref={box} className={"modal" + (m.wide ? " w" : "")} role="dialog" aria-modal="true" tabIndex={-1}>{m.node}</div>
+      <div ref={box} className={"modal" + (m.wide ? " w" : "")} role="dialog" aria-modal="true" tabIndex={-1}>{m.node}
+        <button type="button" className="mx" aria-label="Zamknij" onClick={close}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg></button></div>
     </div>
   );
 }

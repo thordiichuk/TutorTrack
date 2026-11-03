@@ -390,7 +390,7 @@ export function LessonSheet({ id }: { id: string }) {
   const st = l.status === "done" ? "przeprowadzona" : l.status === "cancelled" ? "odwołana" : "zaplanowana";
   const pay = l.status === "cancelled" ? (l.fee > 0 ? pln(l.fee) + " (opłata) · " + (l.paid ? "opłacona" : "nieopłacona") : "bez opłaty") : pln(l.amount) + " · " + (l.paid ? "opłacona" : "nieopłacona");
   return <div className="lsheet">
-    <div className="lsh"><div><h2>{s ? s.name : "Lekcja"}{sub ? " · " + sub : ""}</h2><div className="hint">{fd(l.date)} · {st}</div></div><button className="xbtn" aria-label="Zamknij" onClick={close}><Ic n="x" s={16} /></button></div>
+    <div className="lsh"><div><h2>{s ? s.name : "Lekcja"}{sub ? " · " + sub : ""}</h2><div className="hint">{fd(l.date)} · {st}</div></div></div>
     <div className="kv"><span>Godzina</span><b>{l.time}–{te(l.time, l.min)} ({l.min} min)</b></div>
     {l.topic && <div className="kv"><span>Temat</span><b>{l.topic}</b></div>}
     <div className="kv"><span>Kwota</span><b>{pay}</b></div>

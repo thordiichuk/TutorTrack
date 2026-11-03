@@ -425,3 +425,10 @@ body[data-th=dark] .rqbox,body[data-th=graphite] .rqbox{background:var(--aml);bo
 .tdtag{font-style:normal;font-size:11px;font-weight:700;color:#fff;background:var(--ac);border-radius:6px;padding:2px 8px;align-self:center}
 .dgrp.flash .dgl{animation:tflash 1.4s ease-out}
 @keyframes tflash{0%,30%{box-shadow:0 0 0 10px color-mix(in srgb,var(--ac) 35%,transparent)}100%{box-shadow:0 0 0 4px var(--acl)}}
+
+/* close (×) button in every window */
+.modal{position:relative}
+.mx{position:absolute;top:14px;right:14px;width:36px;height:36px;border:0;border-radius:10px;background:var(--bg);color:var(--mu);display:grid;place-items:center;cursor:pointer;z-index:1}
+.mx:hover{color:var(--tx)}
+body.stu .mx{border-radius:12px}
+.modal>h2:first-child,.modal>.lsheet>.lsh,.modal>div>h2:first-child{padding-right:44px}
