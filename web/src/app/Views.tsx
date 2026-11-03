@@ -496,6 +496,8 @@ export function Settings({ group = "" }: { group?: string }) {
     <div className="sgrp">{I("domyslne", "Domyślne wartości lekcji", "clock", (c.dur || 60) + " min · " + (c.time || "16:00"))}{I("szablony", "Szablony notatek", "note", pr ? String(4 + (c.tpl || []).length) : "Pro")}{I("cel", "Cel miesięczny", "target", pr ? (c.goal ? pln(c.goal).replace(",00", "") : "wyłączony") : "Pro")}</div>
     <div className="sgt">Aplikacja</div>
     <div className="sgrp">{I("wyglad", "Wygląd", "palette", thName[th] || "Jasny")}{I("dane", "Kopia danych", "download")}{I("kosz", "Kosz", "trash", pr ? (data!.trash.length ? String(data!.trash.length) : "pusty") : "Pro")}</div>
+    {user!.isAdmin && !demo && <div className="sgrp" style={{ marginTop: 16 }}><button className="sitem" onClick={() => navigate("/admin")}><span className="sic"><Ic n="alert" s={16} /></span><b>Panel administratora</b><Ic n="chev" s={16} /></button></div>}
+    <button className="slogout" onClick={() => confirm({ title: demo ? "Wyjść z trybu demo?" : "Wylogować się?", text: demo ? "Dane przykładowe nie są zapisywane." : "Twoje dane są bezpiecznie zapisane na koncie.", ok: demo ? "Wyjdź" : "Wyloguj się", onOk: logout })}><Ic n="out" s={18} />{demo ? "Wyjdź z dema" : "Wyloguj się"}</button>
   </div>;
 }
 

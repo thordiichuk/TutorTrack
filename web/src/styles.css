@@ -441,3 +441,5 @@ input[type=date],input[type=time],input[type=month]{-webkit-appearance:none;appe
 input[type=date]::-webkit-date-and-time-value,input[type=time]::-webkit-date-and-time-value{text-align:left}
 html,body{overflow-x:hidden;max-width:100%}
 .ov{overflow:hidden;touch-action:none}.ov .modal{touch-action:pan-y}
+.slogout{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:20px;padding:14px;border:1px solid #f3c7c2;border-radius:14px;background:var(--card);color:var(--rd);font:inherit;font-weight:700;font-size:15px;cursor:pointer}.slogout:hover{background:var(--rdl)}
+body[data-th=dark] .slogout,body[data-th=graphite] .slogout{border-color:var(--bd)}
