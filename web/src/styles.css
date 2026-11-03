@@ -454,3 +454,14 @@ body.stu .slogout{border-radius:18px;font-weight:800}
 .langb.on{border-color:var(--ac);background:var(--acl)}.langb .lok{margin-left:auto;color:var(--ac);font-weight:800}
 .lflag{width:34px;height:24px;border-radius:6px;background:var(--bg);display:grid;place-items:center;font-size:11px;font-weight:800;color:var(--mu)}
 .lsel{width:auto;padding:4px 8px;font-size:13px;color:var(--mu);background:transparent}
+
+/* public header: language switch with flags */
+.lflags{position:relative;margin-left:auto}
+.lflags+.de{margin-left:0}
+.lfbtn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--bd);background:var(--card);border-radius:10px;padding:6px 9px;font:inherit;font-size:13px;font-weight:600;color:var(--tx);cursor:pointer}
+.lfbtn:hover{border-color:var(--bdh)}
+.flag{width:22px;height:15px;border-radius:3px;flex:none;display:block;overflow:hidden}
+.lfmenu{position:absolute;right:0;top:calc(100% + 6px);list-style:none;margin:0;padding:6px;background:var(--card);border:1px solid var(--bd);border-radius:12px;box-shadow:0 12px 32px rgba(20,20,50,.16);z-index:30;min-width:170px}
+.lfmenu button{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;padding:9px 10px;border-radius:8px;font:inherit;font-size:14px;color:var(--tx);cursor:pointer;text-align:left}
+.lfmenu button:hover,.lfmenu button.on{background:var(--acl)}.lfmenu button.on{font-weight:700}
+@media(max-width:860px){.lflags{margin-left:auto}.lflags~.mt{margin-left:8px}}

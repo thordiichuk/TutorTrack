@@ -3,7 +3,7 @@ import { Ic, Logo } from "../lib/icons";
 import { navigate } from "../lib/router";
 import { calc, fm, FREE, pln, PRO_PLN, toG, ym } from "../lib/util";
 import { useAuth } from "../state";
-import { LangSelect } from "../ui/lang";
+import { LangFlags } from "../ui/lang";
 import { tr } from "../lib/i18n";
 
 /* ---------- shared chrome ---------- */
@@ -53,14 +53,14 @@ export function PubHeader({ aud }: { aud: Aud }) {
         {links.map(([id, t, ic]) => <button key={id} className={"lk" + (on === id ? " on" : "")} aria-current={on === id ? "true" : undefined} onClick={() => { setOpen(false); scrollToId(id, home); }}><span className="pni"><Ic n={ic} s={18} /></span>{t}</button>)}
         <span className="mo">{cta}</span>
       </nav>
-      <div className="de">{cta}</div>
+      <LangFlags /><div className="de">{cta}</div>
       <button className="btn s mt" id="mt" aria-expanded={open} aria-controls="pn" aria-label={open ? tr("Zamknij menu") : tr("Menu")} onClick={() => setOpen(!open)}><Ic n={open ? "x" : "menu"} /></button>
     </div></header>{open && <div className="pnb" onClick={() => setOpen(false)} />}</>
   );
 }
 
 export function PubFooter() {
-  return <footer className="pi pf"><LangSelect /><span>© {new Date().getFullYear()}{" "}{tr("TutorTrack")}</span><a href="/regulamin">{tr("Regulamin")}</a><a href="/prywatnosc">{tr("Polityka prywatności")}</a></footer>;
+  return <footer className="pi pf"><span>© {new Date().getFullYear()}{" "}{tr("TutorTrack")}</span><a href="/regulamin">{tr("Regulamin")}</a><a href="/prywatnosc">{tr("Polityka prywatności")}</a></footer>;
 }
 
 /** Adds the "in" class to .rv elements as they scroll into view. */
