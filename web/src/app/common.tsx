@@ -11,7 +11,7 @@ export type Ui = {
   sel: string; month: string; bm: string; open: Record<string, boolean>; lv: "list" | "cal"; cm: string; cd: string; sr: string;
 };
 export const initialUi = (): Ui => ({
-  q: "", sf: "active", so: "az", subj: "", lf: { m: "up", st: "", sb: "", mo: "", ls: "", ps: "", q: "", o: "desc" },
+  q: "", sf: "active", so: "ln", subj: "", lf: { m: "up", st: "", sb: "", mo: "", ls: "", ps: "", q: "", o: "desc" },
   sel: "", month: ym(new Date()), bm: ym(new Date()), open: {}, lv: "list", cm: ym(new Date()), cd: "", sr: "6",
 });
 export const UiCtx = createContext<[Ui, Dispatch<SetStateAction<Ui>>]>(null as any);
