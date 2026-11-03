@@ -319,10 +319,10 @@ body.stu .seg button[aria-pressed=true]{background:var(--card);color:var(--ac);b
 .tile{border-radius:22px;padding:16px;border:0}
 .tile .l{font-size:13px;font-weight:800}.tile .v{font-size:24px;font-weight:900;margin-top:4px;color:var(--sink)}.tile small{display:block;font-size:12px;font-weight:700;margin-top:2px}
 .tl1{background:var(--t1);color:var(--t1f)}.tl2{background:var(--t2);color:var(--t2f)}.tl3{background:var(--t3);color:var(--t3f)}.tl4{background:var(--t4);color:var(--t4f)}.tl5{background:var(--t5);color:var(--t5f)}
-.hero{background:var(--ac);color:#fff;border-radius:24px;padding:18px;display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:8px;border:0;text-align:left;cursor:pointer;width:100%;font:inherit}.hero>span{display:block}.hero>.hl,.hero>.hp{display:flex}.hero .hl{gap:12px}
-.hero .hl{display:flex;justify-content:space-between;font-size:13px;font-weight:700;opacity:.85}
-.hero .hv{font-size:24px;font-weight:900}
-.hero .hp{display:flex;gap:8px;flex-wrap:wrap}.hero .hp span{background:rgba(255,255,255,.18);border-radius:12px;padding:6px 10px;font-size:13px;font-weight:700}
+.shero{background:var(--ac);color:#fff;border-radius:24px;padding:18px;display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:8px;border:0;text-align:left;cursor:pointer;width:100%;font:inherit}.shero>span{display:block}.shero>.hl,.shero>.hp{display:flex}.shero .hl{gap:12px}
+.shero .hl{display:flex;justify-content:space-between;font-size:13px;font-weight:700;opacity:.85}
+.shero .hv{font-size:24px;font-weight:900}
+.shero .hp{display:flex;gap:8px;flex-wrap:wrap}.shero .hp span{background:rgba(255,255,255,.18);border-radius:12px;padding:6px 10px;font-size:13px;font-weight:700}
 .bento{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
 .bento>.w2{grid-column:span 2}.bento>.w4{grid-column:1/-1}
 @media(max-width:860px){.bento{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.bento>.w2,.bento>.w4{grid-column:1/-1}}
@@ -350,8 +350,9 @@ body[data-th=dark] .gcat[class*=tl] .gslot,body[data-th=graphite] .gcat[class*=t
 .gslot b{color:inherit;font-weight:900}
 /* more-menu sheet */
 .more-list{display:grid;gap:8px}.more-list button{display:flex;align-items:center;gap:12px;width:100%;border:0;border-radius:16px;padding:14px;background:var(--bg);color:var(--tx);font:inherit;font-weight:800;cursor:pointer;text-align:left}
-/* public pages + login use the friendly font too */
-body.pubp{font-family:Nunito,system-ui,sans-serif}
-body.pubp .btn{border-radius:14px;font-weight:800}
-body.pubp input{border-radius:14px}
+/* public pages + login: keep the original look */
+body.pubp{--bg:#f6f7fb;--tx:#1b1f3b;--mu:#6b7090;--bd:#e4e6f0;--ac:#4f46e5;--ach:#4338ca;--acl:#eef0ff;--gr:#15803d;--grl:#e7f6ec;--am:#b45309;--aml:#fff4dc;--rd:#b91c1c;--rdl:#fdeaea;--sh:0 1px 2px rgba(27,31,59,.06),0 4px 14px rgba(27,31,59,.05);--hov:#fafbff;--bdh:#c9cce0;--hdr:rgba(255,255,255,.85);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+body.pubp .btn{font-weight:500}body.pubp .card{box-shadow:var(--sh)}body.pubp .tag{border-radius:99px}
+body.pubp .stat .l{font-size:13px;font-weight:400}body.pubp .stat .v{font-size:26px}body.pubp input,body.pubp select,body.pubp textarea{border-color:var(--bd)}body.pubp h2{font-weight:700}
 @media(max-width:600px){.ov{place-items:end center;padding:0}.modal,.modal.w{max-width:none;border-radius:20px 20px 0 0;max-height:90vh;padding:20px 18px calc(20px + env(safe-area-inset-bottom));animation:sheet .2s ease-out}@keyframes sheet{from{transform:translateY(40px);opacity:0}}}

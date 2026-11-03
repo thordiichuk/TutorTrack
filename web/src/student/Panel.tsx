@@ -135,11 +135,11 @@ export function StudentPanel() {
       {!d!.links.length && <div className="nt" style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>Połącz się z korepetytorem, aby widzieć swoje lekcje, notatki i prace domowe. <button className="btn s p" onClick={() => go("kor")}>Dodaj kod</button></div>}
       {pending > 0 && <div className="nt">Prośby czekające na decyzję korepetytora: <b>{pending}</b>.</div>}
       <div className="bento">
-        {next ? <button type="button" className="hero w2" onClick={() => lessonModal(next.id)}>
+        {next ? <button type="button" className="shero w2" onClick={() => lessonModal(next.id)}>
             <span className="hl"><span>Najbliższa lekcja · {next.date === td ? "dziś" : next.date === addDays(1) ? "jutro" : WDL[wdOf(next.date)].toLowerCase()}</span><span>{next.tutor}</span></span>
             <span className="hv">{next.subject || "Lekcja"} · {next.time}</span>
             <span className="hp"><span>{next.min} min</span>{next.topic && <span>{next.topic}</span>}</span></button>
-          : <div className="hero w2" style={{ cursor: "default" }}><span className="hl"><span>Najbliższa lekcja</span></span><span className="hv">Brak zaplanowanych</span></div>}
+          : <div className="shero w2" style={{ cursor: "default" }}><span className="hl"><span>Najbliższa lekcja</span></span><span className="hv">Brak zaplanowanych</span></div>}
         <div className="tile tl3"><div className="l">Zadania</div><div className="v">{todo.length}</div><small>{(() => { const late = todo.filter((l) => l.hd && l.hd < td).length; return late ? late + " po terminie" : todo.filter((l) => l.hd && l.hd <= ymd(sun)).length + " na ten tydzień"; })()}</small></div>
         <div className="tile tl2"><div className="l">Nauka w miesiącu</div><div className="v">{fmtH(monthMin)}</div><small>{week.length} {week.length === 1 ? "lekcja" : week.length > 1 && week.length < 5 ? "lekcje" : "lekcji"} w tym tygodniu</small></div>
       </div>
