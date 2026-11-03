@@ -240,8 +240,6 @@ export function StudentPanel() {
     if (!L.length) return <>{head}<div className="card"><Empty icon="chart" title="Brak lekcji w tym miesiącu" sub="Wybierz inny miesiąc albo dodaj kod od korepetytora." /></div></>;
     const byDate = (a: L, b: L) => (a.date + a.time).localeCompare(b.date + b.time);
     return <>{head}
-      {tutors.length > 0 && <div className="card sumc" style={{ marginBottom: 16 }}><div><h2 style={{ margin: 0 }}>Podsumowanie przeprowadzonych lekcji</h2><span className="hint">Lista lekcji z tematami i kwotami – do skopiowania, PDF lub wydruku.</span></div>
-        <div className="acts">{tutors.map((t) => <button key={t} className="btn p" onClick={() => summary(t)}>{tutors.length > 1 ? "Od: " + t : "Pokaż podsumowanie"}</button>)}</div></div>}
       <div className="grid g4 st2"><div className="card stat"><div className="l">Lekcje</div><div className="v">{dn.length}</div></div><div className="card stat"><div className="l">Czas nauki</div><div className="v">{fmtH(min)}</div></div><div className="card stat"><div className="l">Odwołane</div><div className="v am">{cn.length}</div></div><div className="card stat"><div className="l">Zadania</div><div className="v">{hw.filter((l) => done.has(l.id)).length} / {hw.length}</div></div></div>
       {tot > 0 && <div className="grid g4" style={{ gridTemplateColumns: "repeat(3,1fr)", marginTop: 16 }}><div className="card stat"><div className="l">Kwota</div><div className="v">{pln(tot)}</div></div><div className="card stat"><div className="l">Opłacone</div><div className="v gr">{pln(paid)}</div></div><div className="card stat"><div className="l">Do zapłaty</div><div className="v am">{pln(tot - paid)}</div></div></div>}
       <div className="grid g2" style={{ marginTop: 16 }}>
@@ -249,6 +247,8 @@ export function StudentPanel() {
         <div className="card"><h2>Zaplanowane</h2>{pl.length ? pl.sort(byDate).map((l) => <button type="button" className="srow" key={l.id} onClick={() => lessonModal(l.id)}><span className="tm">{pd(l.date).getDate()} {MSHORT[pd(l.date).getMonth()]}<small>{l.time}</small></span><span className="sb" /><span className="m"><b>{l.subject || "Lekcja"}</b><span>{l.tutor}</span></span></button>) : <p className="hint">Brak zaplanowanych lekcji w tym miesiącu.</p>}</div>
       </div>
       <div className="card" style={{ marginTop: 16 }}><h2>Lekcje i notatki</h2>{[...dn, ...cn].sort(byDate).map((l) => <button type="button" className={"srow" + (l.status === "cancelled" ? " cx" : "")} key={l.id} onClick={() => lessonModal(l.id)}><span className="tm">{pd(l.date).getDate()} {MSHORT[pd(l.date).getMonth()]}<small>{l.time}</small></span><span className="sb" /><span className="m"><b>{l.subject || "Lekcja"}{l.topic ? " · " + l.topic : ""}</b><span>{l.notes || l.tutor}</span></span>{shortTag(l, false)}</button>)}</div>
+      {tutors.length > 0 && <div className="card sumc" style={{ marginTop: 16 }}><div><h2 style={{ margin: 0 }}>Podsumowanie przeprowadzonych lekcji</h2><span className="hint">Lista lekcji z tematami i kwotami – do skopiowania, PDF lub wydruku.</span></div>
+        <div className="acts">{tutors.map((t) => <button key={t} className="btn p" onClick={() => summary(t)}>{tutors.length > 1 ? "Od: " + t : "Pokaż podsumowanie"}</button>)}</div></div>}
     </>;
   }
 
