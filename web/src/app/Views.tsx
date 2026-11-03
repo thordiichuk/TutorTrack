@@ -4,7 +4,7 @@ import { Empty, Ic } from "../lib/icons";
 import { navigate } from "../lib/router";
 import {
   amt, billable, cq, download, fd, fm, FREE, gStr, Lesson, MSHORT, pad, pd, pln, PRO_PLN, sortL, subjList, sumAmt, te, toG, ym, ymd, pwOk, copyText, subjRates,
-  lekcje, addDays, WDL,
+  lekcje, addDays, WDL, subjColor,
 } from "../lib/util";
 import { useAuth, useTutor } from "../state";
 import { errMsg, Field, useOverlay } from "../ui/overlay";
@@ -68,34 +68,37 @@ export function Dashboard() {
   const late = user?.settings.late === false ? [] : sortL(lessons.filter((l) => l.status === "planned" && l.date + " " + l.time < now && l.cr?.status !== "pending"), 1);
   const goal = user?.plan === "pro" ? user.settings.goal || 0 : 0;
   const tot = sumAmt(done, () => true), pc = goal ? Math.min(100, Math.round(tot / goal * 100)) : 0;
-  const td = ymd(new Date());
-  const today = up.length ? lessons.filter((l) => l.date === td && l.status !== "cancelled").sort((a, b) => a.time.localeCompare(b.time)) : lessons.filter((l) => l.date === td && l.status !== "cancelled");
-  const next = sortL(lessons.filter((l) => l.status === "planned" && l.date > td), 1).slice(0, 4);
-  const unAll = lessons.filter((l) => billable(l) && !l.paid);
-  const bySt = [...new Set(unAll.map((l) => l.sid))].map((sid) => ({ sid, ls: unAll.filter((l) => l.sid === sid) })).sort((a, b) => sumAmt(b.ls, () => true) - sumAmt(a.ls, () => true)).slice(0, 5);
-  const wd = new Date(); const dateLabel = WDL[(wd.getDay() + 6) % 7].toLowerCase() + ", " + wd.getDate() + " " + MLONG_G[wd.getMonth()];
+  const td = ymd(new Date()), nowD = new Date();
+  const today = lessons.filter((l) => l.date === td && l.status !== "cancelled").sort((a, b) => a.time.localeCompare(b.time));
+  const nx = up[0];
+  const inLabel = (l: Lesson) => {
+    if (l.date === td) { const [h, mi] = l.time.split(":").map(Number); const diff = h * 60 + mi - (nowD.getHours() * 60 + nowD.getMinutes()); return diff < 60 ? "za " + Math.max(diff, 0) + " min" : "za " + Math.round(diff / 60) + " h"; }
+    if (l.date === addDays(1)) return "jutro";
+    return WDSHORT_L[pd(l.date).getDay()] + " " + pd(l.date).getDate() + " " + MSHORT[pd(l.date).getMonth()];
+  };
+  const unM = done.filter((l) => !l.paid);
+  const mName = fm(m).split(" ")[0];
   return <>
     <SetupBar />
-    <div className="dhead"><div><div className="hint">{dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1)}</div><h2>Cześć, {(user?.name || "korepetytorze").split(" ")[0]}!</h2></div>
-      <MonthInput v={m} on={(v) => setUi((u) => ({ ...u, month: v }))} /></div>
-    {reqs.map((l) => { const s = stu(l.sid); return <div className="rq" key={l.id}><span className="rqd" />
-      <div className="rqm"><b>{l.cr!.kind === "move" ? "Prośba o przeniesienie" : "Prośba o odwołanie"}</b><span>{s ? s.name : ""} · {l.subject || (s ? subjList(s)[0] : "")}, {WDSHORT_L[pd(l.date).getDay()]} {l.time} · „{l.cr!.reason}”</span></div>
-      <button className="btn s" onClick={() => modal(<LessonSheet id={l.id} />)}>Rozpatrz</button></div>; })}
-    <div className="grid g4 st2 kst">
-      <div className="card stat"><div className="l">Do zapłaty</div><div className="v am">{pln(sumAmt(done, (l) => !l.paid)).replace(",00", "")}</div></div>
-      <div className="card stat"><div className="l">Opłacone</div><div className="v gr">{pln(sumAmt(done, (l) => l.paid)).replace(",00", "")}</div></div>
-      <div className="card stat"><div className="l">Przeprowadzone lekcje</div><div className="v">{done.filter((l) => l.status === "done").length}</div></div>
-      <div className="card stat"><div className="l">Aktywni uczniowie</div><div className="v">{students.filter((s) => s.active).length}</div></div>
+    <div className="bento kb">
+      {nx ? <button type="button" className="khero w2" onClick={() => modal(<LessonSheet id={nx.id} />)}>
+          <span className="hl"><span>Następna lekcja · {inLabel(nx)}</span><span>{nx.subject || subjList(stu(nx.sid) || { subject: "" })[0] || ""}</span></span>
+          <span className="hv">{stu(nx.sid)?.name || "?"}</span>
+          <span className="hp"><span>{nx.time}–{te(nx.time, nx.min)}</span>{nx.topic && <span>{nx.topic}</span>}</span></button>
+        : <div className="khero w2"><span className="hl"><span>Następna lekcja</span></span><span className="hv">Brak zaplanowanych</span><span className="hp"><span>Dodaj lekcję przyciskiem „+”</span></span></div>}
+      <div className="tile tl3"><div className="l">Do zapłaty</div><div className="v">{pln(sumAmt(unM, () => true)).replace(",00", "")}</div><small>{lekcje(unM.length)}</small></div>
+      <div className="tile tl2"><div className="l">Opłacone</div><div className="v">{pln(sumAmt(done, (l) => l.paid)).replace(",00", "")}</div><small>{mName}</small></div>
+      {reqs.length > 0 && <div className="kreq w4">{reqs.map((l) => { const st = stu(l.sid); return <div className="kreqr" key={l.id}>
+        <div className="rqm"><b>{reqs.length === 1 ? "1 prośba ucznia" : st?.name}</b><span>{st ? st.name.split(" ")[0] : ""} prosi o {l.cr!.kind === "move" ? "przeniesienie na " + (() => { const d = pd(l.date); d.setDate(d.getDate() + 7); return d.getDate() + " " + MSHORT[d.getMonth()]; })() : "odwołanie lekcji " + pd(l.date).getDate() + " " + MSHORT[pd(l.date).getMonth()]}</span></div>
+        <button className="lnk" onClick={() => modal(<LessonSheet id={l.id} />)}>Rozpatrz</button></div>; })}</div>}
+      <div className="kplan w2"><div className="dch"><h2>Plan na dziś</h2><a href="/aplikacja/lessons">Wszystkie</a></div>
+        {today.length ? today.map((l) => { const st = stu(l.sid), sub = l.subject || (st ? subjList(st)[0] : ""); return <button key={l.id} className="kpr" onClick={() => modal(<LessonSheet id={l.id} />)}>
+          <span className="kpb" style={{ background: subjColor(sub) }} /><span className="lwho"><b>{st?.name || "?"}</b><span>{sub}</span></span><b className="kpt">{l.time}</b></button>; })
+          : <p className="hint" style={{ margin: "4px 0 6px" }}>Dziś nie masz lekcji.{nx ? " Następna: " + inLabel(nx) + ", " + nx.time + "." : ""}</p>}</div>
+      <div className="tile kg"><div className="l">Uczniowie</div><div className="v">{students.filter((s) => s.active).length}</div></div>
+      <div className="tile kg"><div className="l">Lekcje w mies.</div><div className="v">{done.filter((l) => l.status === "done").length}</div></div>
     </div>
     {goal > 0 && <div className="card" style={{ marginTop: 12 }}><div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}><b>Cel miesięczny</b><span>{pln(tot)} z {pln(goal)} ({Math.round(tot / goal * 100)}%)</span></div><div className="pbar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pc} aria-label="Postęp celu miesięcznego" style={{ margin: "8px 0 0" }}><i style={{ width: pc + "%" }} /></div></div>}
-    <div className="grid g2" style={{ marginTop: 12, gap: 12 }}>
-      <div className="card dcard"><div className="dch"><h2>Dziś</h2><a href="/aplikacja/lessons">Wszystkie lekcje</a></div>{today.length ? today.map((l) => <LessonItem key={l.id} l={l} nd quick={false} />) : <p className="hint" style={{ margin: "4px 0 8px" }}>Dziś nie masz lekcji.</p>}
-        {next.length > 0 && <><h2 style={{ marginTop: 14 }}>Najbliższe</h2>{next.map((l) => <LessonItem key={l.id} l={l} quick={false} />)}</>}</div>
-      <div className="card dcard"><h2>Nieopłacone</h2>{bySt.length ? bySt.map(({ sid, ls }) => { const s = stu(sid); return <div className="unr" key={sid}>
-          <div className="lwho"><b>{s ? s.name : "?"}</b><span>{ls.length === 1 ? fd(ls[0].date) : lekcje(ls.length)}</span></div><b>{pln(sumAmt(ls, () => true)).replace(",00", "")}</b>
-          <button className="btn s" onClick={() => confirm({ title: "Oznaczyć jako opłacone?", text: <>{s ? s.name : ""}: {lekcje(ls.length)} na kwotę <b>{pln(sumAmt(ls, () => true))}</b>. Możesz to później cofnąć.</>, ok: "Tak, opłacone", onOk: () => { run(() => api("POST", "/api/lessons/batch", { ids: ls.map((l) => l.id), patch: { paid: true } }), "Oznaczono jako opłacone."); } })}>Opłacone</button></div>; })
-        : <Empty icon="wallet" title="Wszystko opłacone" sub="Nie ma zaległych płatności." />}</div>
-    </div>
     {late.length > 0 && <div className="card dcard" style={{ marginTop: 12 }}><h2>Do potwierdzenia ({late.length})</h2><p className="hint" style={{ margin: "-6px 0 4px" }}>Te lekcje miały już się odbyć – oznacz je jako przeprowadzone.</p>{(allLate ? late : late.slice(-3)).map((l) => <LessonItem key={l.id} l={l} />)}
       {late.length > 3 && <button className="more" style={{ margin: "8px 0" }} onClick={() => setAllLate(!allLate)}>{allLate ? "Pokaż mniej" : "Pokaż wszystkie (" + late.length + ")"}</button>}</div>}
   </>;

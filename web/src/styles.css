@@ -402,3 +402,18 @@ body[data-th=dark] .rqbox,body[data-th=graphite] .rqbox{background:var(--aml);bo
 .bsr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.bsr b{font-size:17px}.bsr b.gr{color:var(--gr)}.bsr b.am{color:var(--am)}
 .brow{border-top:1px solid var(--bd)}.brow:first-child{border-top:0}.brow .strow{border-top:0}.brow .strow>svg{color:var(--bdh);flex:none}
 .bexp{padding:4px 16px 12px;background:var(--hov)}
+
+/* ---- tutor: dashboard (bento) ---- */
+.kb{gap:10px}
+.khero{background:var(--ac);color:#fff;border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:8px;border:0;text-align:left;cursor:pointer;width:100%;font:inherit}
+.khero>span{display:block}.khero .hl{display:flex;justify-content:space-between;gap:12px;font-size:13px;font-weight:600;opacity:.85}
+.khero .hv{font-size:24px;font-weight:700}.khero .hp{display:flex;gap:8px;flex-wrap:wrap}.khero .hp span{background:rgba(255,255,255,.18);border-radius:10px;padding:6px 10px;font-size:13px;font-weight:600}
+.kb .tile{border-radius:20px}.kb .tile .l{font-weight:600}.kb .tile .v{font-weight:700}.kb .tile small{font-weight:600}
+.kb .tile.kg{background:var(--card);border:1px solid var(--bd)}.kb .tile.kg .l{color:var(--mu)}
+.kreq{border:1.5px solid var(--tx);border-radius:20px;padding:4px 16px;background:var(--card)}
+.kreqr{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--bd)}.kreqr:first-child{border-top:0}
+.lnk{border:0;background:none;color:var(--ac);font:inherit;font-weight:700;font-size:14px;text-decoration:underline;cursor:pointer;padding:8px 0}
+.kplan{background:var(--card);border:1px solid var(--bd);border-radius:20px;padding:16px}
+.kplan h2{font-size:16px;margin:0 0 4px}
+.kpr{display:flex;align-items:center;gap:12px;width:100%;border:0;background:none;padding:8px 0;text-align:left;cursor:pointer;color:var(--tx);font:inherit}
+.kpb{width:6px;height:36px;border-radius:3px;flex:none}.kpt{font-size:15px}
