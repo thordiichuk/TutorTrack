@@ -326,14 +326,8 @@ body.stu .seg button[aria-pressed=true]{background:var(--card);color:var(--ac);b
 .bento{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
 .bento>.w2{grid-column:span 2}.bento>.w4{grid-column:1/-1}
 @media(max-width:860px){.bento{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.bento>.w2,.bento>.w4{grid-column:1/-1}}
-/* student bottom bar: floating pill */
-@media(max-width:860px){
-body.stu .tabs{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));border:0;border-radius:26px;padding:6px;background:var(--card);box-shadow:0 8px 24px rgba(42,37,64,.12);gap:2px}
-body.stu .tabs button{border-radius:20px;padding:8px 2px;font-weight:800;font-size:11px}
-body.stu .tabs button.on{background:var(--ac);color:#fff}
-body.stu .content{padding-bottom:120px}
-body.stu #toast{bottom:104px}
-}
+/* student bottom bar: same as the tutor's */
+@media(max-width:860px){body.stu .tabs{background:var(--card)}body.stu .tabs button{font-family:inherit}}
 /* student: Plan blocks by subject colour */
 .pblk.les{background:color-mix(in srgb,var(--sc,var(--ac)) 16%,var(--card));border-left:0;border-radius:16px}
 .pblk.les .ptm{color:var(--sink)}

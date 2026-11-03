@@ -252,7 +252,7 @@ export function StudentPanel() {
       <div className="main">
         <header className="top">
           <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}><a className="brandm" href="/uczen" aria-label="TutorTrack"><span className="logo" style={{ padding: 0 }}><i><Logo /></i></span></a><div><h1>{cur[1]}</h1><small /></div></div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}><span className="hint" id="usr">{user!.name}</span><button className="btn s lo" aria-label="Ustawienia" onClick={() => go("konto")}><Ic n="set" s={16} /></button>{action}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}><span className="hint" id="usr">{user!.name}</span>{action}</div>
         </header>
         {err && <p className="banner">{err} <button className="lk" onClick={load}>Spróbuj ponownie</button></p>}
         <main className="content">{!d ? <p className="hint">Ładowanie…</p> : tab === "dash" ? Dash() : tab === "plan" ? Plan() : tab === "graf" ? Graf() : tab === "hw" ? Hw() : tab === "sum" ? Sum() : tab === "kor" ? <KorTab d={d} load={load} run={run} /> : <KontoTab out={out} d={d} load={load} />}</main>
