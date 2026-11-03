@@ -160,7 +160,7 @@ function dayTitle(d: string) {
   if (d === addDays(-1)) return "Wczoraj";
   const n = WDL[(pd(d).getDay() + 6) % 7]; return n;
 }
-function DayGroups({ list, dir }: { list: Lesson[]; dir: number }) {
+function DayGroups({ list, dir, jump = true }: { list: Lesson[]; dir: number; jump?: boolean }) {
   const m: Record<string, Lesson[]> = {};
   list.forEach((l) => { (m[l.date] = m[l.date] || []).push(l); });
   const ds = Object.keys(m).sort((a, b) => dir * a.localeCompare(b)), td = ymd(new Date());
@@ -169,7 +169,7 @@ function DayGroups({ list, dir }: { list: Lesson[]; dir: number }) {
   return <><div className="days">{ds.map((d) => { const x = pd(d); const n = m[d].length; return <section className={"dgrp" + (d === td ? " today" : "")} key={d} data-day={d}>
     <div className={"dgh" + (d === td ? " td" : "")}><b>{dayTitle(d)}</b>{d === td && <i className="tdtag">dzisiaj</i>}<span>{x.getDate()} {MLONG_G[x.getMonth()]}{x.getFullYear() !== new Date().getFullYear() ? " " + x.getFullYear() : ""} · {n} {n === 1 ? "lekcja" : n < 5 ? "lekcje" : "lekcji"}</span></div>
     <div className="dgl">{m[d].sort((a, b) => a.time.localeCompare(b.time)).map((l) => <LessonItem key={l.id} l={l} nd />)}</div></section>; })}</div>
-    {target && <TodayJump key={ds[0] + "|" + ds.length} day={target} has={target === td} />}</>;
+    {jump && target && <TodayJump key={ds[0] + "|" + ds.length} day={target} has={target === td} />}</>;
 }
 const MLONG_G = ["stycznia", "lutego", "marca", "kwietnia", "maja", "czerwca", "lipca", "sierpnia", "września", "października", "listopada", "grudnia"];
 
@@ -224,7 +224,7 @@ function LessonsList() {
       <select aria-label="Miesiąc" value={f.mo} onChange={(e) => setF({ mo: e.target.value })}><option value="">Każdy miesiąc</option>{months.map((x) => { const t = fm(x); return <option key={x} value={x}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>; })}</select>
       {nf > 0 && <button className="btn" onClick={() => setUi((u) => ({ ...u, lf: { ...u.lf, st: "", sb: "", mo: "", q: "" } }))}>Wyczyść filtry</button>}
     </div>}
-    {list.length ? <DayGroups list={list} dir={dir} /> : <div className="card"><Empty icon="book" title={empty[f.m][0]} sub={empty[f.m][1]} /></div>}
+    {list.length ? <DayGroups list={list} dir={dir} jump={f.m === "all" || f.m === "up"} /> : <div className="card"><Empty icon="book" title={empty[f.m][0]} sub={empty[f.m][1]} /></div>}
   </>;
 }
 
