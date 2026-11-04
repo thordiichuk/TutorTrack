@@ -142,6 +142,8 @@ export function LessonForm({ l, pre, draft }: { l?: Lesson; pre?: string; draft?
       min: !(m > 0) || Math.round(m) !== m ? tr("Czas trwania musi być dodatnią liczbą minut.") : "",
       amount: isNaN(a) || a < 0 ? tr("Podaj poprawną, nieujemną kwotę.") : "",
       fee: d.status === "cancelled" && (isNaN(fe) || fe < 0) ? tr("Podaj poprawną, nieujemną kwotę.") : "",
+      // a lesson can't be done (or added as cancelled) on a future date
+      status: d.date > ymd(new Date()) && (d.status === "done" || (d.status === "cancelled" && !l)) ? (d.status === "done" ? tr("Przeprowadzona lekcja nie może mieć przyszłej daty.") : tr("Nie można dodać odwołanej lekcji z przyszłą datą – dodaj ją jako zaplanowaną i odwołaj później.")) : "",
     };
     setE(er); if (Object.values(er).some(Boolean)) return;
     const rec = {
@@ -183,14 +185,14 @@ export function LessonForm({ l, pre, draft }: { l?: Lesson; pre?: string; draft?
     <div className="f"><label htmlFor="lst">{tr("Uczeń *")}</label><select id="lst" value={d.sid} onChange={(ev) => { const s = stu(ev.target.value); setManual(false); upd({ sid: ev.target.value, subject: s ? subjList(s)[0] || "" : "" }, true); }}>
       {act.map((s) => <option key={s.id} value={s.id}>{s.name}{s.active ? "" : tr(" (zarchiwizowany)")}</option>)}</select></div>
     {subOpts.length > 1 && <div className="f"><label htmlFor="lsu">{tr("Przedmiot")}</label><select id="lsu" value={d.subject} onChange={(ev) => { setManual(false); upd({ subject: ev.target.value }, true); }}>{subOpts.map((x) => <option key={x}>{x}</option>)}</select></div>}
-    <div className="f2"><Field id="ld" label={tr("Data *")} type="date" value={d.date} onChange={(v) => upd({ date: v })} error={e.date} /><Field id="lt" label={tr("Godzina *")} type="time" value={d.time} onChange={(v) => upd({ time: v })} error={e.time} /></div>
+    <div className="f2"><Field id="ld" label={tr("Data *")} type="date" value={d.date} onChange={(v) => upd({ date: v, ...(v > ymd(new Date()) && (d.status === "done" || (d.status === "cancelled" && !l)) ? { status: "planned" as const } : {}) })} error={e.date} /><Field id="lt" label={tr("Godzina *")} type="time" value={d.time} onChange={(v) => upd({ time: v })} error={e.time} /></div>
     <Field id="lto" label={tr("Temat lekcji")} value={d.topic} onChange={(v) => upd({ topic: v })} />
     {l?.seriesId && <p className="hint" style={{ margin: "-6px 0 10px" }}>↻ {tr("Lekcja z serii. Przy zapisie zapytamy, czy zmienić też kolejne lekcje.")}</p>}
     <div className="f2"><Field id="lm" label={tr("Czas trwania (min) *")} type="number" min={1} step={5} value={d.minS} onChange={(v) => upd({ minS: v })} error={e.min} /><Field id="la" label={tr("Kwota (zł) *")} value={d.amtS} onChange={(v) => { setManual(true); upd({ amtS: v }, false); }} error={e.amount} inputMode="decimal" /></div>
     {!l && <RepeatBox start={d.date} time={d.time} min={Number(d.minS) || 60} rep={rep} set={setRep} pro={user?.plan === "pro"} onPro={() => proUp(tr("Lekcje cykliczne"))} />}
     {(d.status === "planned" || !!d.prep) && <div className="f"><label htmlFor="lpn">{tr("Notatka przed zajęciami")}</label><TplSel onPick={(t) => upd({ prep: (d.prep ? d.prep + "\n" : "") + t })} /><textarea id="lpn" rows={2} placeholder={tr("Plan lekcji, materiały – widzisz ją tylko Ty")} value={d.prep} onChange={(ev) => upd({ prep: ev.target.value })} /></div>}
     <div className="f2">
-      <div className="f"><label htmlFor="lss">{tr("Status lekcji")}</label><select id="lss" value={d.status} onChange={(ev) => upd({ status: ev.target.value as Lesson["status"] }, false)}><option value="planned">{tr("Zaplanowana")}</option><option value="done">{tr("Przeprowadzona")}</option><option value="cancelled">{tr("Odwołana")}</option></select></div>
+      <div className="f"><label htmlFor="lss">{tr("Status lekcji")}</label><select id="lss" value={d.status} onChange={(ev) => upd({ status: ev.target.value as Lesson["status"] }, false)}><option value="planned">{tr("Zaplanowana")}</option><option value="done" disabled={d.date > ymd(new Date())}>{tr("Przeprowadzona")}</option><option value="cancelled" disabled={!l && d.date > ymd(new Date())}>{tr("Odwołana")}</option></select>{e.status && <div className="er" role="alert">{e.status}</div>}</div>
       <div className="f"><label htmlFor="lps">{tr("Status płatności")}</label><select id="lps" value={d.paid ? "1" : "0"} onChange={(ev) => upd({ paid: ev.target.value === "1" }, false)}><option value="0">{tr("Nieopłacona")}</option><option value="1">{tr("Opłacona")}</option></select></div>
     </div>
     {d.status === "done" ? <>
@@ -296,7 +298,7 @@ export function LessonActions({ l }: { l: Lesson }) {
   return <div className="acts">
     <CancelRequestActions l={l} />
     {!pendingCr && l.status === "planned" && <>
-      <button className="btn s p" onClick={() => modal(<DoneModal l={l} />)}>{tr("Przeprowadzona")}</button>
+      {l.date <= ymd(new Date()) && <button className="btn s p" onClick={() => modal(<DoneModal l={l} />)}>{tr("Przeprowadzona")}</button>}
       <button className="btn s" onClick={() => confirm({ title: tr("Odwołać lekcję?"), text: <>{l.topic || tr("Bez tematu")} · {fd(l.date)}<br />{fee > 0 ? <>{tr("Zostanie naliczona opłata:")}{" "}<b>{pln(fee)}</b>.</> : tr("Odwołana lekcja nie jest płatna.")}</>, ok: tr("Odwołaj lekcję"),
         onOk: () => { run(() => api("PATCH", "/api/lessons/" + l.id, { status: "cancelled", fee, paid: false }), tr("Lekcja odwołana.")); } })}>{tr("Odwołana")}</button>
     </>}

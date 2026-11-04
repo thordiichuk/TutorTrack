@@ -196,37 +196,58 @@ function TodayJump({ day, has }: { day: string; has: boolean }) {
 }
 
 function LessonsList() {
+  const { user } = useAuth();
   const { students, lessons, stu } = useData();
   const [ui, setUi] = useUi();
   const f = ui.lf;
   const td = ymd(new Date());
   const subOf = (l: Lesson) => l.subject || subjList(stu(l.sid) || { subject: "" })[0] || "";
   const subs = [...new Set(students.flatMap((s) => subjList(s)).concat(lessons.map(subOf)).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pl"));
-  const months = [...new Set(lessons.map((l) => l.date.slice(0, 7)))].sort().reverse();
   const setF = (p: Partial<typeof f>) => setUi((u) => ({ ...u, lf: { ...u.lf, ...p } }));
   const [open, setOpen] = useState(false);
-  const nf = [f.st, f.sb, f.mo, f.q].filter(Boolean).length;
+  const nf = [f.st, f.sb, f.q].filter(Boolean).length;
   const unpaid = (l: Lesson) => billable(l) && !l.paid;
   const nPay = lessons.filter(unpaid).length;
-  const MODES: [typeof f.m, string][] = [["up", tr("Nadchodzące")], ["pay", tr("Do opłacenia") + (nPay ? " · " + nPay : "")], ["past", tr("Minione")], ["all", tr("Wszystkie")]];
-  const inMode = (l: Lesson) => f.m === "up" ? l.status === "planned" && l.date >= td : f.m === "pay" ? unpaid(l) : f.m === "past" ? l.date < td : true;
-  const dir = f.m === "up" ? 1 : -1;
-  const list = sortL(lessons.filter((l) => inMode(l) && (!f.st || l.sid === f.st) && (!f.sb || subOf(l) === f.sb) && (!f.mo || l.date.slice(0, 7) === f.mo)
-    && (!f.q || (l.topic + " " + l.notes).toLowerCase().includes(f.q.toLowerCase()))), dir);
-  const empty: Record<string, [string, string]> = { up: [tr("Brak zaplanowanych lekcji"), tr("Dodaj lekcję przyciskiem „+”.")], pay: [tr("Wszystko opłacone"), tr("Nie ma lekcji czekających na płatność.")], past: [tr("Brak minionych lekcji"), tr("Tu pojawią się lekcje, które już się odbyły.")], all: [tr("Brak lekcji"), tr("Żadna lekcja nie pasuje do filtrów.")] };
+  const mode = f.m === "pay" ? "pay" : "week";
+  const match = (l: Lesson) => (!f.st || l.sid === f.st) && (!f.sb || subOf(l) === f.sb) && (!f.q || (l.topic + " " + l.notes).toLowerCase().includes(f.q.toLowerCase()));
+  // the shown week (Monday or Sunday first, as in the settings)
+  const sunFirst = user?.settings.wk === "sun";
+  const start = new Date(); start.setHours(0, 0, 0, 0); start.setDate(start.getDate() - (sunFirst ? start.getDay() : (start.getDay() + 6) % 7) + 7 * (f.w || 0));
+  const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(start); d.setDate(d.getDate() + i); return ymd(d); });
+  const end = days[6];
+  const fm2 = (x: string) => { const d = pd(x); return d.getDate() + " " + MSHORT[d.getMonth()]; };
+  const searching = !!f.q.trim();
+  const weekList = lessons.filter((l) => l.date >= days[0] && l.date <= end && match(l));
+  const pay = sortL(lessons.filter((l) => unpaid(l) && match(l)), -1);
+  const found = sortL(lessons.filter(match), -1);
   return <>
     <div className="lbar2">
-      <div className="chips" role="group" aria-label={tr("Pokaż lekcje")}>{MODES.map(([k, t]) => <button key={k} className={"chip" + (f.m === k ? " on" : "")} aria-pressed={f.m === k} onClick={() => setF({ m: k })}>{t}</button>)}</div>
+      <div className="chips" role="group" aria-label={tr("Pokaż lekcje")}>
+        <button className={"chip" + (mode === "week" ? " on" : "")} aria-pressed={mode === "week"} onClick={() => setF({ m: "week" })}>{tr("Tydzień")}</button>
+        <button className={"chip" + (mode === "pay" ? " on" : "")} aria-pressed={mode === "pay"} onClick={() => setF({ m: "pay" })}>{tr("Do opłacenia") + (nPay ? " · " + nPay : "")}</button></div>
       <button className={"btn s" + (nf ? " p" : "")} aria-expanded={open} onClick={() => setOpen(!open)}>{tr("Filtry")}{nf ? ` · ${nf}` : ""}</button>
     </div>
     {open && <div className="fpanel">
       <input type="search" placeholder={tr("Szukaj w temacie i notatkach")} value={f.q} aria-label={tr("Szukaj w lekcjach")} onChange={(e) => setF({ q: e.target.value })} />
       <select aria-label={tr("Uczeń")} value={f.st} onChange={(e) => setF({ st: e.target.value })}><option value="">{tr("Wszyscy uczniowie")}</option>{students.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select>
       {subs.length > 1 && <select aria-label={tr("Przedmiot")} value={f.sb} onChange={(e) => setF({ sb: e.target.value })}><option value="">{tr("Wszystkie przedmioty")}</option>{subs.map((x) => <option key={x} value={x}>{x}</option>)}</select>}
-      <select aria-label={tr("Miesiąc")} value={f.mo} onChange={(e) => setF({ mo: e.target.value })}><option value="">{tr("Każdy miesiąc")}</option>{months.map((x) => { const t = fm(x); return <option key={x} value={x}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>; })}</select>
-      {nf > 0 && <button className="btn" onClick={() => setUi((u) => ({ ...u, lf: { ...u.lf, st: "", sb: "", mo: "", q: "" } }))}>{tr("Wyczyść filtry")}</button>}
+      {nf > 0 && <button className="btn" onClick={() => setUi((u) => ({ ...u, lf: { ...u.lf, st: "", sb: "", q: "" } }))}>{tr("Wyczyść filtry")}</button>}
     </div>}
-    {list.length ? <DayGroups list={list} dir={dir} jump={f.m === "all" || f.m === "up"} /> : <div className="card"><Empty icon="book" title={empty[f.m][0]} sub={empty[f.m][1]} /></div>}
+    {searching ? <>
+      <p className="hint" style={{ margin: "0 2px 10px" }}>{tr("Wyniki wyszukiwania we wszystkich tygodniach: {0}", found.length)}</p>
+      {found.length ? <DayGroups list={found} dir={-1} jump={false} /> : <div className="card"><Empty icon="book" title={tr("Brak lekcji")} sub={tr("Żadna lekcja nie pasuje do filtrów.")} /></div>}
+    </> : mode === "pay" ? (pay.length ? <DayGroups list={pay} dir={-1} jump={false} /> : <div className="card"><Empty icon="wallet" title={tr("Wszystko opłacone")} sub={tr("Nie ma lekcji czekających na płatność.")} /></div>) : <>
+      <div className="wkbar ltw">
+        <button className="btn s" aria-label={tr("Poprzedni tydzień")} onClick={() => setF({ w: (f.w || 0) - 1 })}>‹</button>
+        <b>{fm2(days[0])} – {fm2(end)}{pd(end).getFullYear() !== new Date().getFullYear() ? " " + pd(end).getFullYear() : ""}<small>{lekcje(weekList.filter((l) => l.status !== "cancelled").length)}</small></b>
+        <button className="btn s" aria-label={tr("Następny tydzień")} onClick={() => setF({ w: (f.w || 0) + 1 })}>›</button>
+        {(f.w || 0) !== 0 && <button className="btn s" onClick={() => setF({ w: 0 })}>{tr("Dziś")}</button>}
+      </div>
+      <div className="days">{days.map((d) => { const ls = weekList.filter((l) => l.date === d).sort((a, b) => a.time.localeCompare(b.time)); const x = pd(d);
+        return <section className={"dgrp" + (d === td ? " today" : "") + (ls.length ? "" : " empty")} key={d} data-day={d}>
+          <div className={"dgh" + (d === td ? " td" : "")}><b>{dayTitle(d)}</b>{d === td && <i className="tdtag">{tr("dzisiaj")}</i>}<span>{x.getDate()} {MLONG_G[x.getMonth()]}{ls.length ? " · " + lekcje(ls.length) : ""}</span>{!ls.length && <span className="dfree">{tr("wolne")}</span>}</div>
+          {ls.length > 0 && <div className="dgl">{ls.map((l) => <LessonItem key={l.id} l={l} nd />)}</div>}</section>; })}</div>
+    </>}
   </>;
 }
 

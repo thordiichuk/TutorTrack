@@ -152,6 +152,9 @@ async function ownStudent(tutorId: string, id: string, db = pool as any) {
   const r = (await q("SELECT * FROM students WHERE id=$1 AND tutor_id=$2 AND deleted_at IS NULL", [id, tutorId], db))[0];
   return r || fail(404, "Nie znaleziono ucznia.");
 }
+/** Today in Poland (the app's time zone), as YYYY-MM-DD. */
+const todayPL = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Warsaw" }).format(new Date());
+
 async function ownLesson(tutorId: string, id: string, db = pool as any) {
   if (!UUID.test(id)) fail(404, "Nie znaleziono lekcji.");
   const r = (await q("SELECT l.* FROM lessons l JOIN students s ON s.id=l.student_id WHERE l.id=$1 AND l.tutor_id=$2 AND l.deleted_at IS NULL AND s.deleted_at IS NULL", [id, tutorId], db))[0];
@@ -387,6 +390,8 @@ export async function buildApp(opts: { logger?: boolean; authRateLimit?: number 
   app.post("/api/lessons", async (req) => {
     const u = await need(req, "tutor");
     const b = parse(lessonIn, req.body);
+    if (b.date > todayPL() && b.status === "done") fail(400, "Przeprowadzona lekcja nie może mieć przyszłej daty.");
+    if (b.date > todayPL() && b.status === "cancelled") fail(400, "Nie można dodać odwołanej lekcji z przyszłą datą – dodaj ją jako zaplanowaną i odwołaj później.");
     await ownStudent(u.id, b.sid);
     const r = (await q(`INSERT INTO lessons(tutor_id,student_id,subject,date,time,min,topic,prep,notes,hw,hw_due,status,paid,amount,fee)
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING *`,
@@ -398,6 +403,7 @@ export async function buildApp(opts: { logger?: boolean; authRateLimit?: number 
     const l = await ownLesson(u.id, id, db);
     if (b.sid && b.sid !== l.student_id) await ownStudent(u.id, b.sid, db);
     const m = { ...mapLesson(l), ...b };
+    if (m.status === "done" && m.date > todayPL() && (l.status !== "done" || b.date)) fail(400, "Przeprowadzona lekcja nie może mieć przyszłej daty.");
     const r = (await q(`UPDATE lessons SET student_id=$2,subject=$3,date=$4,time=$5,min=$6,topic=$7,prep=$8,notes=$9,hw=$10,hw_due=$11,status=$12,paid=$13,amount=$14,fee=$15,
         cr_status = CASE WHEN cr_status = 'pending' AND $12 = 'cancelled' THEN 'accepted' WHEN cr_status = 'pending' AND $12 = 'done' THEN 'rejected' ELSE cr_status END
       WHERE id=$1 RETURNING *`,

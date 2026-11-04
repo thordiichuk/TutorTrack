@@ -1159,5 +1159,9 @@
 "Wczytaj": "Load",
 "Zajęcia wczytane.": "Activities loaded.",
 "Lekcje cykliczne są dostępne w planie Pro.": "Recurring lessons are available on the Pro plan.",
-"Nie znaleziono serii lekcji.": "Lesson series not found."
+"Nie znaleziono serii lekcji.": "Lesson series not found.",
+"Przeprowadzona lekcja nie może mieć przyszłej daty.": "A lesson marked as done can't have a future date.",
+"Nie można dodać odwołanej lekcji z przyszłą datą – dodaj ją jako zaplanowaną i odwołaj później.": "You can't add a cancelled lesson with a future date – add it as planned and cancel it later.",
+"Tydzień": "Week",
+"Wyniki wyszukiwania we wszystkich tygodniach: {0}": "Search results across all weeks: {0}"
 }

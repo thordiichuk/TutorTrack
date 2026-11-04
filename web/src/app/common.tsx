@@ -8,11 +8,11 @@ import { tr } from "../lib/i18n";
 /* ---------- per-session UI state shared by tutor views (filters, months) ---------- */
 export type Ui = {
   q: string; sf: "active" | "arch" | "all"; so: "az" | "za" | "ln" | "new"; subj: string;
-  lf: { m: "up" | "pay" | "past" | "all"; st: string; sb: string; mo: string; ls: string; ps: string; q: string; o: "desc" | "asc" };
+  lf: { m: "week" | "pay" | "up" | "past" | "all"; w: number; st: string; sb: string; mo: string; ls: string; ps: string; q: string; o: "desc" | "asc" };
   sel: string; month: string; bm: string; open: Record<string, boolean>; lv: "list" | "cal"; cm: string; cd: string; sr: string;
 };
 export const initialUi = (): Ui => ({
-  q: "", sf: "active", so: "ln", subj: "", lf: { m: "up", st: "", sb: "", mo: "", ls: "", ps: "", q: "", o: "desc" },
+  q: "", sf: "active", so: "ln", subj: "", lf: { m: "week", w: 0, st: "", sb: "", mo: "", ls: "", ps: "", q: "", o: "desc" },
   sel: "", month: ym(new Date()), bm: ym(new Date()), open: {}, lv: "list", cm: ym(new Date()), cd: "", sr: "6",
 });
 export const UiCtx = createContext<[Ui, Dispatch<SetStateAction<Ui>>]>(null as any);

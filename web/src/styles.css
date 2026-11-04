@@ -491,3 +491,8 @@ body[data-th] .brow:has(.bexp)>.strow{background:color-mix(in srgb,var(--bg) 88%
 .serlist{margin:4px 0 16px}.serlist h2{margin-bottom:6px}
 .serrow{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--bd);flex-wrap:wrap}.serrow:first-of-type{border-top:0}
 .serrow .lwho{flex:1;min-width:180px}.sico{width:32px;height:32px;border-radius:9px;background:var(--acl);color:var(--ac);display:grid;place-items:center;font-weight:800;flex:none}
+
+/* lessons: one week at a time */
+.ltw{margin:0 0 12px}.ltw b{display:flex;flex-direction:column;align-items:center;line-height:1.2}.ltw b small{font-size:12px;font-weight:500;color:var(--mu)}
+.dgrp.empty .dgh{padding-bottom:0}.dgrp.empty .dgh b{color:var(--mu);font-weight:600}.dfree{margin-left:auto;font-size:12px!important}
+.days .dgrp.empty+.dgrp.empty{margin-top:-8px}
