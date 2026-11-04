@@ -24,12 +24,11 @@ function PwRules({ p, q }: { p: string; q: string }) {
 /** Buttons at the bottom of sign-up / login pages leading to the other two account types. */
 function OtherRoles({ role, kind }: { role: "tutor" | "student" | "parent"; kind: "reg" | "log" }) {
   const R = {
-    tutor: [tr("Jesteś korepetytorem?"), "/rejestracja", "/logowanie"],
-    student: [tr("Jesteś uczniem?"), "/uczen/rejestracja", "/uczen/logowanie"],
-    parent: [tr("Jesteś rodzicem?"), "/rodzic/rejestracja", "/rodzic/logowanie"],
+    tutor: [tr("Jesteś korepetytorem?"), "/rejestracja", tr("Załóż konto korepetytora"), "/logowanie", tr("Zaloguj się jako korepetytor")],
+    student: [tr("Jesteś uczniem?"), "/uczen/rejestracja", tr("Załóż konto ucznia"), "/uczen/logowanie", tr("Zaloguj się jako uczeń")],
+    parent: [tr("Jesteś rodzicem?"), "/rodzic/rejestracja", tr("Załóż konto rodzica"), "/rodzic/logowanie", tr("Zaloguj się jako rodzic")],
   } as const;
-  const others = (["tutor", "student", "parent"] as const).filter((r) => r !== role);
-  return <div className="oroles">{others.map((r) => <a key={r} className="btn" href={kind === "reg" ? R[r][1] : R[r][2]}>{R[r][0]}</a>)}</div>;
+  return <>{(["tutor", "student", "parent"] as const).filter((r) => r !== role).map((r) => <p key={r} className="hint" style={{ textAlign: "center" }}>{R[r][0]}{" "}<a href={kind === "reg" ? R[r][1] : R[r][3]}>{kind === "reg" ? R[r][2] : R[r][4]}</a></p>)}</>;
 }
 
 function Shortcut({ u }: { u: User }) {

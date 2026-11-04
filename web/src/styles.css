@@ -513,4 +513,3 @@ body[data-th=dark] .stpick,body[data-th=graphite] .stpick{border-color:var(--bd)
 .pmh{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:0 4px 6px}.pmh b{font-size:15px}.pmh span{font-size:13px;color:var(--mu)}
 button.tile{text-align:left;font:inherit;cursor:pointer;width:100%}
 
-.oroles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:18px;padding-top:16px;border-top:1px solid var(--bd)}.oroles .btn{justify-content:center;text-align:center;white-space:normal;font-size:14px;padding-left:8px;padding-right:8px}
