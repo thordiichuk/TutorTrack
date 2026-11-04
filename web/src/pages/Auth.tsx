@@ -21,6 +21,17 @@ function PwRules({ p, q }: { p: string; q: string }) {
   </>;
 }
 
+/** Buttons at the bottom of sign-up / login pages leading to the other two account types. */
+function OtherRoles({ role, kind }: { role: "tutor" | "student" | "parent"; kind: "reg" | "log" }) {
+  const R = {
+    tutor: [tr("Jesteś korepetytorem?"), "/rejestracja", "/logowanie"],
+    student: [tr("Jesteś uczniem?"), "/uczen/rejestracja", "/uczen/logowanie"],
+    parent: [tr("Jesteś rodzicem?"), "/rodzic/rejestracja", "/rodzic/logowanie"],
+  } as const;
+  const others = (["tutor", "student", "parent"] as const).filter((r) => r !== role);
+  return <div className="oroles">{others.map((r) => <a key={r} className="btn" href={kind === "reg" ? R[r][1] : R[r][2]}>{R[r][0]}</a>)}</div>;
+}
+
 function Shortcut({ u }: { u: User }) {
   return <div className="au"><div className="card"><h2>{tr("Jesteś zalogowany")}</h2><p>{tr("Zalogowano jako")}{" "}{u.name}.</p><a className="btn p" href={dest(u)}>{tr("Przejdź do panelu")}</a></div></div>;
 }
@@ -79,7 +90,7 @@ export function Register({ role }: { role: "tutor" | "student" | "parent" }) {
         <button className="btn p" type="submit" disabled={busy} style={{ width: "100%", justifyContent: "center" }}>{st ? tr("Zarejestruj się") : tr("Utwórz konto")}</button>
       </form>
       <p className="hint" style={{ textAlign: "center" }}>{tr("Masz już konto?")}{" "}<a href={pa ? "/rodzic/logowanie" : st ? "/uczen/logowanie" : "/logowanie"}>{tr("Zaloguj się")}</a></p>
-      <p className="hint" style={{ textAlign: "center" }}>{pa ? <>{tr("Jesteś uczniem?")}{" "}<a href="/uczen/rejestracja">{tr("Załóż konto ucznia")}</a></> : st ? <>{tr("Jesteś korepetytorem?")}{" "}<a href="/rejestracja">{tr("Załóż konto korepetytora")}</a></> : <>{tr("Jesteś uczniem?")}{" "}<a href="/uczen/rejestracja">{tr("Załóż konto ucznia")}</a></>}</p>
+      <OtherRoles role={role} kind="reg" />
     </div></PubPage>
   );
 }
@@ -122,7 +133,7 @@ export function Login({ role, notice }: { role: "tutor" | "student" | "parent"; 
       <p style={{ textAlign: "center" }}><button className="lk" type="button" onClick={() => modal(<Forgot />)}>{tr("Nie pamiętasz hasła?")}</button></p>
       {pa ? <div style={{ borderTop: "1px solid var(--bd)", marginTop: 20, paddingTop: 16, textAlign: "center" }}><p className="hint" style={{ margin: "0 0 10px" }}>{tr("Nie masz jeszcze konta rodzica?")}</p><a className="btn" href="/rodzic/rejestracja" style={{ width: "100%", justifyContent: "center" }}>{tr("Zarejestruj się")}</a></div>
         : <p className="hint" style={{ textAlign: "center" }}>{tr("Nie masz konta?")}{" "}<a href={st ? "/uczen/rejestracja" : "/rejestracja"}>{tr("Zarejestruj się")}</a></p>}
-      {st && !pa && <p className="hint" style={{ textAlign: "center" }}>{tr("Jesteś rodzicem?")}{" "}<a href="/rodzic/logowanie">{tr("Zaloguj się jako rodzic")}</a></p>}
+      <OtherRoles role={role} kind="log" />
     </div></PubPage>
   );
 }
