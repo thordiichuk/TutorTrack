@@ -67,7 +67,7 @@ function fakeApi(s: DemoState, method: string, path: string, body: any): unknown
   const key = method + " " + seg.map((x, i) => (i > 0 && /^(s\d+|l\d+|d\d+)$/.test(x) ? ":id" : x)).join("/");
   const id = seg.find((x) => /^(s\d+|l\d+|d\d+)$/.test(x)) || "";
   switch (key) {
-    case "GET tutor/data": return clone({ students: s.students, lessons: s.lessons, trash: s.trash });
+    case "GET tutor/data": return clone({ students: s.students, lessons: s.lessons, trash: s.trash, series: (s as any).series || [] });
     case "PATCH me": s.user = { ...s.user, ...(body.name ? { name: body.name } : {}), ...(body.brand != null ? { brand: body.brand } : {}), settings: { ...s.user.settings, ...(body.settings || {}) } }; return { user: clone(s.user) };
     case "POST me/plan": s.user.plan = body.plan; return { user: clone(s.user) };
     case "POST students": { canActivate(); const st = { cancelMode: "off", cancelPct: 0, cancelFixed: 0, rates: {}, email: "", phone: "", note: "", ...body, id: nid(), active: true, inviteCode: null, linked: false }; s.students.push(st); return { student: clone(st) }; }
@@ -78,6 +78,12 @@ function fakeApi(s: DemoState, method: string, path: string, body: any): unknown
       s.students = s.students.filter((x) => x.id !== id); s.lessons = s.lessons.filter((l) => l.sid !== id); return { ok: true };
     }
     case "POST students/:id/invite": case "DELETE students/:id/invite": fail(400, "W trybie demo nie można udostępniać panelu ucznia. Załóż konto, aby korzystać z tej funkcji."); break;
+    case "POST lessons/series": {
+      if (s.user.plan !== "pro") fail(402, "Lekcje cykliczne są dostępne w planie Pro.");
+      const sid = nid(); (s as any).series = [...((s as any).series || []), { id: sid, sid: body.sid, freq: body.freq }];
+      body.dates.forEach((d: string) => s.lessons.push({ ...body, dates: undefined, freq: undefined, date: d, id: nid(), seriesId: sid }));
+      return { seriesId: sid, count: body.dates.length };
+    }
     case "POST lessons": { const l = { ...body, id: nid() }; s.lessons.push(l); return { lesson: clone(l) }; }
     case "PATCH lessons/:id": { const l = s.lessons.find((x) => x.id === id) || fail(404, "Nie znaleziono lekcji."); Object.assign(l, body); return { lesson: clone(l) }; }
     case "POST lessons/batch": { const out = body.ids.map((i: string) => Object.assign(s.lessons.find((x) => x.id === i)!, body.patch)); return { lessons: clone(out) }; }

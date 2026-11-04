@@ -109,7 +109,7 @@ const mapCr = (r: any) => (r.cr_status ? { status: r.cr_status, kind: r.cr_kind 
 const mapLesson = (r: any) => ({
   id: r.id, sid: r.student_id, subject: r.subject, date: r.date, time: r.time, min: r.min, topic: r.topic, prep: r.prep,
   notes: r.notes, hw: r.hw, hd: r.hw_due || "", status: r.status, paid: r.paid, amount: r.amount, fee: r.fee,
-  cr: mapCr(r),
+  cr: mapCr(r), seriesId: r.series_id || null,
 });
 const mapEvent = (r: any) => ({ id: r.id, title: r.title, cat: r.cat, repeat: r.repeat, weekday: r.weekday, date: r.date || "", start: r.start_time, end: r.end_time });
 
@@ -169,7 +169,8 @@ async function tutorData(u: User) {
     ...ts.map((r: any) => ({ kind: "student", id: r.id, name: r.name, lessons: r.n, deletedAt: new Date(r.deleted_at).getTime() })),
     ...tl.map((r: any) => ({ kind: "lesson", id: r.id, name: r.name, date: r.date, time: r.time, deletedAt: new Date(r.deleted_at).getTime() })),
   ].sort((a, b) => b.deletedAt - a.deletedAt);
-  return { students: students.map(mapStudent), lessons: lessons.map(mapLesson), trash };
+  const series = await q("SELECT id, student_id, freq FROM lesson_series WHERE tutor_id=$1", [u.id]);
+  return { students: students.map(mapStudent), lessons: lessons.map(mapLesson), trash, series: series.map((r: any) => ({ id: r.id, sid: r.student_id, freq: r.freq })) };
 }
 
 async function linkCode(userId: string, code: string, db = pool as any) {
@@ -434,7 +435,61 @@ export async function buildApp(opts: { logger?: boolean; authRateLimit?: number 
 
   app.patch("/api/lessons/:id", async (req) => {
     const u = await need(req, "tutor");
-    return { lesson: await patchLesson(u, (req.params as any).id, parse(lessonPatch, req.body)) };
+    const id = (req.params as any).id, b = parse(lessonPatch, req.body);
+    const future = (req.query as any)?.scope === "future";
+    if (!future) return { lesson: await patchLesson(u, id, b) };
+    // "this and the following lessons" of a series: same change of day/time/length/amount/subject for later planned lessons
+    return tx(async (c) => {
+      const old = await ownLesson(u.id, id, c);
+      const lesson = await patchLesson(u, id, b, c);
+      if (old.series_id) {
+        const delta = b.date ? Math.round((Date.parse(b.date) - Date.parse(old.date)) / 864e5) : 0;
+        await q(`UPDATE lessons SET date = date + $3::int, time = COALESCE($4, time), min = COALESCE($5, min), amount = COALESCE($6, amount), subject = COALESCE($7, subject)
+          WHERE series_id=$1 AND tutor_id=$2 AND id<>$8 AND date > $9 AND status='planned' AND deleted_at IS NULL`,
+          [old.series_id, u.id, delta, b.time ?? null, b.min ?? null, b.amount ?? null, b.subject ?? null, id, old.date], c);
+      }
+      return { lesson };
+    });
+  });
+
+  /* ----- recurring lessons (Pro) ----- */
+  const seriesBody = lessonIn.omit({ date: true }).extend({ freq: z.union([z.literal(1), z.literal(2)]), dates: z.array(z.string().regex(DATE)).min(1).max(60) });
+  const insertSeriesLessons = async (c: any, u: User, seriesId: string, t: any, dates: string[]) => {
+    for (const d of [...new Set(dates)].sort())
+      await q(`INSERT INTO lessons(tutor_id,student_id,subject,date,time,min,topic,prep,status,paid,amount,fee,series_id)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'planned',false,$9,0,$10)`, [u.id, t.sid, t.subject, d, t.time, t.min, t.topic, t.prep, t.amount, seriesId], c);
+  };
+  app.post("/api/lessons/series", async (req) => {
+    const u = await need(req, "tutor");
+    if (u.plan !== "pro") fail(402, "Lekcje cykliczne są dostępne w planie Pro.");
+    const b = parse(seriesBody, req.body);
+    await ownStudent(u.id, b.sid);
+    const id = await tx(async (c) => {
+      const sr = (await q("INSERT INTO lesson_series(tutor_id,student_id,freq) VALUES ($1,$2,$3) RETURNING id", [u.id, b.sid, b.freq], c))[0];
+      await insertSeriesLessons(c, u, sr.id, b, b.dates);
+      return sr.id;
+    });
+    return { seriesId: id, count: new Set(b.dates).size };
+  });
+  async function ownSeries(u: User, id: string) {
+    if (!UUID.test(id)) fail(404, "Nie znaleziono serii lekcji.");
+    return (await q("SELECT * FROM lesson_series WHERE id=$1 AND tutor_id=$2", [id, u.id]))[0] || fail(404, "Nie znaleziono serii lekcji.");
+  }
+  app.post("/api/series/:id/extend", async (req) => {
+    const u = await need(req, "tutor");
+    if (u.plan !== "pro") fail(402, "Lekcje cykliczne są dostępne w planie Pro.");
+    const sr = await ownSeries(u, (req.params as any).id);
+    const b = parse(z.object({ dates: z.array(z.string().regex(DATE)).min(1).max(60) }), req.body);
+    const last = (await q("SELECT * FROM lessons WHERE series_id=$1 AND deleted_at IS NULL ORDER BY date DESC, time DESC LIMIT 1", [sr.id]))[0] || fail(404, "Nie znaleziono serii lekcji.");
+    await tx((c) => insertSeriesLessons(c, u, sr.id, { sid: sr.student_id, subject: last.subject, time: last.time, min: last.min, topic: "", prep: "", amount: last.amount }, b.dates));
+    return { ok: true, count: new Set(b.dates).size };
+  });
+  app.post("/api/series/:id/end", async (req) => {
+    const u = await need(req, "tutor");
+    const sr = await ownSeries(u, (req.params as any).id);
+    const where = "series_id=$1 AND status='planned' AND date >= CURRENT_DATE AND deleted_at IS NULL";
+    const r = u.plan === "pro" ? await q(`UPDATE lessons SET deleted_at=now() WHERE ${where} RETURNING id`, [sr.id]) : await q(`DELETE FROM lessons WHERE ${where} RETURNING id`, [sr.id]);
+    return { ok: true, removed: r.length };
   });
 
   app.post("/api/lessons/batch", async (req) => {
@@ -447,9 +502,13 @@ export async function buildApp(opts: { logger?: boolean; authRateLimit?: number 
   app.delete("/api/lessons/:id", async (req) => {
     const u = await need(req, "tutor");
     const id = (req.params as any).id;
-    await ownLesson(u.id, id);
-    if (u.plan === "pro") await q("UPDATE lessons SET deleted_at=now() WHERE id=$1", [id]);
-    else await q("DELETE FROM lessons WHERE id=$1", [id]);
+    const l = await ownLesson(u.id, id);
+    // scope=future: also the later planned lessons of the same series
+    const future = (req.query as any)?.scope === "future" && l.series_id;
+    const where = future ? "(id=$1 OR (series_id=$2 AND date > $3 AND status='planned' AND deleted_at IS NULL))" : "id=$1";
+    const args = future ? [id, l.series_id, l.date] : [id];
+    if (u.plan === "pro") await q(`UPDATE lessons SET deleted_at=now() WHERE ${where}`, args);
+    else await q(`DELETE FROM lessons WHERE ${where}`, args);
     return { ok: true, trashed: u.plan === "pro" };
   });
 

@@ -114,3 +114,32 @@ test("student asks to cancel, tutor accepts or rejects", async () => {
   assert.equal(ls.find((l: any) => l.id === b).cr.note, "Za późno");
   assert.equal((await call("DELETE", `/api/student/lessons/${b}/cancel-request`, undefined, st)).status, 409);
 });
+
+test("recurring lessons: Pro only, edit/delete this and following, extend and end", async () => {
+  const t = await register("tutor");
+  const sid = (await call("POST", "/api/students", { name: "Seria", subject: "Fizyka", rate: 10000 }, t)).body.student.id;
+  const base = { sid, subject: "Fizyka", time: "17:30", min: 60, status: "planned", amount: 10000, freq: 1, dates: ["2030-01-08", "2030-01-15", "2030-01-22", "2030-01-29"] };
+  assert.equal((await call("POST", "/api/lessons/series", base, t)).status, 402);
+  await call("POST", "/api/me/plan", { plan: "pro" }, t);
+  const r = await call("POST", "/api/lessons/series", base, t);
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  let d = (await call("GET", "/api/tutor/data", undefined, t)).body;
+  const ls = d.lessons.filter((l: any) => l.seriesId === r.body.seriesId);
+  assert.equal(ls.length, 4);
+  assert.equal(d.series.length, 1);
+  // move the 2nd lesson one day later and to 18:00 – the following ones follow, the 1st does not
+  assert.equal((await call("PATCH", `/api/lessons/${ls[1].id}?scope=future`, { date: "2030-01-16", time: "18:00" }, t)).status, 200);
+  d = (await call("GET", "/api/tutor/data", undefined, t)).body;
+  const by = (id: string) => d.lessons.find((l: any) => l.id === id);
+  assert.equal(by(ls[0].id).time, "17:30");
+  assert.deepEqual([by(ls[1].id).date, by(ls[2].id).date, by(ls[3].id).date], ["2030-01-16", "2030-01-23", "2030-01-30"]);
+  assert.equal(by(ls[3].id).time, "18:00");
+  // extend by two lessons, then delete the 3rd and following
+  assert.equal((await call("POST", `/api/series/${r.body.seriesId}/extend`, { dates: ["2030-02-06", "2030-02-13"] }, t)).status, 200);
+  assert.equal((await call("DELETE", `/api/lessons/${ls[2].id}?scope=future`, undefined, t)).status, 200);
+  d = (await call("GET", "/api/tutor/data", undefined, t)).body;
+  assert.equal(d.lessons.filter((l: any) => l.seriesId === r.body.seriesId).length, 2);
+  // ending the series removes the remaining future planned lessons
+  const end = await call("POST", `/api/series/${r.body.seriesId}/end`, {}, t);
+  assert.equal(end.body.removed, 2);
+});

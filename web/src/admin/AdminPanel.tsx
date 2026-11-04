@@ -35,7 +35,7 @@ export function AdminPanel() {
       <a className="logo" href="/"><i><Logo /></i>{tr("TutorTrack")}</a><span className="hint hide-sm">{tr("Panel administratora")}</span>
       <span style={{ flex: 1 }} /><span className="hint hide-sm" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{user!.email}</span>
       <a className="btn s" href={home}>{tr("Moje konto")}</a>
-      <button className="btn s" onClick={() => ov.confirm({ title: "Wylogować się?", text: "Wrócisz do strony głównej.", ok: "Wyloguj się", onOk: logout })}>{tr("Wyloguj")}</button>
+      <button className="btn s" onClick={() => ov.confirm({ title: tr("Wylogować się?"), text: tr("Wrócisz do strony głównej."), ok: tr("Wyloguj się"), onOk: logout })}>{tr("Wyloguj")}</button>
     </div></header>
     <div className="pi">
       <nav className="utabs" aria-label={tr("Sekcje panelu administratora")}>{TABS.map((x) => <button key={x[0]} className={"btn s" + (tab === x[0] ? " p" : "")} aria-current={tab === x[0] ? "page" : undefined} onClick={() => setTab(x[0])}>{x[1]}</button>)}</nav>
@@ -123,12 +123,12 @@ function UsersTab() {
             {u.blocked && <span className="tag rd">{tr("Zablokowane")}</span>}
           </div>
           <div className="acts">
-            {u.role === "tutor" && <button className="btn s" onClick={() => act(async () => { await api("POST", `/api/admin/users/${u.id}/plan`, { plan: u.plan === "pro" ? "free" : "pro" }); if (self) setUser({ ...me!, plan: u.plan === "pro" ? "free" : "pro" }); }, "Zmieniono plan.")}>{u.plan === "pro" ? tr("Ustaw Free") : tr("Ustaw Pro")}</button>}
+            {u.role === "tutor" && <button className="btn s" onClick={() => act(async () => { await api("POST", `/api/admin/users/${u.id}/plan`, { plan: u.plan === "pro" ? "free" : "pro" }); if (self) setUser({ ...me!, plan: u.plan === "pro" ? "free" : "pro" }); }, tr("Zmieniono plan."))}>{u.plan === "pro" ? tr("Ustaw Free") : tr("Ustaw Pro")}</button>}
             {!locked && <>
             <button className="btn s" onClick={() => u.blocked
-              ? act(() => api("POST", `/api/admin/users/${u.id}/block`, { blocked: false }), "Konto odblokowane.")
-              : ov.confirm({ title: "Zablokować konto?", text: <>{u.email}{" "}{tr("zostanie wylogowany i nie będzie mógł się zalogować, dopóki go nie odblokujesz. Dane konta zostaną zachowane.")}</>, ok: "Zablokuj", danger: true,
-                onOk: () => act(() => api("POST", `/api/admin/users/${u.id}/block`, { blocked: true }), "Konto zablokowane.") })}>{u.blocked ? tr("Odblokuj") : tr("Zablokuj")}</button>
+              ? act(() => api("POST", `/api/admin/users/${u.id}/block`, { blocked: false }), tr("Konto odblokowane."))
+              : ov.confirm({ title: tr("Zablokować konto?"), text: <>{u.email}{" "}{tr("zostanie wylogowany i nie będzie mógł się zalogować, dopóki go nie odblokujesz. Dane konta zostaną zachowane.")}</>, ok: tr("Zablokuj"), danger: true,
+                onOk: () => act(() => api("POST", `/api/admin/users/${u.id}/block`, { blocked: true }), tr("Konto zablokowane.")) })}>{u.blocked ? tr("Odblokuj") : tr("Zablokuj")}</button>
             <button className="btn s d" onClick={() => del(u)}>{tr("Usuń")}</button>
             </>}
           </div>
@@ -145,7 +145,7 @@ function DeleteUser({ u, onDone }: { u: AUser; onDone: () => void }) {
     <p>{tr("Zostanie trwale usunięte konto")}{" "}<b>{u.email}</b>{u.role === "tutor" ? <>{" "}{tr("razem z uczniami (")}{u.students}{tr(") i lekcjami (")}{u.lessons}).</> : <>{" "}{tr("razem z jego grafikiem.")}</>}{" "}{tr("Tej operacji nie można cofnąć.")}</p>
     <Field id="dconf" label={tr("Wpisz adres e-mail konta, aby potwierdzić")} value={v} onChange={setV} error={err} autoComplete="off" />
     <div className="mf"><button className="btn" onClick={close}>{tr("Anuluj")}</button><button className="btn p" style={{ background: "var(--rd)", borderColor: "var(--rd)" }} onClick={async () => {
-      try { await api("DELETE", "/api/admin/users/" + u.id, { confirmEmail: v }); close(); toast("Konto usunięte."); onDone(); } catch (e) { setErr(errMsg(e)); }
+      try { await api("DELETE", "/api/admin/users/" + u.id, { confirmEmail: v }); close(); toast(tr("Konto usunięte.")); onDone(); } catch (e) { setErr(errMsg(e)); }
     }}>{tr("Usuń konto")}</button></div></>;
 }
 

@@ -19,10 +19,13 @@ export type Lesson = {
   hw: string; hd: string; status: Status; paid: boolean; amount: number; fee: number;
   /** Student's request to cancel the lesson. */
   cr?: CancelRequest | null;
+  /** Recurring lessons: lessons created together share a series. */
+  seriesId?: string | null;
 };
 export type CancelRequest = { status: "pending" | "accepted" | "rejected" | "moved"; kind?: "cancel" | "move"; reason: string; note: string; at: number };
 export type TrashItem = { kind: "student" | "lesson"; id: string; name: string; lessons?: number; date?: string; time?: string; deletedAt: number };
-export type TutorData = { students: Student[]; lessons: Lesson[]; trash: TrashItem[] };
+export type Series = { id: string; sid: string; freq: number };
+export type TutorData = { students: Student[]; lessons: Lesson[]; trash: TrashItem[]; series?: Series[] };
 
 export const FREE = 3;
 export const PRO_PLN = 1900;

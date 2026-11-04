@@ -7,6 +7,7 @@ import {
 import { useAuth, useTutor } from "../state";
 import { errMsg, Field, useOverlay } from "../ui/overlay";
 import { Empty, Ic } from "../lib/icons";
+import { laterInSeries, newRep, Rep, RepeatBox, repDates, ScopeAsk, SeriesList } from "./series";
 import { LessonItem, LessonTags, registerLessonUi, useData, useUi, useUpsell } from "./common";
 import { tr } from "../lib/i18n";
 
@@ -124,6 +125,8 @@ export function LessonForm({ l, pre, draft }: { l?: Lesson; pre?: string; draft?
   const [manual, setManual] = useState(!!l || !!draft);
   const [feeManual, setFeeManual] = useState(false);
   const [e, setE] = useState<Record<string, string>>({});
+  const [rep, setRep] = useState<Rep>(() => newRep(d0.date));
+  const { proUp } = useUpsell();
   const upd = (p: Partial<typeof d>, auto = !manual) => {
     const n = { ...d, ...p };
     if (auto) { const s = stu(n.sid), m = Number(n.minS); if (s && m > 0) n.amtS = gStr(calc(rateFor(s, n.subject), m)); }
@@ -149,9 +152,23 @@ export function LessonForm({ l, pre, draft }: { l?: Lesson; pre?: string; draft?
       status: d.status, paid: d.paid, amount: a, fee: d.status === "cancelled" ? fe : 0,
     };
     if (rec.status === "cancelled" && !rec.fee) rec.paid = false;
-    const commit = async () => {
-      const ok = await run(() => (l ? api("PATCH", "/api/lessons/" + l.id, rec) : api("POST", "/api/lessons", rec)), l ? tr("Zapisano zmiany lekcji.") : tr("Dodano lekcję."));
+    // a new recurring series
+    if (!l && rep.freq) {
+      const dates = repDates(rec.date, rec.time, m, rep, lessons);
+      if (!dates.length) { setE({ ...er, date: tr("Brak terminów – sprawdź datę początku i końca.") }); return; }
+      const ok = await run(() => api("POST", "/api/lessons/series", { ...rec, status: "planned", paid: false, notes: "", hw: "", hd: "", fee: 0, freq: rep.freq, dates }), tr("Dodano serię: {0} lekcji.", dates.length));
       if (ok) close();
+      return;
+    }
+    const later = l ? laterInSeries(l, lessons) : [];
+    const shared = l && later.length > 0 && (rec.date !== l.date || rec.time !== l.time || rec.min !== l.min || rec.amount !== l.amount || rec.subject !== l.subject);
+    const send = async (scope: "one" | "future") => {
+      const ok = await run(() => (l ? api("PATCH", "/api/lessons/" + l.id + (scope === "future" ? "?scope=future" : ""), rec) : api("POST", "/api/lessons", rec)), l ? tr("Zapisano zmiany lekcji.") : tr("Dodano lekcję."));
+      if (ok) close();
+    };
+    const commit = async () => {
+      if (shared) modal(<ScopeAsk title={tr("Zmienić też kolejne lekcje?")} text={tr("Zmiana dnia, godziny, czasu trwania, kwoty lub przedmiotu może dotyczyć tylko tej lekcji albo także kolejnych zaplanowanych lekcji z tej serii.")} n={later.length} onPick={send} />);
+      else await send("one");
     };
     const ov = rec.status === "cancelled" ? [] : overlap(lessons, rec.date, rec.time, m, l?.id);
     if (ov.length) {
@@ -168,7 +185,9 @@ export function LessonForm({ l, pre, draft }: { l?: Lesson; pre?: string; draft?
     {subOpts.length > 1 && <div className="f"><label htmlFor="lsu">{tr("Przedmiot")}</label><select id="lsu" value={d.subject} onChange={(ev) => { setManual(false); upd({ subject: ev.target.value }, true); }}>{subOpts.map((x) => <option key={x}>{x}</option>)}</select></div>}
     <div className="f2"><Field id="ld" label={tr("Data *")} type="date" value={d.date} onChange={(v) => upd({ date: v })} error={e.date} /><Field id="lt" label={tr("Godzina *")} type="time" value={d.time} onChange={(v) => upd({ time: v })} error={e.time} /></div>
     <Field id="lto" label={tr("Temat lekcji")} value={d.topic} onChange={(v) => upd({ topic: v })} />
+    {l?.seriesId && <p className="hint" style={{ margin: "-6px 0 10px" }}>↻ {tr("Lekcja z serii. Przy zapisie zapytamy, czy zmienić też kolejne lekcje.")}</p>}
     <div className="f2"><Field id="lm" label={tr("Czas trwania (min) *")} type="number" min={1} step={5} value={d.minS} onChange={(v) => upd({ minS: v })} error={e.min} /><Field id="la" label={tr("Kwota (zł) *")} value={d.amtS} onChange={(v) => { setManual(true); upd({ amtS: v }, false); }} error={e.amount} inputMode="decimal" /></div>
+    {!l && <RepeatBox start={d.date} time={d.time} min={Number(d.minS) || 60} rep={rep} set={setRep} pro={user?.plan === "pro"} onPro={() => proUp(tr("Lekcje cykliczne"))} />}
     {(d.status === "planned" || !!d.prep) && <div className="f"><label htmlFor="lpn">{tr("Notatka przed zajęciami")}</label><TplSel onPick={(t) => upd({ prep: (d.prep ? d.prep + "\n" : "") + t })} /><textarea id="lpn" rows={2} placeholder={tr("Plan lekcji, materiały – widzisz ją tylko Ty")} value={d.prep} onChange={(ev) => upd({ prep: ev.target.value })} /></div>}
     <div className="f2">
       <div className="f"><label htmlFor="lss">{tr("Status lekcji")}</label><select id="lss" value={d.status} onChange={(ev) => upd({ status: ev.target.value as Lesson["status"] }, false)}><option value="planned">{tr("Zaplanowana")}</option><option value="done">{tr("Przeprowadzona")}</option><option value="cancelled">{tr("Odwołana")}</option></select></div>
@@ -181,7 +200,7 @@ export function LessonForm({ l, pre, draft }: { l?: Lesson; pre?: string; draft?
     </> : d.status === "planned" && <p className="hint" style={{ margin: "-6px 0 10px" }}>{tr("Notatkę po zajęciach i pracę domową dodasz, gdy oznaczysz lekcję jako przeprowadzoną.")}</p>}
     {d.status === "cancelled" && <Field id="lfe" label={tr("Opłata za odwołanie (zł)")} value={d.feeS} onChange={(v) => { setFeeManual(true); setD({ ...d, feeS: v }); }} error={e.fee} inputMode="decimal" />}
     {d.status === "cancelled" && <p className="hint">{tr("Odwołana lekcja jest płatna tylko wtedy, gdy w danych ucznia ustawiono opłatę za odwołanie.")}</p>}
-    <div className="mf"><button className="btn" onClick={close}>{tr("Anuluj")}</button><button className="btn p" onClick={save}>{tr("Zapisz lekcję")}</button></div>
+    <div className="mf"><button className="btn" onClick={close}>{tr("Anuluj")}</button><button className="btn p" onClick={save}>{!l && rep.freq ? tr("Zapisz serię") : tr("Zapisz lekcję")}</button></div>
   </>;
 }
 
@@ -200,7 +219,7 @@ function DoneModal({ l }: { l: Lesson }) {
     <p className="hint">{tr("Po potwierdzeniu lekcja trafi do rozliczeń jako przeprowadzona.")}</p>
     <div className="mf"><button className="btn" onClick={close}>{tr("Anuluj")}</button><button className="btn p" onClick={async () => {
       close();
-      await run(() => api("PATCH", "/api/lessons/" + l.id, { status: "done", notes: n.trim() || l.notes, hw: hw.trim(), hd: hw.trim() ? hd : "" }), n.trim() ? "Lekcja przeprowadzona, notatka zapisana." : "Lekcja oznaczona jako przeprowadzona.");
+      await run(() => api("PATCH", "/api/lessons/" + l.id, { status: "done", notes: n.trim() || l.notes, hw: hw.trim(), hd: hw.trim() ? hd : "" }), n.trim() ? tr("Lekcja przeprowadzona, notatka zapisana.") : tr("Lekcja oznaczona jako przeprowadzona."));
     }}>{tr("Potwierdź")}</button></div>
   </>;
 }
@@ -219,7 +238,7 @@ export function CancelRequestActions({ l }: { l: Lesson }) {
     const d = pd(l.date); d.setDate(d.getDate() + 7); const nd = ymd(d);
     return <>
       <button className="btn s p" onClick={async () => {
-        const ok = await run(() => api("POST", `/api/lessons/${l.id}/cancel-request/move`), "Lekcja przeniesiona na " + fd(nd) + ".");
+        const ok = await run(() => api("POST", `/api/lessons/${l.id}/cancel-request/move`), tr("Lekcja przeniesiona na ") + fd(nd) + ".");
         if (ok && overlap(lessons, nd, l.time, l.min, l.id).length) modal(<><h2>{tr("Uwaga: nakładające się terminy")}</h2><p>{tr("Lekcja została przeniesiona na")}{" "}{fd(nd)}, {l.time}{tr(", ale nakłada się na inną lekcję. Jeśli to pomyłka, zmień termin w edycji.")}</p><DoneBtn /></>);
       }}>{tr("Przenieś na")}{" "}{fd(nd).replace(/ \d{4}$/, "")}</button>
       <button className="btn s" onClick={() => modal(<CancelInstead l={l} nd={nd} />)}>{tr("Odwołaj zamiast przenosić")}</button>
@@ -228,9 +247,9 @@ export function CancelRequestActions({ l }: { l: Lesson }) {
   }
   return <>
     <button className="btn s p" onClick={() => confirm({
-      title: "Potwierdzić odwołanie lekcji?", ok: "Potwierdź odwołanie",
-      text: <>{s ? s.name : ""} · {fd(l.date)}, {l.time}<br />{tr("Przyczyna:")}{" "}{l.cr!.reason}<br />{fee > 0 ? <>{tr("Zostanie naliczona opłata za odwołanie:")}{" "}<b>{pln(fee)}</b>.</> : "Odwołana lekcja nie będzie płatna."}</>,
-      onOk: () => { run(() => api("POST", `/api/lessons/${l.id}/cancel-request/accept`, { fee }), "Lekcja odwołana. Uczeń zobaczy potwierdzenie."); },
+      title: tr("Potwierdzić odwołanie lekcji?"), ok: tr("Potwierdź odwołanie"),
+      text: <>{s ? s.name : ""} · {fd(l.date)}, {l.time}<br />{tr("Przyczyna:")}{" "}{l.cr!.reason}<br />{fee > 0 ? <>{tr("Zostanie naliczona opłata za odwołanie:")}{" "}<b>{pln(fee)}</b>.</> : tr("Odwołana lekcja nie będzie płatna.")}</>,
+      onOk: () => { run(() => api("POST", `/api/lessons/${l.id}/cancel-request/accept`, { fee }), tr("Lekcja odwołana. Uczeń zobaczy potwierdzenie.")); },
     })}>{tr("Potwierdź odwołanie")}</button>
     <button className="btn s" onClick={() => modal(<RejectRequest l={l} />)}>{tr("Odrzuć prośbę")}</button>
   </>;
@@ -247,8 +266,8 @@ function CancelInstead({ l, nd }: { l: Lesson; nd: string }) {
       <div className="er" id="e_cin" role="alert" style={{ color: "var(--rd)", fontSize: 12 }}>{err}</div></div>
     <p className="hint">{tr("Lekcja zostanie odwołana bez opłaty. Uczeń zobaczy Twój komentarz w swoim panelu.")}</p>
     <div className="mf"><button className="btn" onClick={close}>{tr("Anuluj")}</button><button className="btn p" onClick={async () => {
-      if (note.trim().length < 3) { setErr("Napisz krótki komentarz dla ucznia."); return; }
-      if (await run(() => api("POST", `/api/lessons/${l.id}/cancel-request/accept`, { fee: 0, note: note.trim() }), "Lekcja odwołana. Uczeń zobaczy Twój komentarz.")) close();
+      if (note.trim().length < 3) { setErr(tr("Napisz krótki komentarz dla ucznia.")); return; }
+      if (await run(() => api("POST", `/api/lessons/${l.id}/cancel-request/accept`, { fee: 0, note: note.trim() }), tr("Lekcja odwołana. Uczeń zobaczy Twój komentarz."))) close();
     }}>{tr("Odwołaj lekcję")}</button></div>
   </>;
 }
@@ -261,7 +280,7 @@ function RejectRequest({ l }: { l: Lesson }) {
     <p className="hint">{tr("Przyczyna podana przez ucznia:")}{" "}{l.cr?.reason}</p>
     <div className="f"><label htmlFor="rjn">{tr("Komentarz dla ucznia (opcjonalnie)")}</label><textarea id="rjn" rows={3} maxLength={500} placeholder={tr("Np. Odwołanie jest możliwe najpóźniej 24 godziny przed lekcją.")} value={note} onChange={(e) => setNote(e.target.value)} /></div>
     <p className="hint">{tr("Lekcja zostanie zaplanowana bez zmian. Uczeń zobaczy Twoją decyzję i komentarz.")}</p>
-    <div className="mf"><button className="btn" onClick={close}>{tr("Anuluj")}</button><button className="btn p" onClick={async () => { if (await run(() => api("POST", `/api/lessons/${l.id}/cancel-request/reject`, { note: note.trim() }), "Prośba odrzucona.")) close(); }}>{tr("Odrzuć prośbę")}</button></div>
+    <div className="mf"><button className="btn" onClick={close}>{tr("Anuluj")}</button><button className="btn p" onClick={async () => { if (await run(() => api("POST", `/api/lessons/${l.id}/cancel-request/reject`, { note: note.trim() }), tr("Prośba odrzucona."))) close(); }}>{tr("Odrzuć prośbę")}</button></div>
   </>;
 }
 
@@ -278,15 +297,15 @@ export function LessonActions({ l }: { l: Lesson }) {
     <CancelRequestActions l={l} />
     {!pendingCr && l.status === "planned" && <>
       <button className="btn s p" onClick={() => modal(<DoneModal l={l} />)}>{tr("Przeprowadzona")}</button>
-      <button className="btn s" onClick={() => confirm({ title: "Odwołać lekcję?", text: <>{l.topic || "Bez tematu"} · {fd(l.date)}<br />{fee > 0 ? <>{tr("Zostanie naliczona opłata:")}{" "}<b>{pln(fee)}</b>.</> : "Odwołana lekcja nie jest płatna."}</>, ok: "Odwołaj lekcję",
-        onOk: () => { run(() => api("PATCH", "/api/lessons/" + l.id, { status: "cancelled", fee, paid: false }), "Lekcja odwołana."); } })}>{tr("Odwołana")}</button>
+      <button className="btn s" onClick={() => confirm({ title: tr("Odwołać lekcję?"), text: <>{l.topic || tr("Bez tematu")} · {fd(l.date)}<br />{fee > 0 ? <>{tr("Zostanie naliczona opłata:")}{" "}<b>{pln(fee)}</b>.</> : tr("Odwołana lekcja nie jest płatna.")}</>, ok: tr("Odwołaj lekcję"),
+        onOk: () => { run(() => api("PATCH", "/api/lessons/" + l.id, { status: "cancelled", fee, paid: false }), tr("Lekcja odwołana.")); } })}>{tr("Odwołana")}</button>
     </>}
     {!pendingCr && (l.status !== "cancelled" || l.fee > 0) && <button className="btn s" onClick={() => {
-      if (l.paid) run(() => api("PATCH", "/api/lessons/" + l.id, { paid: false }), "Cofnięto oznaczenie płatności.");
-      else confirm({ title: "Czy na pewno lekcja została opłacona?", text: <>{l.topic || "Bez tematu"} · {s ? s.name : ""} · {fd(l.date)}{l.status === "cancelled" ? <><br />{tr("Odwołana lekcja – opłata za odwołanie:")}{" "}</> : <br />}<b>{pln(amt(l))}</b>{tr(". Możesz to później cofnąć.")}</>, ok: "Tak, opłacona",
-        onOk: () => { run(() => api("PATCH", "/api/lessons/" + l.id, { paid: true }), "Lekcja oznaczona jako opłacona."); } });
+      if (l.paid) run(() => api("PATCH", "/api/lessons/" + l.id, { paid: false }), tr("Cofnięto oznaczenie płatności."));
+      else confirm({ title: tr("Czy na pewno lekcja została opłacona?"), text: <>{l.topic || tr("Bez tematu")} · {s ? s.name : ""} · {fd(l.date)}{l.status === "cancelled" ? <><br />{tr("Odwołana lekcja – opłata za odwołanie:")}{" "}</> : <br />}<b>{pln(amt(l))}</b>{tr(". Możesz to później cofnąć.")}</>, ok: tr("Tak, opłacona"),
+        onOk: () => { run(() => api("PATCH", "/api/lessons/" + l.id, { paid: true }), tr("Lekcja oznaczona jako opłacona.")); } });
     }}>{l.paid ? tr("Cofnij płatność") : tr("Opłacona")}</button>}
-    {l.status === "cancelled" && !l.fee && fee > 0 && <button className="btn s p" onClick={() => run(() => api("PATCH", "/api/lessons/" + l.id, { fee }), "Naliczono opłatę: " + pln(fee) + ".")}>{tr("Nalicz opłatę")}</button>}
+    {l.status === "cancelled" && !l.fee && fee > 0 && <button className="btn s p" onClick={() => run(() => api("PATCH", "/api/lessons/" + l.id, { fee }), tr("Naliczono opłatę: ") + pln(fee) + ".")}>{tr("Nalicz opłatę")}</button>}
     {!pendingCr && <button className="btn s" onClick={async () => {
       const d = pd(l.date); d.setDate(d.getDate() + 7);
       const n = { sid: l.sid, subject: l.subject, date: ymd(d), time: l.time, min: l.min, topic: l.topic, status: "planned", paid: false, amount: l.amount, fee: 0 };
@@ -296,8 +315,11 @@ export function LessonActions({ l }: { l: Lesson }) {
       else modal(<><h2>{tr("Dodano lekcję")}</h2><p>{tr("Nowa lekcja:")}{" "}{fd(n.date)}, {n.time}.</p><DoneBtn /></>);
     }}>{tr("Powtórz za tydzień")}</button>}
     <button className="btn s" onClick={() => modal(<LessonForm l={l} />)}>{tr("Edytuj")}</button>
-    <button className="btn s d" onClick={() => confirm({ title: "Usunąć lekcję?", text: pro ? "Lekcja trafi do kosza na 30 dni." : "Tej operacji nie można cofnąć. W planie Pro usunięte lekcje trafiają do kosza.", ok: "Usuń lekcję", danger: true,
-      onOk: () => { run(() => api("DELETE", "/api/lessons/" + l.id), pro ? "Lekcja w koszu." : "Lekcja usunięta."); } })}>{tr("Usuń")}</button>
+    <button className="btn s d" onClick={() => { const later = laterInSeries(l, lessons);
+      if (later.length) modal(<ScopeAsk danger title={tr("Usunąć lekcję?")} text={pro ? tr("Usunięte lekcje trafią do kosza na 30 dni.") : tr("Tej operacji nie można cofnąć.")} n={later.length}
+        onPick={(sc) => { run(() => api("DELETE", "/api/lessons/" + l.id + (sc === "future" ? "?scope=future" : "")), sc === "future" ? tr("Usunięto lekcję i kolejne z serii.") : (pro ? tr("Lekcja w koszu.") : tr("Lekcja usunięta."))); }} />);
+      else confirm({ title: tr("Usunąć lekcję?"), text: pro ? tr("Lekcja trafi do kosza na 30 dni.") : tr("Tej operacji nie można cofnąć. W planie Pro usunięte lekcje trafiają do kosza."), ok: tr("Usuń lekcję"), danger: true,
+      onOk: () => { run(() => api("DELETE", "/api/lessons/" + l.id), pro ? tr("Lekcja w koszu.") : tr("Lekcja usunięta.")); } }); }}>{tr("Usuń")}</button>
   </div>;
 }
 function DoneBtn() { const { close } = useOverlay(); return <div className="mf"><button className="btn p" onClick={close}>{tr("Rozumiem")}</button></div>; }
@@ -314,6 +336,7 @@ export function StudentDetail({ id }: { id: string }) {
     <div className="rates">{subjRates(s).map(([x, r]) => <span key={x} className="rate">{x && <b>{x}</b>}{pln(r)}{" "}{tr("/ 60 min")}</span>)}</div>
     <p>{tr("E-mail:")}{" "}{s.email || tr("brak")}<br />{tr("Telefon:")}{" "}{s.phone || tr("brak")}{s.note && <><br />{tr("Notatka:")}{" "}{s.note}</>}</p>
     <div className="grid g2" style={{ marginBottom: 12 }}><div className="card stat"><div className="l">{tr("Przeprowadzone lekcje")}</div><div className="v">{dn.length}</div></div><div className="card stat"><div className="l">{tr("Do zapłaty")}</div><div className="v am">{pln(sumAmt(ls.filter(billable), (l) => !l.paid))}</div></div></div>
+    <SeriesList sid={id} />
     <h2>{tr("Historia lekcji")}</h2>
     {ls.length ? ls.map((l) => <LessonItem key={l.id} l={l} quick={false} />) : <Empty icon="book" title={tr("Brak lekcji")} sub={tr("Dodaj pierwszą lekcję dla tego ucznia.")} />}
     <div className="mf"><button className="btn" onClick={() => modal(<StudentForm s={s} />)}>{tr("Edytuj")}</button><button className="btn" onClick={() => modal(<ShareModal id={id} />, true)}>{s.inviteCode ? tr("Kod ucznia") : tr("Udostępnij uczniowi")}</button><span style={{ flex: 1 }} /><button className="btn" onClick={close}>{tr("Zamknij")}</button><button className="btn p" onClick={() => modal(<LessonForm pre={id} />)}>{tr("Dodaj lekcję")}</button></div>
@@ -344,9 +367,9 @@ export function ShareModal({ id }: { id: string }) {
     <div className="f"><label htmlFor="shm">{tr("Wiadomość dla ucznia")}</label><textarea id="shm" rows={5} readOnly value={msg} /></div>
     <p className="hint">{tr("Kod działa dla jednego konta ucznia. Jeśli wycieknie, utwórz nowy – stary przestanie działać, a uczeń zostanie odłączony.")}</p>
     <div className="mf">
-      <button className="btn d" onClick={() => confirm({ title: "Wyłączyć dostęp ucznia?", text: "Uczeń przestanie widzieć lekcje w panelu ucznia. Twój dziennik się nie zmieni.", ok: "Wyłącz dostęp", danger: true, onOk: () => { run(() => api("DELETE", `/api/students/${id}/invite`), "Dostęp ucznia wyłączony."); } })}>{tr("Wyłącz dostęp")}</button>
-      <button className="btn" onClick={() => confirm({ title: "Utworzyć nowy kod?", text: "Stary kod przestanie działać, a połączone konto ucznia zostanie odłączone.", ok: "Utwórz nowy kod", onOk: create })}>{tr("Nowy kod")}</button>
-      <button className="btn p" onClick={async () => { toast((await copyText(msg)) ? "Skopiowano." : "Zaznacz tekst i skopiuj go ręcznie."); }}>{tr("Kopiuj wiadomość")}</button>
+      <button className="btn d" onClick={() => confirm({ title: tr("Wyłączyć dostęp ucznia?"), text: tr("Uczeń przestanie widzieć lekcje w panelu ucznia. Twój dziennik się nie zmieni."), ok: tr("Wyłącz dostęp"), danger: true, onOk: () => { run(() => api("DELETE", `/api/students/${id}/invite`), tr("Dostęp ucznia wyłączony.")); } })}>{tr("Wyłącz dostęp")}</button>
+      <button className="btn" onClick={() => confirm({ title: tr("Utworzyć nowy kod?"), text: tr("Stary kod przestanie działać, a połączone konto ucznia zostanie odłączone."), ok: tr("Utwórz nowy kod"), onOk: create })}>{tr("Nowy kod")}</button>
+      <button className="btn p" onClick={async () => { toast((await copyText(msg)) ? tr("Skopiowano.") : tr("Zaznacz tekst i skopiuj go ręcznie.")); }}>{tr("Kopiuj wiadomość")}</button>
     </div>
   </>;
 }
@@ -375,8 +398,8 @@ export function SummaryModal({ id }: { id: string }) {
     <div className="pt">{t}</div>
     <div className="mf"><button className="btn" onClick={close}>{tr("Zamknij")}</button>
       <button className="btn only-m" onClick={() => shareText("Podsumowanie lekcji – " + s.name, t)}>{tr("Udostępnij")}</button>
-      <button className="btn no-m" onClick={() => { if (user?.plan !== "pro") { proUp("Wydruk i PDF podsumowania"); return; } printText("Podsumowanie lekcji – " + s.name, t); }}>{tr("Drukuj / PDF")}{user?.plan !== "pro" && <> <span className="tag ac">{tr("Pro")}</span></>}</button>
-      <button className="btn p" onClick={async () => toast((await copyText(t)) ? "Skopiowano." : "Zaznacz tekst i skopiuj go ręcznie.")}>{tr("Kopiuj")}</button></div>
+      <button className="btn no-m" onClick={() => { if (user?.plan !== "pro") { proUp(tr("Wydruk i PDF podsumowania")); return; } printText("Podsumowanie lekcji – " + s.name, t); }}>{tr("Drukuj / PDF")}{user?.plan !== "pro" && <> <span className="tag ac">{tr("Pro")}</span></>}</button>
+      <button className="btn p" onClick={async () => toast((await copyText(t)) ? tr("Skopiowano.") : tr("Zaznacz tekst i skopiuj go ręcznie."))}>{tr("Kopiuj")}</button></div>
   </>;
 }
 
@@ -422,9 +445,9 @@ function ArchiveActions({ s }: { s: Student }) {
   const { confirm, close } = useOverlay();
   const { upsell } = useUpsell();
   const pro = user?.plan === "pro";
-  if (s.active) return <button className="btn" style={{ marginRight: "auto" }} onClick={() => confirm({ title: "Zarchiwizować ucznia?", text: "Historia lekcji i rozliczenia zostaną zachowane. Ucznia możesz przywrócić w każdej chwili.", ok: "Archiwizuj", onOk: () => { run(() => api("PATCH", "/api/students/" + s.id, { active: false }), "Uczeń zarchiwizowany."); } })}>{tr("Archiwizuj")}</button>;
+  if (s.active) return <button className="btn" style={{ marginRight: "auto" }} onClick={() => confirm({ title: tr("Zarchiwizować ucznia?"), text: tr("Historia lekcji i rozliczenia zostaną zachowane. Ucznia możesz przywrócić w każdej chwili."), ok: tr("Archiwizuj"), onOk: () => { run(() => api("PATCH", "/api/students/" + s.id, { active: false }), tr("Uczeń zarchiwizowany.")); } })}>{tr("Archiwizuj")}</button>;
   return <span style={{ marginRight: "auto", display: "flex", gap: 8, flexWrap: "wrap" }}>
-    <button className="btn" onClick={() => { if (user?.plan === "free" && students.filter((x) => x.active).length >= FREE) { upsell(); return; } close(); run(() => api("PATCH", "/api/students/" + s.id, { active: true }), "Uczeń przywrócony."); }}>{tr("Przywróć")}</button>
-    <button className="btn d" onClick={() => confirm({ title: "Usunąć ucznia?", text: `${s.name} i jego lekcje (${lessons.filter((l) => l.sid === s.id).length}) ${pro ? "trafią do kosza na 30 dni." : "zostaną trwale usunięte. W planie Pro można je przywrócić z kosza."}`, ok: "Usuń ucznia", danger: true, onOk: () => { run(() => api("DELETE", "/api/students/" + s.id), pro ? "Uczeń w koszu." : "Uczeń usunięty."); } })}>{tr("Usuń")}</button>
+    <button className="btn" onClick={() => { if (user?.plan === "free" && students.filter((x) => x.active).length >= FREE) { upsell(); return; } close(); run(() => api("PATCH", "/api/students/" + s.id, { active: true }), tr("Uczeń przywrócony.")); }}>{tr("Przywróć")}</button>
+    <button className="btn d" onClick={() => confirm({ title: tr("Usunąć ucznia?"), text: tr("{0} i jego lekcje ({1}) {2}", s.name, lessons.filter((l) => l.sid === s.id).length, pro ? "trafią do kosza na 30 dni." : "zostaną trwale usunięte. W planie Pro można je przywrócić z kosza."), ok: tr("Usuń ucznia"), danger: true, onOk: () => { run(() => api("DELETE", "/api/students/" + s.id), pro ? tr("Uczeń w koszu.") : tr("Uczeń usunięty.")); } })}>{tr("Usuń")}</button>
   </span>;
 }

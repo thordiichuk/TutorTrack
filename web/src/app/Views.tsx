@@ -284,14 +284,14 @@ export function Billing() {
     const sids = [...new Set(lessons.filter((l) => (l.status === "done" || l.status === "cancelled") && l.date.slice(0, 7) === m && stu(l.sid)).map((l) => l.sid))];
     if (!sids.length) { toast(tr("Brak lekcji do podsumowania w tym miesiącu.")); return; }
     modal(<><h2>{tr("Podsumowania –")}{" "}{fm(m)}</h2><p className="hint">{tr("Gotowe wiadomości dla każdego ucznia.")}</p>
-      {sids.map((sid) => { const t = summaryText(stu(sid)!, lessons, m, user?.brand || ""); return <div className="f" key={sid}><label>{name(sid)}</label><textarea rows={7} readOnly value={t} /><button className="btn s" style={{ marginTop: 6 }} onClick={async () => toast((await copyText(t)) ? "Skopiowano." : "Zaznacz tekst i skopiuj go ręcznie.")}>{tr("Kopiuj")}</button></div>; })}
+      {sids.map((sid) => { const t = summaryText(stu(sid)!, lessons, m, user?.brand || ""); return <div className="f" key={sid}><label>{name(sid)}</label><textarea rows={7} readOnly value={t} /><button className="btn s" style={{ marginTop: 6 }} onClick={async () => toast((await copyText(t)) ? tr("Skopiowano.") : tr("Zaznacz tekst i skopiuj go ręcznie."))}>{tr("Kopiuj")}</button></div>; })}
       <div className="mf"><button className="btn p" onClick={close}>{tr("Zamknij")}</button></div></>, true);
   };
   return <>
     <div className="bar"><MonthInput v={m} on={(v) => setUi((u) => ({ ...u, bm: v }))} /><span className="sp" />
       <button className="btn" onClick={() => modal(<><h2>{tr("Eksport i podsumowania")}</h2><div className="mnu">
         <button className="btn" onClick={() => { close(); download("rozliczenie-" + m + ".csv", csvRows(done, name), "text/csv"); }}>{tr("Rozliczenie miesiąca – CSV (")}{fm(m)})</button>
-        <button className="btn" onClick={() => { close(); if (!pro) { proUp("Eksport roku do CSV"); return; } const y = m.slice(0, 4); download("rozliczenie-" + y + ".csv", csvRows(lessons.filter((l) => billable(l) && l.date.slice(0, 4) === y), name), "text/csv"); }}>{tr("Rozliczenie całego roku – CSV")}{" "}{!pro && <span className="tag ac">{tr("Pro")}</span>}</button>
+        <button className="btn" onClick={() => { close(); if (!pro) { proUp(tr("Eksport roku do CSV")); return; } const y = m.slice(0, 4); download("rozliczenie-" + y + ".csv", csvRows(lessons.filter((l) => billable(l) && l.date.slice(0, 4) === y), name), "text/csv"); }}>{tr("Rozliczenie całego roku – CSV")}{" "}{!pro && <span className="tag ac">{tr("Pro")}</span>}</button>
         <button className="btn" onClick={() => { close(); sumAll(); }}>{tr("Podsumowania dla wszystkich uczniów")}{" "}{!pro && <span className="tag ac">{tr("Pro")}</span>}</button>
       </div><div className="mf"><button className="btn" onClick={close}>{tr("Zamknij")}</button></div></>)}>{tr("Eksport")}</button></div>
     <div className="card bsum">
@@ -309,8 +309,8 @@ export function Billing() {
           <span className="lwho"><b>{name(id) || "?"}</b><span>{lekcje(ls.length)} · {pln(t).replace(",00", "")}</span></span>
           {due > 0 ? <b className="sdue">{pln(due).replace(",00", "")}</b> : <span className="sok">{tr("rozliczony")}</span>}<Ic n={o ? "chevd" : "chev"} s={16} /></button>
         {o && <div className="bexp">
-          <div className="acts" style={{ marginBottom: 6 }}>{un.length > 0 && <button className="btn s p" onClick={() => confirm({ title: "Oznaczyć wszystkie jako opłacone?", text: <>{lekcje(un.length)}{" "}{tr("na łączną kwotę")}{" "}<b>{pln(sumAmt(un, () => true))}</b> ({fm(m)}{tr("). Każdą możesz później cofnąć.")}</>, ok: "Tak, opłacone", onOk: () => { run(() => api("POST", "/api/lessons/batch", { ids: un.map((l) => l.id), patch: { paid: true } }), "Oznaczono jako opłacone: " + un.length + "."); } })}>{tr("Oznacz wszystkie jako opłacone")}</button>}<button className="btn s" onClick={() => modal(<SummaryModal id={id} />)}>{tr("Podsumowanie dla ucznia")}</button></div>
-          {un.map((l) => <div className="unr" key={l.id}><div className="lwho"><b>{l.topic || tr("Bez tematu")}</b><span>{fd(l.date)} · {l.min}{" "}{tr("min")}</span></div><b>{pln(amt(l)).replace(",00", "")}</b><button className="btn s" onClick={() => run(() => api("PATCH", "/api/lessons/" + l.id, { paid: true }), "Lekcja oznaczona jako opłacona.")}>{tr("Opłacona")}</button></div>)}
+          <div className="acts" style={{ marginBottom: 6 }}>{un.length > 0 && <button className="btn s p" onClick={() => confirm({ title: tr("Oznaczyć wszystkie jako opłacone?"), text: <>{lekcje(un.length)}{" "}{tr("na łączną kwotę")}{" "}<b>{pln(sumAmt(un, () => true))}</b> ({fm(m)}{tr("). Każdą możesz później cofnąć.")}</>, ok: tr("Tak, opłacone"), onOk: () => { run(() => api("POST", "/api/lessons/batch", { ids: un.map((l) => l.id), patch: { paid: true } }), tr("Oznaczono jako opłacone: ") + un.length + "."); } })}>{tr("Oznacz wszystkie jako opłacone")}</button>}<button className="btn s" onClick={() => modal(<SummaryModal id={id} />)}>{tr("Podsumowanie dla ucznia")}</button></div>
+          {un.map((l) => <div className="unr" key={l.id}><div className="lwho"><b>{l.topic || tr("Bez tematu")}</b><span>{fd(l.date)} · {l.min}{" "}{tr("min")}</span></div><b>{pln(amt(l)).replace(",00", "")}</b><button className="btn s" onClick={() => run(() => api("PATCH", "/api/lessons/" + l.id, { paid: true }), tr("Lekcja oznaczona jako opłacona."))}>{tr("Opłacona")}</button></div>)}
         </div>}
       </div>; })}</div></>}
     <RevenueChart />
@@ -324,7 +324,7 @@ function RevenueChart() {
   const { lessons } = useData();
   const [ui] = useUi();
   const { proUp } = useUpsell();
-  if (user?.plan !== "pro") return <div className="card" style={{ marginTop: 16 }}><h2>{tr("Przychód z 6 miesięcy")}{" "}<span className="tag ac">{tr("Pro")}</span></h2><p className="hint">{tr("Zobacz opłacone i zaległe kwoty miesiąc po miesiącu.")}</p><button className="btn p s" onClick={() => proUp("Wykres przychodu")}>{tr("Odblokuj w Pro")}</button></div>;
+  if (user?.plan !== "pro") return <div className="card" style={{ marginTop: 16 }}><h2>{tr("Przychód z 6 miesięcy")}{" "}<span className="tag ac">{tr("Pro")}</span></h2><p className="hint">{tr("Zobacz opłacone i zaległe kwoty miesiąc po miesiącu.")}</p><button className="btn p s" onClick={() => proUp(tr("Wykres przychodu"))}>{tr("Odblokuj w Pro")}</button></div>;
   const [y, mo] = ui.bm.split("-").map(Number); let mx = 1;
   const M = Array.from({ length: 6 }, (_, k) => { const d = new Date(y, mo - 1 - (5 - k), 1), key = ym(d), ls = lessons.filter((l) => billable(l) && l.date.slice(0, 7) === key), p = sumAmt(ls, (l) => l.paid), du = sumAmt(ls, (l) => !l.paid); mx = Math.max(mx, p + du); return { l: MSHORT[d.getMonth()], p, d: du }; });
   return <div className="card" style={{ marginTop: 16 }}><h2>{tr("Przychód z 6 miesięcy")}{" "}<span className="hint" style={{ fontWeight: 400, fontSize: 13 }}>{tr("(zł)")}</span></h2><div className="rchart">
@@ -338,7 +338,7 @@ export function Stats() {
   const { lessons, stu } = useData();
   const [ui, setUi] = useUi();
   const { proUp } = useUpsell();
-  if (user?.plan !== "pro") return <div className="card"><h2 style={{ marginBottom: 8 }}>{tr("Rozszerzone statystyki")}{" "}<span className="tag ac">{tr("Pro")}</span></h2><p className="hint" style={{ margin: "0 0 16px" }}>{tr("Przychód według przedmiotu i ucznia, średnia kwota za lekcję, odsetek odwołań oraz najbardziej obłożone dni i godziny – liczone z Twoich danych.")}</p><button className="btn p s" onClick={() => proUp("Rozszerzone statystyki")}>{tr("Odblokuj w Pro")}</button></div>;
+  if (user?.plan !== "pro") return <div className="card"><h2 style={{ marginBottom: 8 }}>{tr("Rozszerzone statystyki")}{" "}<span className="tag ac">{tr("Pro")}</span></h2><p className="hint" style={{ margin: "0 0 16px" }}>{tr("Przychód według przedmiotu i ucznia, średnia kwota za lekcję, odsetek odwołań oraz najbardziej obłożone dni i godziny – liczone z Twoich danych.")}</p><button className="btn p s" onClick={() => proUp(tr("Rozszerzone statystyki"))}>{tr("Odblokuj w Pro")}</button></div>;
   const R = ui.sr, nw = new Date(), from = R === "all" ? "" : ym(new Date(nw.getFullYear(), nw.getMonth() - (+R - 1), 1));
   const L = lessons.filter((l) => !from || l.date.slice(0, 7) >= from), bil = L.filter(billable), dn = L.filter((l) => l.status === "done"), cn = L.filter((l) => l.status === "cancelled"), rev = sumAmt(bil, () => true);
   const bs: Record<string, number> = {}, bt: Record<string, number> = {}, wd: Record<string, number> = {}, hr: Record<string, number> = {}, WD = [tr("Poniedziałek"), tr("Wtorek"), tr("Środa"), tr("Czwartek"), tr("Piątek"), tr("Sobota"), tr("Niedziela")];
@@ -370,7 +370,7 @@ export function usePlanActions() {
   const setPlan = async (plan: "free" | "pro") => { try { const r = await api("POST", "/api/me/plan", { plan }); setUser(r.user); await reload(); toast(plan === "pro" ? tr("Pro odblokowane (symulacja).") : tr("Plan zmieniony na Free.")); } catch (e) { toast(errMsg(e)); } };
   return {
     tryPro: () => modal(<><h2>{tr("Przetestuj Pro")}</h2><div className="demo">{tr("Tryb testowy – żadna płatność nie zostanie pobrana")}</div><p>{tr("Pro kosztuje")}{" "}{pln(PRO_PLN).replace(",00", "")}{" "}{tr("miesięcznie i znosi limit aktywnych uczniów. Płatności nie są jeszcze podłączone – ten ekran tylko symuluje zakup.")}</p>
-      <div className="mf"><button className="btn" onClick={() => { close(); toast("Zakup anulowany. Zostajesz na planie Free."); }}>{tr("Anuluj zakup")}</button><button className="btn p" onClick={() => { close(); setPlan("pro"); }}>{tr("Zasymuluj udany zakup")}</button></div></>),
+      <div className="mf"><button className="btn" onClick={() => { close(); toast(tr("Zakup anulowany. Zostajesz na planie Free.")); }}>{tr("Anuluj zakup")}</button><button className="btn p" onClick={() => { close(); setPlan("pro"); }}>{tr("Zasymuluj udany zakup")}</button></div></>),
     toFree: () => confirm({ title: tr("Wrócić do planu Free?"), text: tr("Wszystkie dane zostaną zachowane. Jeśli masz więcej niż {0} aktywnych uczniów, dodawanie i przywracanie uczniów zostanie zablokowane.", FREE), ok: tr("Wróć do Free"), onOk: () => setPlan("free") }),
   };
 }
@@ -438,28 +438,28 @@ export function Settings({ group = "" }: { group?: string }) {
       <Field id="pfn" label={tr("Imię lub imię i nazwisko")} value={pf.name} onChange={(v) => setPf({ ...pf, name: v })} error={pf.err} />
       <Field id="pfb" label={tr("Nazwa lub marka korepetytora")} value={pf.brand} onChange={(v) => setPf({ ...pf, brand: v })} />
       <p className="hint" style={{ margin: "4px 0 16px" }}>{tr("E-mail:")}{" "}{user!.email}{tr(". Nazwa lub marka jest widoczna dla Twoich uczniów w panelu ucznia.")}</p>
-      <button className="btn p" disabled={demo} onClick={async () => { if (!pf.name.trim()) { setPf({ ...pf, err: "Podaj imię." }); return; } try { await updateMe({ name: pf.name.trim(), brand: pf.brand.trim() }); setPf({ ...pf, err: "" }); toast("Profil zapisany."); } catch (e) { toast(errMsg(e)); } }}>{tr("Zapisz profil")}</button></div>;
-  const HASLO = <div className="card"><h2>{tr("Konto i bezpieczeństwo")}</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>{tr("Hasło jest przechowywane wyłącznie jako zaszyfrowany skrót.")}</p><div className="acts"><button className="btn" disabled={demo} onClick={() => modal(<ChangePassword />)}>{tr("Zmień hasło")}</button>{user!.isAdmin && !demo && <button className="btn" onClick={() => navigate("/admin")}>{tr("Panel administratora")}</button>}<button className="btn" onClick={() => confirm({ title: demo ? "Wyjść z trybu demo?" : "Wylogować się?", text: demo ? "Dane przykładowe nie są zapisywane." : "Twoje dane są bezpiecznie zapisane na koncie.", ok: demo ? "Wyjdź" : "Wyloguj się", onOk: logout })}>{demo ? tr("Wyjdź z dema") : tr("Wyloguj się")}</button></div></div>;
+      <button className="btn p" disabled={demo} onClick={async () => { if (!pf.name.trim()) { setPf({ ...pf, err: tr("Podaj imię.") }); return; } try { await updateMe({ name: pf.name.trim(), brand: pf.brand.trim() }); setPf({ ...pf, err: "" }); toast(tr("Profil zapisany.")); } catch (e) { toast(errMsg(e)); } }}>{tr("Zapisz profil")}</button></div>;
+  const HASLO = <div className="card"><h2>{tr("Konto i bezpieczeństwo")}</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>{tr("Hasło jest przechowywane wyłącznie jako zaszyfrowany skrót.")}</p><div className="acts"><button className="btn" disabled={demo} onClick={() => modal(<ChangePassword />)}>{tr("Zmień hasło")}</button>{user!.isAdmin && !demo && <button className="btn" onClick={() => navigate("/admin")}>{tr("Panel administratora")}</button>}<button className="btn" onClick={() => confirm({ title: demo ? tr("Wyjść z trybu demo?") : tr("Wylogować się?"), text: demo ? tr("Dane przykładowe nie są zapisywane.") : tr("Twoje dane są bezpiecznie zapisane na koncie."), ok: demo ? tr("Wyjdź") : tr("Wyloguj się"), onOk: logout })}>{demo ? tr("Wyjdź z dema") : tr("Wyloguj się")}</button></div></div>;
   const DOMYSLNE = <div className="card"><h2>{tr("Domyślne wartości")}</h2>
       <div className="f2">
-        <div className="f"><label htmlFor="sd">{tr("Domyślny czas lekcji (min)")}</label><input id="sd" type="number" min={5} step={5} defaultValue={c.dur || 60} onBlur={(e) => { const v = Number(e.target.value); if (!(v > 0) || Math.round(v) !== v) { toast("Podaj dodatnią liczbę minut."); e.target.value = String(c.dur || 60); return; } if (v !== (c.dur || 60)) save({ dur: v }); }} /></div>
+        <div className="f"><label htmlFor="sd">{tr("Domyślny czas lekcji (min)")}</label><input id="sd" type="number" min={5} step={5} defaultValue={c.dur || 60} onBlur={(e) => { const v = Number(e.target.value); if (!(v > 0) || Math.round(v) !== v) { toast(tr("Podaj dodatnią liczbę minut.")); e.target.value = String(c.dur || 60); return; } if (v !== (c.dur || 60)) save({ dur: v }); }} /></div>
         <div className="f"><label htmlFor="st">{tr("Godzina nowej lekcji")}</label><input id="st" type="time" defaultValue={c.time || "16:00"} onBlur={(e) => { if (e.target.value && e.target.value !== (c.time || "16:00")) save({ time: e.target.value }); }} /></div>
       </div>
       <div className="f2">
-        <div className="f"><label htmlFor="sr2">{tr("Stawka nowego ucznia (zł / 60 min)")}</label><input id="sr2" inputMode="decimal" defaultValue={gStr(c.rate || 10000)} onBlur={(e) => { const v = toG(e.target.value); if (isNaN(v) || v < 0) { toast("Podaj poprawną, nieujemną stawkę."); e.target.value = gStr(c.rate || 10000); return; } if (v !== (c.rate || 10000)) save({ rate: v }); }} /></div>
+        <div className="f"><label htmlFor="sr2">{tr("Stawka nowego ucznia (zł / 60 min)")}</label><input id="sr2" inputMode="decimal" defaultValue={gStr(c.rate || 10000)} onBlur={(e) => { const v = toG(e.target.value); if (isNaN(v) || v < 0) { toast(tr("Podaj poprawną, nieujemną stawkę.")); e.target.value = gStr(c.rate || 10000); return; } if (v !== (c.rate || 10000)) save({ rate: v }); }} /></div>
         <div className="f"><label htmlFor="sw">{tr("Początek tygodnia w kalendarzu")}</label><select id="sw" value={c.wk === "sun" ? "sun" : "mon"} onChange={(e) => save({ wk: e.target.value })}><option value="mon">{tr("Poniedziałek")}</option><option value="sun">{tr("Niedziela")}</option></select></div>
       </div>
       <div className="chk" style={{ marginTop: 8 }}><input type="checkbox" id="sl" checked={c.late !== false} onChange={(e) => save({ late: e.target.checked })} /><label htmlFor="sl">{tr("Pokazuj na pulpicie lekcje do potwierdzenia")}</label></div></div>;
   const CEL = <div className="card"><h2>{tr("Cel miesięczny")}{tag}</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>{tr("Pasek postępu na pulpicie pokazuje, ile z celu osiągnąłeś w wybranym miesiącu. Zostaw puste, aby wyłączyć.")}</p>
-      <div className="f"><label htmlFor="sg">{tr("Cel (zł)")}</label><input id="sg" inputMode="decimal" value={goal} disabled={!pr} onChange={(e) => setGoal(e.target.value)} onBlur={() => { const v = goal.trim() === "" ? 0 : toG(goal); if (isNaN(v) || v < 0) { toast("Podaj poprawną, nieujemną kwotę."); return; } if (v !== (c.goal || 0)) save({ goal: v }); }} /></div>{up(tr("Cel miesięczny"))}</div>;
+      <div className="f"><label htmlFor="sg">{tr("Cel (zł)")}</label><input id="sg" inputMode="decimal" value={goal} disabled={!pr} onChange={(e) => setGoal(e.target.value)} onBlur={() => { const v = goal.trim() === "" ? 0 : toG(goal); if (isNaN(v) || v < 0) { toast(tr("Podaj poprawną, nieujemną kwotę.")); return; } if (v !== (c.goal || 0)) save({ goal: v }); }} /></div>{up(tr("Cel miesięczny"))}</div>;
   const SZABLONY = <div className="card"><h2>{tr("Szablony notatek")}{tag}</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>{tr("Wstawiasz je w formularzu lekcji. Dostępne są 4 gotowe szablony i Twoje własne.")}</p>
-      {(c.tpl || []).map((x, i) => <div className="row" key={i}><div className="m"><b>{x.n}</b><span>{x.t}</span></div><button className="btn s d" disabled={!pr} onClick={() => save({ tpl: (c.tpl || []).filter((_, j) => j !== i) }, "Usunięto szablon.")}>{tr("Usuń")}</button></div>)}
+      {(c.tpl || []).map((x, i) => <div className="row" key={i}><div className="m"><b>{x.n}</b><span>{x.t}</span></div><button className="btn s d" disabled={!pr} onClick={() => save({ tpl: (c.tpl || []).filter((_, j) => j !== i) }, tr("Usunięto szablon."))}>{tr("Usuń")}</button></div>)}
       <div className="f" style={{ marginTop: 12 }}><label htmlFor="tn">{tr("Nazwa szablonu")}</label><input id="tn" disabled={!pr} value={tpl.n} onChange={(e) => setTpl({ ...tpl, n: e.target.value })} /></div>
       <div className="f"><label htmlFor="tt">{tr("Treść")}</label><textarea id="tt" rows={3} disabled={!pr} value={tpl.t} onChange={(e) => setTpl({ ...tpl, t: e.target.value })} /></div>
-      {pr ? <button className="btn" onClick={async () => { if (!tpl.n.trim() || !tpl.t.trim()) { toast("Podaj nazwę i treść szablonu."); return; } await save({ tpl: [...(c.tpl || []), { n: tpl.n.trim(), t: tpl.t.trim() }] }, "Dodano szablon."); setTpl({ n: "", t: "" }); }}>{tr("Dodaj szablon")}</button> : up(tr("Szablony notatek"))}</div>;
+      {pr ? <button className="btn" onClick={async () => { if (!tpl.n.trim() || !tpl.t.trim()) { toast(tr("Podaj nazwę i treść szablonu.")); return; } await save({ tpl: [...(c.tpl || []), { n: tpl.n.trim(), t: tpl.t.trim() }] }, tr("Dodano szablon.")); setTpl({ n: "", t: "" }); }}>{tr("Dodaj szablon")}</button> : up(tr("Szablony notatek"))}</div>;
   const DANE = <div className="card"><h2>{tr("Dane")}</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>{tr("Kopia danych zawiera dane uczniów – przechowuj ją bezpiecznie.")}</p>
       <div className="acts">
-        <button className="btn" onClick={async () => { try { const d = await api("GET", "/api/export"); download("tutortrack-kopia-" + ymd(new Date()) + ".json", JSON.stringify(d, null, 1), "application/json"); toast("Kopia zapisana."); } catch (e) { toast(errMsg(e)); } }}>{tr("Eksportuj kopię danych")}</button>
+        <button className="btn" onClick={async () => { try { const d = await api("GET", "/api/export"); download("tutortrack-kopia-" + ymd(new Date()) + ".json", JSON.stringify(d, null, 1), "application/json"); toast(tr("Kopia zapisana.")); } catch (e) { toast(errMsg(e)); } }}>{tr("Eksportuj kopię danych")}</button>
         <button className="btn" disabled={demo} onClick={importFile}>{tr("Importuj kopię danych")}</button>
         <button className="btn d" disabled={demo} onClick={() => modal(<DeleteAccount onDone={() => { setUser(null); logout(); }} />)}>{tr("Usuń konto i dane")}</button>
       </div></div>;
@@ -468,9 +468,9 @@ export function Settings({ group = "" }: { group?: string }) {
         <p className="hint" style={{ margin: "-6px 0 12px" }}>{tr("Usunięte lekcje i uczniowie trafiają tu na 30 dni.")}</p>
         {data!.trash.length ? <>{data!.trash.map((x) => { const d = Math.max(0, 30 - Math.floor((Date.now() - x.deletedAt) / 864e5)); const nm = x.kind === "student" ? tr("Uczeń: {0} ({1} lekcji)", x.name, x.lessons) : tr("Lekcja: {0} · {1}, {2}", x.name || "usunięty uczeń", fd(x.date!), x.time);
           return <div className="row" key={x.id}><div className="m"><b>{nm}</b><span>{tr("Pozostało dni:")}{" "}{d}</span></div><div className="acts">
-            <button className="btn s" onClick={() => run(() => api("POST", `/api/trash/${x.kind}/${x.id}/restore`), "Przywrócono.")}>{tr("Przywróć")}</button>
-            <button className="btn s d" onClick={() => confirm({ title: "Usunąć na stałe?", text: "Tej operacji nie można cofnąć.", ok: "Usuń na stałe", danger: true, onOk: () => { run(() => api("DELETE", `/api/trash/${x.kind}/${x.id}`)); } })}>{tr("Usuń na stałe")}</button></div></div>; })}
-          <div style={{ marginTop: 12 }}><button className="btn d" onClick={() => confirm({ title: "Opróżnić kosz?", text: "Wszystkie elementy zostaną trwale usunięte.", ok: "Opróżnij", danger: true, onOk: () => { run(() => api("DELETE", "/api/trash"), "Kosz opróżniony."); } })}>{tr("Opróżnij kosz")}</button></div></>
+            <button className="btn s" onClick={() => run(() => api("POST", `/api/trash/${x.kind}/${x.id}/restore`), tr("Przywrócono."))}>{tr("Przywróć")}</button>
+            <button className="btn s d" onClick={() => confirm({ title: tr("Usunąć na stałe?"), text: tr("Tej operacji nie można cofnąć."), ok: tr("Usuń na stałe"), danger: true, onOk: () => { run(() => api("DELETE", `/api/trash/${x.kind}/${x.id}`)); } })}>{tr("Usuń na stałe")}</button></div></div>; })}
+          <div style={{ marginTop: 12 }}><button className="btn d" onClick={() => confirm({ title: tr("Opróżnić kosz?"), text: tr("Wszystkie elementy zostaną trwale usunięte."), ok: tr("Opróżnij"), danger: true, onOk: () => { run(() => api("DELETE", "/api/trash"), tr("Kosz opróżniony.")); } })}>{tr("Opróżnij kosz")}</button></div></>
           : <p className="hint">{tr("Kosz jest pusty.")}</p>}</>}</div>;
 
   const I = (k: string, t: string, ic: string, v?: ReactNode) => <button key={k} className="sitem" onClick={() => { setSec(k); window.scrollTo(0, 0); }}><span className="sic"><Ic n={ic} s={16} /></span><b>{t}</b>{v != null && <span className="sv">{v}</span>}<Ic n="chev" s={16} /></button>;
@@ -500,7 +500,7 @@ export function Settings({ group = "" }: { group?: string }) {
     <div className="sgt">{tr("Aplikacja")}</div>
     <div className="sgrp">{I("wyglad", tr("Wygląd"), "palette", thName[th] || tr("Jasny"))}{I("jezyk", tr("Język"), "globe", langName())}{I("dane", tr("Kopia danych"), "download")}{I("kosz", tr("Kosz"), "trash", pr ? (data!.trash.length ? String(data!.trash.length) : tr("pusty")) : tr("Pro"))}</div>
     {user!.isAdmin && !demo && <div className="sgrp" style={{ marginTop: 16 }}><button className="sitem" onClick={() => navigate("/admin")}><span className="sic"><Ic n="alert" s={16} /></span><b>{tr("Panel administratora")}</b><Ic n="chev" s={16} /></button></div>}
-    <button className="slogout" onClick={() => confirm({ title: demo ? "Wyjść z trybu demo?" : "Wylogować się?", text: demo ? "Dane przykładowe nie są zapisywane." : "Twoje dane są bezpiecznie zapisane na koncie.", ok: demo ? "Wyjdź" : "Wyloguj się", onOk: logout })}><Ic n="out" s={18} />{demo ? tr("Wyjdź z dema") : tr("Wyloguj się")}</button>
+    <button className="slogout" onClick={() => confirm({ title: demo ? tr("Wyjść z trybu demo?") : tr("Wylogować się?"), text: demo ? tr("Dane przykładowe nie są zapisywane.") : tr("Twoje dane są bezpiecznie zapisane na koncie."), ok: demo ? tr("Wyjdź") : tr("Wyloguj się"), onOk: logout })}><Ic n="out" s={18} />{demo ? tr("Wyjdź z dema") : tr("Wyloguj się")}</button>
   </div>;
 }
 
@@ -535,9 +535,9 @@ export function ChangePassword() {
     <Field id="pn1" label={tr("Nowe hasło (min. 8 znaków, litera i cyfra)")} type="password" value={f.n1} onChange={(v) => setF({ ...f, n1: v })} error={e.n1} autoComplete="new-password" />
     <Field id="pn2" label={tr("Powtórz nowe hasło")} type="password" value={f.n2} onChange={(v) => setF({ ...f, n2: v })} error={e.n2} autoComplete="new-password" />
     <div className="mf"><button className="btn" onClick={close}>{tr("Anuluj")}</button><button className="btn p" onClick={async () => {
-      const er = { c: f.c ? "" : "Podaj obecne hasło.", n1: pwOk(f.n1) ? "" : "Hasło musi mieć co najmniej 8 znaków oraz literę i cyfrę.", n2: f.n1 === f.n2 ? "" : "Hasła muszą być identyczne." };
+      const er = { c: f.c ? "" : tr("Podaj obecne hasło."), n1: pwOk(f.n1) ? "" : tr("Hasło musi mieć co najmniej 8 znaków oraz literę i cyfrę."), n2: f.n1 === f.n2 ? "" : tr("Hasła muszą być identyczne.") };
       setE(er); if (er.c || er.n1 || er.n2) return;
-      try { await api("POST", "/api/me/password", { current: f.c, next: f.n1 }); close(); toast("Hasło zmienione. Inne urządzenia zostały wylogowane."); } catch (x) { setE({ c: errMsg(x) }); }
+      try { await api("POST", "/api/me/password", { current: f.c, next: f.n1 }); close(); toast(tr("Hasło zmienione. Inne urządzenia zostały wylogowane.")); } catch (x) { setE({ c: errMsg(x) }); }
     }}>{tr("Zapisz hasło")}</button></div></>;
 }
 
@@ -547,7 +547,7 @@ export function DeleteAccount({ onDone }: { onDone: () => void }) {
   return <><h2>{tr("Usunąć konto i wszystkie dane?")}</h2><p>{tr("Zostaną trwale usunięte profil i wszystkie powiązane dane. Tej operacji nie można cofnąć.")}</p>
     <Field id="dpw" label={tr("Potwierdź hasłem")} type="password" value={pw} onChange={setPw} error={err} autoComplete="current-password" />
     <div className="mf"><button className="btn" onClick={close}>{tr("Anuluj")}</button><button className="btn p" style={{ background: "var(--rd)", borderColor: "var(--rd)" }} onClick={async () => {
-      try { await api("DELETE", "/api/me", { password: pw }); close(); toast("Konto usunięte."); onDone(); } catch (x) { setErr(errMsg(x)); }
+      try { await api("DELETE", "/api/me", { password: pw }); close(); toast(tr("Konto usunięte.")); onDone(); } catch (x) { setErr(errMsg(x)); }
     }}>{tr("Usuń konto")}</button></div></>;
 }
 

@@ -107,7 +107,7 @@ export function StudentPanel() {
       {l.cr?.status === "moved" && <div className="nt" style={{ marginTop: 12 }}><b>{tr("Korepetytor przeniósł lekcję na Twoją prośbę")}</b>{l.cr.note ? <>{" "}{tr("– z")}{" "}{fd(l.cr.note)}{" "}{tr("na")}{" "}{fd(l.date)}</> : null}.<br />{tr("Przyczyna:")}{" "}{l.cr.reason}</div>}
       <div className="mf">
         {l.status === "planned" && l.cr?.status !== "pending" && <button className="btn d" style={{ marginRight: "auto" }} onClick={() => ov.modal(<CancelRequestForm l={l} onSent={load} />)}>{tr("Odwołaj lub przenieś")}</button>}
-        {l.cr?.status === "pending" && <button className="btn d" style={{ marginRight: "auto" }} onClick={() => { ov.close(); run(() => api("DELETE", `/api/student/lessons/${l.id}/cancel-request`), "Prośba o odwołanie wycofana."); }}>{tr("Wycofaj prośbę")}</button>}
+        {l.cr?.status === "pending" && <button className="btn d" style={{ marginRight: "auto" }} onClick={() => { ov.close(); run(() => api("DELETE", `/api/student/lessons/${l.id}/cancel-request`), tr("Prośba o odwołanie wycofana.")); }}>{tr("Wycofaj prośbę")}</button>}
         <button className="btn" onClick={ov.close}>{tr("Zamknij")}</button>{l.hw && <button className="btn p" onClick={() => toggleHw(l.id, true)}>{done.has(l.id) ? tr("Cofnij: niezrobione") : tr("Oznacz zadanie jako zrobione")}</button>}</div></>);
   };
   const evForm = (e?: Ev) => ov.modal(<EvForm e={e} lessons={all} events={d!.events} onSave={(b) => run(() => (e ? api("PATCH", "/api/student/events/" + e.id, b) : api("POST", "/api/student/events", b)), e ? tr("Zapisano zmiany.") : tr("Dodano zajęcia."))}
@@ -236,7 +236,7 @@ export function StudentPanel() {
       ov.modal(<><h2>{tr("Podsumowanie –")}{" "}{fm(m)}</h2><p className="hint">{tr("Lekcje od:")}{" "}{tutor}{tr(". Możesz je skopiować, udostępnić albo (na komputerze) wydrukować.")}</p>
         <textarea rows={11} readOnly value={txt} />
         <div className="mf"><button className="btn" onClick={ov.close}>{tr("Zamknij")}</button><button className="btn only-m" onClick={() => shareText("Podsumowanie lekcji – " + fm(m), txt)}>{tr("Udostępnij")}</button><button className="btn no-m" onClick={() => printText("Podsumowanie lekcji – " + fm(m), txt)}>{tr("Drukuj / PDF")}</button>
-          <button className="btn p" onClick={async () => ov.toast((await copyText(txt)) ? "Skopiowano." : "Zaznacz tekst i skopiuj go ręcznie.")}>{tr("Kopiuj")}</button></div></>);
+          <button className="btn p" onClick={async () => ov.toast((await copyText(txt)) ? tr("Skopiowano.") : tr("Zaznacz tekst i skopiuj go ręcznie."))}>{tr("Kopiuj")}</button></div></>);
     };
     const tutors = [...new Set(L.filter((l) => l.status === "done" || l.status === "cancelled").map((l) => l.tutor))];
     if (!L.length) return <>{head}<div className="card"><Empty icon="chart" title={tr("Brak lekcji w tym miesiącu")} sub={tr("Wybierz inny miesiąc albo dodaj kod od korepetytora.")} /></div></>;
@@ -332,7 +332,7 @@ function KorTab({ d, load, run }: { d: Data; load: () => Promise<void>; run: (fn
         <div className="er" id="e_ucode" role="alert" style={{ color: "var(--rd)", fontSize: 13, marginTop: 6 }}>{e}</div></div>
       <div className="card" style={{ marginTop: 16 }}><h2>{tr("Twoi korepetytorzy")}</h2>
         {d.links.length ? d.links.map((k) => <div className="row" key={k.sid}><div className="av">{(k.tutor || tr("K")).charAt(0).toUpperCase()}</div><div className="m"><b>{k.tutor}</b><span>{k.subject}{" "}{tr("· lekcji:")}{" "}{k.lessons.length}</span>{k.contact?.email || k.contact?.phone ? <span className="ktc">{k.contact.email && <a href={"mailto:" + k.contact.email}>✉️ {k.contact.email}</a>}{k.contact.phone && <a href={"tel:" + k.contact.phone.replace(/\s/g, "")}>📞 {k.contact.phone}</a>}</span> : <span className="hint" style={{ fontSize: 12, display: "block", marginTop: 2 }}>{tr("Korepetytor nie udostępnił danych kontaktowych.")}</span>}</div>
-          <button className="btn s d" onClick={() => ov.confirm({ title: "Odłączyć korepetytora?", text: "Lekcje, notatki i zadania od tego korepetytora znikną z Twojego panelu. Aby połączyć się ponownie, poproś korepetytora o nowy kod.", ok: "Odłącz", danger: true, onOk: () => { run(() => api("DELETE", "/api/student/link/" + k.sid), "Odłączono korepetytora."); } })}>{tr("Odłącz")}</button></div>)
+          <button className="btn s d" onClick={() => ov.confirm({ title: tr("Odłączyć korepetytora?"), text: tr("Lekcje, notatki i zadania od tego korepetytora znikną z Twojego panelu. Aby połączyć się ponownie, poproś korepetytora o nowy kod."), ok: tr("Odłącz"), danger: true, onOk: () => { run(() => api("DELETE", "/api/student/link/" + k.sid), tr("Odłączono korepetytora.")); } })}>{tr("Odłącz")}</button></div>)
           : <p className="hint">{tr("Nie połączono jeszcze żadnego korepetytora.")}</p>}</div>
       <p className="hint" style={{ marginTop: 12 }}>{tr("Twoje lekcje widzisz tylko Ty i korepetytor, który je prowadzi. Wszystkie funkcje dla ucznia są bezpłatne.")}</p></>;
   }
@@ -345,7 +345,7 @@ function KontoTab({ out, d, load, go }: { out: () => void; d: Data; load: () => 
   const [sec, setSec] = useState("");
   const SEC: Record<string, ReactNode> = {
     profil: <div className="card"><h2>{tr("Profil")}</h2><Field id="sn2" label={tr("Imię")} value={name} onChange={setName} error={e} /><p className="hint" style={{ margin: "4px 0 16px" }}>{tr("E-mail:")}{" "}{user!.email}</p>
-        <button className="btn p" onClick={async () => { if (!name.trim()) { setE("Podaj imię."); return; } try { await updateMe({ name: name.trim() }); setE(""); ov.toast("Profil zapisany."); } catch (x) { ov.toast(errMsg(x)); } }}>{tr("Zapisz profil")}</button></div>,
+        <button className="btn p" onClick={async () => { if (!name.trim()) { setE(tr("Podaj imię.")); return; } try { await updateMe({ name: name.trim() }); setE(""); ov.toast(tr("Profil zapisany.")); } catch (x) { ov.toast(errMsg(x)); } }}>{tr("Zapisz profil")}</button></div>,
     wyglad: <ThemePicker />,
     jezyk: <LangPicker />,
     kopia: <div className="card"><h2>{tr("Kopia zajęć")}</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>{tr("Zapisz swoje zajęcia (szkoła, zajęcia dodatkowe) do pliku albo wczytaj je z pliku. Lekcje od korepetytorów są zawsze na koncie i nie trzeba ich kopiować.")}</p>
@@ -354,9 +354,9 @@ function KontoTab({ out, d, load, go }: { out: () => void; d: Data; load: () => 
             const f = document.createElement("input"); f.type = "file"; f.accept = ".json,application/json";
             f.onchange = () => { const file = f.files?.[0]; if (!file) return; file.text().then((txt) => {
               let o: any = null; try { o = JSON.parse(txt); } catch { /* invalid */ }
-              if (!o || !Array.isArray(o.events)) { ov.toast("Nieprawidłowy plik z zajęciami."); return; }
-              ov.confirm({ title: "Wczytać zajęcia?", text: `Obecne zajęcia zostaną zastąpione (${o.events.length} zajęć z pliku). Lekcje od korepetytorów się nie zmienią.`, ok: "Wczytaj", danger: true,
-                onOk: async () => { try { await api("POST", "/api/student/import", { events: o.events }); await load(); ov.toast("Zajęcia wczytane."); } catch (x) { ov.toast(errMsg(x)); } } });
+              if (!o || !Array.isArray(o.events)) { ov.toast(tr("Nieprawidłowy plik z zajęciami.")); return; }
+              ov.confirm({ title: tr("Wczytać zajęcia?"), text: tr("Obecne zajęcia zostaną zastąpione ({0} zajęć z pliku). Lekcje od korepetytorów się nie zmienią.", o.events.length), ok: tr("Wczytaj"), danger: true,
+                onOk: async () => { try { await api("POST", "/api/student/import", { events: o.events }); await load(); ov.toast(tr("Zajęcia wczytane.")); } catch (x) { ov.toast(errMsg(x)); } } });
             }); };
             f.click();
           }}>{tr("Importuj zajęcia")}</button></div></div>,
