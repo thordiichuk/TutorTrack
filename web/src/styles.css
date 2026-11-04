@@ -515,7 +515,7 @@ button.tile{text-align:left;font:inherit;cursor:pointer;width:100%}
 
 .oroles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:18px;padding-top:16px;border-top:1px solid var(--bd)}.oroles .btn{justify-content:center;text-align:center;white-space:normal;font-size:14px;padding-left:8px;padding-right:8px}
 @media (max-width:600px){
-.oroles{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:16px;padding-top:14px}
-.oroles .btn{flex:0 1 auto;min-height:0;padding:7px 14px;font-size:13px;font-weight:600;border-radius:8px;white-space:nowrap;color:var(--mu)}
+.oroles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:16px;padding-top:14px}
+.oroles .btn{width:100%;min-height:0;padding:8px 6px;font-size:13px;font-weight:600;border-radius:8px;white-space:nowrap;color:var(--mu)}
 .oroles .btn:hover{color:var(--ac);border-color:var(--ac)}
 }
