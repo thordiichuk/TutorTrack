@@ -495,3 +495,16 @@ body[data-th] .brow:has(.bexp)>.strow{background:color-mix(in srgb,var(--bg) 88%
 /* lessons: one week at a time */
 .ltw{margin:0 0 12px}.ltw b{display:flex;flex-direction:column;align-items:center;line-height:1.2}.ltw b small{font-size:12px;font-weight:500;color:var(--mu)}
 .dfreerow{padding:14px 16px;font-size:14px;color:var(--mu)}
+
+/* lessons: student picker + one student's list */
+.lbar3{display:flex;gap:8px;margin:-4px 0 12px}
+.stpick{flex:1;min-width:0;display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid #e1e1e8;border-radius:12px;padding:0 4px 0 12px;color:var(--mu)}
+.stpick select{border:0;background:transparent;padding:9px 6px;font-weight:600;color:var(--tx);min-width:0;flex:1}
+.stpick select:focus{outline:none}.stpick:focus-within{border-color:var(--ac)}
+.sthead{display:flex;flex-direction:column;gap:12px;margin-bottom:12px}
+.sth1{display:flex;align-items:center;gap:12px}.sth1 .lwho{flex:1}
+.sthst{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.sthst>div{background:var(--bg);border-radius:10px;padding:10px 12px}.sthst span{display:block;font-size:12px;color:var(--mu);font-weight:600}.sthst b{font-size:18px}.sthst b.am{color:var(--am)}.sthst b.gr{color:var(--gr)}
+.sthead>.btn{align-self:flex-start}
+.stseg{display:flex;margin-bottom:14px}.stseg button{flex:1}.segn{opacity:.7;font-weight:600;margin-left:2px}
+body[data-th=dark] .stpick,body[data-th=graphite] .stpick{border-color:var(--bd)}

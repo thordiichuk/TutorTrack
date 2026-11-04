@@ -225,15 +225,17 @@ function LessonsList() {
       <div className="chips" role="group" aria-label={tr("Pokaż lekcje")}>
         <button className={"chip" + (mode === "week" ? " on" : "")} aria-pressed={mode === "week"} onClick={() => setF({ m: "week" })}>{tr("Tydzień")}</button>
         <button className={"chip" + (mode === "pay" ? " on" : "")} aria-pressed={mode === "pay"} onClick={() => setF({ m: "pay" })}>{tr("Do opłacenia") + (nPay ? " · " + nPay : "")}</button></div>
-      <button className={"btn s" + (nf ? " p" : "")} aria-expanded={open} onClick={() => setOpen(!open)}>{tr("Filtry")}{nf ? ` · ${nf}` : ""}</button>
+    </div>
+    <div className="lbar3">
+      <label className="stpick"><Ic n="users" s={16} /><select aria-label={tr("Uczeń")} value={f.st} onChange={(e) => setF({ st: e.target.value, sv: "up" })}><option value="">{tr("Wszyscy uczniowie")}</option>{[...students].sort((a, b) => a.name.localeCompare(b.name, "pl")).map((s) => <option key={s.id} value={s.id}>{s.name}{s.active ? "" : tr(" (zarchiwizowany)")}</option>)}</select></label>
+      <button className={"btn s" + (nf - (f.st ? 1 : 0) ? " p" : "")} aria-expanded={open} onClick={() => setOpen(!open)}>{tr("Filtry")}{nf - (f.st ? 1 : 0) ? ` · ${nf - (f.st ? 1 : 0)}` : ""}</button>
     </div>
     {open && <div className="fpanel">
       <input type="search" placeholder={tr("Szukaj w temacie i notatkach")} value={f.q} aria-label={tr("Szukaj w lekcjach")} onChange={(e) => setF({ q: e.target.value })} />
-      <select aria-label={tr("Uczeń")} value={f.st} onChange={(e) => setF({ st: e.target.value })}><option value="">{tr("Wszyscy uczniowie")}</option>{students.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select>
       {subs.length > 1 && <select aria-label={tr("Przedmiot")} value={f.sb} onChange={(e) => setF({ sb: e.target.value })}><option value="">{tr("Wszystkie przedmioty")}</option>{subs.map((x) => <option key={x} value={x}>{x}</option>)}</select>}
       {nf > 0 && <button className="btn" onClick={() => setUi((u) => ({ ...u, lf: { ...u.lf, st: "", sb: "", q: "" } }))}>{tr("Wyczyść filtry")}</button>}
     </div>}
-    {searching ? <>
+    {f.st && !searching && mode === "week" ? <StudentLessons sid={f.st} list={lessons.filter(match)} view={f.sv || "up"} setView={(v) => setF({ sv: v })} clear={() => setF({ st: "" })} /> : searching ? <>
       <p className="hint" style={{ margin: "0 2px 10px" }}>{tr("Wyniki wyszukiwania we wszystkich tygodniach: {0}", found.length)}</p>
       {found.length ? <DayGroups list={found} dir={-1} jump={false} /> : <div className="card"><Empty icon="book" title={tr("Brak lekcji")} sub={tr("Żadna lekcja nie pasuje do filtrów.")} /></div>}
     </> : mode === "pay" ? (pay.length ? <DayGroups list={pay} dir={-1} jump={false} /> : <div className="card"><Empty icon="wallet" title={tr("Wszystko opłacone")} sub={tr("Nie ma lekcji czekających na płatność.")} /></div>) : <>
@@ -248,6 +250,40 @@ function LessonsList() {
           <div className={"dgh" + (d === td ? " td" : "")}><b>{dayTitle(d)}</b>{d === td && <i className="tdtag">{tr("dzisiaj")}</i>}<span>{x.getDate()} {MLONG_G[x.getMonth()]}{ls.length ? " · " + lekcje(ls.length) : ""}</span></div>
           <div className="dgl">{ls.length ? ls.map((l) => <LessonItem key={l.id} l={l} nd />) : <div className="dfreerow">{tr("Dzień wolny – brak lekcji.")}</div>}</div></section>; })}</div>
     </>}
+  </>;
+}
+
+/** All lessons of one student: summary card, upcoming / past / all, grouped by month. */
+function StudentLessons({ sid, list, view, setView, clear }: { sid: string; list: Lesson[]; view: "up" | "past" | "all"; setView: (v: "up" | "past" | "all") => void; clear: () => void }) {
+  const { stu } = useData();
+  const { modal } = useOverlay();
+  const s = stu(sid);
+  const td = ymd(new Date());
+  const up = sortL(list.filter((l) => l.date >= td && l.status === "planned"), 1);
+  const past = sortL(list.filter((l) => !(l.date >= td && l.status === "planned")), -1);
+  const shown = view === "up" ? up : view === "past" ? past : sortL(list, -1);
+  const due = sumAmt(list.filter((l) => billable(l)), (l) => !l.paid);
+  const done = list.filter((l) => l.status === "done").length;
+  const months: [string, Lesson[]][] = [];
+  shown.forEach((l) => { const k = l.date.slice(0, 7); const g = months.find((x) => x[0] === k); if (g) g[1].push(l); else months.push([k, [l]]); });
+  if (!s) return null;
+  const V: ["up" | "past" | "all", string, number][] = [["up", tr("Nadchodzące"), up.length], ["past", tr("Minione"), past.length], ["all", tr("Wszystkie"), list.length]];
+  return <>
+    <div className="card sthead">
+      <div className="sth1"><span className="sav2">{s.name.charAt(0).toUpperCase()}</span><div className="lwho"><b>{s.name}</b><span>{subjRates(s).map(([x, r]) => (x ? x + " · " : "") + pln(r).replace(",00", "") + "/h").join("  ·  ")}</span></div>
+        <button className="xbtn" aria-label={tr("Pokaż wszystkich uczniów")} onClick={clear}><Ic n="x" s={16} /></button></div>
+      <div className="sthst">
+        <div><span>{tr("Zaplanowane")}</span><b>{up.length}</b></div>
+        <div><span>{tr("Przeprowadzone")}</span><b>{done}</b></div>
+        <div><span>{tr("Do zapłaty")}</span><b className={due ? "am" : "gr"}>{pln(due).replace(",00", "")}</b></div>
+      </div>
+      <button className="btn s" onClick={() => modal(<StudentDetail id={sid} />, true)}>{tr("Szczegóły ucznia")}</button>
+    </div>
+    <div className="seg stseg" role="group" aria-label={tr("Pokaż lekcje")}>{V.map(([k, t, n]) => <button key={k} aria-pressed={view === k} onClick={() => setView(k)}>{t} <span className="segn">{n}</span></button>)}</div>
+    {!months.length ? <div className="card"><Empty icon="book" title={view === "up" ? tr("Brak zaplanowanych lekcji") : tr("Brak lekcji")} sub={view === "up" ? tr("Dodaj lekcję przyciskiem „+”.") : tr("Żadna lekcja nie pasuje do filtrów.")} /></div>
+      : <div className="days">{months.map(([k, ls]) => { const sum = sumAmt(ls.filter(billable), () => true); const t = fm(k);
+        return <section className="dgrp" key={k}><div className="dgh"><b>{t.charAt(0).toUpperCase() + t.slice(1)}</b><span>{lekcje(ls.length)}{sum ? " · " + pln(sum).replace(",00", "") : ""}</span></div>
+          <div className="dgl">{ls.map((l) => <LessonItem key={l.id} l={l} noName />)}</div></section>; })}</div>}
   </>;
 }
 

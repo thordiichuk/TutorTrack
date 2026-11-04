@@ -1188,5 +1188,8 @@
 "Przeprowadzona lekcja nie może mieć przyszłej daty.": "Проведений урок не може мати майбутньої дати.",
 "Nie można dodać odwołanej lekcji z przyszłą datą – dodaj ją jako zaplanowaną i odwołaj później.": "Не можна додати скасований урок із майбутньою датою – додайте його як запланований і скасуйте пізніше.",
 "Tydzień": "Тиждень",
-"Wyniki wyszukiwania we wszystkich tygodniach: {0}": "Результати пошуку за всі тижні: {0}"
+"Wyniki wyszukiwania we wszystkich tygodniach: {0}": "Результати пошуку за всі тижні: {0}",
+"Pokaż wszystkich uczniów": "Показати всіх учнів",
+"Szczegóły ucznia": "Деталі учня",
+"Przeprowadzone": "Проведені"
 }

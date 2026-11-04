@@ -1163,5 +1163,8 @@
 "Przeprowadzona lekcja nie może mieć przyszłej daty.": "A lesson marked as done can't have a future date.",
 "Nie można dodać odwołanej lekcji z przyszłą datą – dodaj ją jako zaplanowaną i odwołaj później.": "You can't add a cancelled lesson with a future date – add it as planned and cancel it later.",
 "Tydzień": "Week",
-"Wyniki wyszukiwania we wszystkich tygodniach: {0}": "Search results across all weeks: {0}"
+"Wyniki wyszukiwania we wszystkich tygodniach: {0}": "Search results across all weeks: {0}",
+"Pokaż wszystkich uczniów": "Show all students",
+"Szczegóły ucznia": "Student details",
+"Przeprowadzone": "Done"
 }
