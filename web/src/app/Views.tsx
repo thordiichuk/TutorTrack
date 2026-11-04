@@ -244,9 +244,9 @@ function LessonsList() {
         {(f.w || 0) !== 0 && <button className="btn s" onClick={() => setF({ w: 0 })}>{tr("Dziś")}</button>}
       </div>
       <div className="days">{days.map((d) => { const ls = weekList.filter((l) => l.date === d).sort((a, b) => a.time.localeCompare(b.time)); const x = pd(d);
-        return <section className={"dgrp" + (d === td ? " today" : "") + (ls.length ? "" : " empty")} key={d} data-day={d}>
-          <div className={"dgh" + (d === td ? " td" : "")}><b>{dayTitle(d)}</b>{d === td && <i className="tdtag">{tr("dzisiaj")}</i>}<span>{x.getDate()} {MLONG_G[x.getMonth()]}{ls.length ? " · " + lekcje(ls.length) : ""}</span>{!ls.length && <span className="dfree">{tr("wolne")}</span>}</div>
-          {ls.length > 0 && <div className="dgl">{ls.map((l) => <LessonItem key={l.id} l={l} nd />)}</div>}</section>; })}</div>
+        return <section className={"dgrp" + (d === td ? " today" : "")} key={d} data-day={d}>
+          <div className={"dgh" + (d === td ? " td" : "")}><b>{dayTitle(d)}</b>{d === td && <i className="tdtag">{tr("dzisiaj")}</i>}<span>{x.getDate()} {MLONG_G[x.getMonth()]}{ls.length ? " · " + lekcje(ls.length) : ""}</span></div>
+          <div className="dgl">{ls.length ? ls.map((l) => <LessonItem key={l.id} l={l} nd />) : <div className="dfreerow">{tr("Dzień wolny – brak lekcji.")}</div>}</div></section>; })}</div>
     </>}
   </>;
 }
