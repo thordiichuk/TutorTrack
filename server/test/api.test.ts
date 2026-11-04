@@ -143,3 +143,32 @@ test("recurring lessons: Pro only, edit/delete this and following, extend and en
   const end = await call("POST", `/api/series/${r.body.seriesId}/end`, {}, t);
   assert.equal(end.body.removed, 2);
 });
+
+test("parent access: Pro only, read-only data of one child, max two parents", async () => {
+  const t = await register("tutor");
+  const sid = (await call("POST", "/api/students", { name: "Ola", subject: "Matematyka", rate: 10000 }, t)).body.student.id;
+  await call("POST", "/api/lessons", { sid, date: "2026-10-02", time: "16:00", min: 60, status: "done", amount: 10000, prep: "TAJNE", notes: "Dobrze", hw: "zad 1" }, t);
+  assert.equal((await call("POST", `/api/students/${sid}/parent-invite`, undefined, t)).status, 402);
+  await call("POST", "/api/me/plan", { plan: "pro" }, t);
+  const code = (await call("POST", `/api/students/${sid}/parent-invite`, undefined, t)).body.student.parentCode;
+  assert.ok(code);
+  // the parent code is not a student code
+  assert.equal((await call("POST", "/api/auth/register", { role: "student", name: "S", email: `ps${uniq}@x.pl`, password: "haslo123", code })).status, 404);
+  const p1 = await register("parent", { code });
+  const d = (await call("GET", "/api/parent/data", undefined, p1)).body;
+  assert.equal(d.children.length, 1);
+  assert.equal(d.children[0].lessons[0].notes, "Dobrze");
+  assert.equal(d.children[0].lessons[0].amount, 10000);
+  assert.equal(d.children[0].lessons[0].prep, undefined);
+  // parents can't use tutor or student endpoints
+  assert.equal((await call("GET", "/api/tutor/data", undefined, p1)).status, 403);
+  assert.equal((await call("GET", "/api/student/data", undefined, p1)).status, 403);
+  await register("parent", { code });
+  assert.equal((await call("POST", "/api/auth/register", { role: "parent", name: "P3", email: `p3${uniq}@x.pl`, password: "haslo123", code })).status, 409);
+  assert.equal((await call("GET", "/api/tutor/data", undefined, t)).body.students[0].parents, 2);
+  // tutor goes back to Free: the parent sees no lessons
+  await call("POST", "/api/me/plan", { plan: "free" }, t);
+  const d2 = (await call("GET", "/api/parent/data", undefined, p1)).body;
+  assert.equal(d2.children[0].locked, true);
+  assert.equal(d2.children[0].lessons.length, 0);
+});

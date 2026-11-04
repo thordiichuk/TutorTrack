@@ -331,6 +331,8 @@ function DoneBtn() { const { close } = useOverlay(); return <div className="mf">
 export function StudentDetail({ id, noHistory }: { id: string; noHistory?: boolean }) {
   const { stu, lessons } = useData();
   const { close, modal } = useOverlay();
+  const { user } = useAuth();
+  const { proUp } = useUpsell();
   const s = stu(id);
   if (!s) return null;
   const ls = sortL(lessons.filter((l) => l.sid === id), -1), dn = ls.filter((l) => l.status === "done");
@@ -342,7 +344,7 @@ export function StudentDetail({ id, noHistory }: { id: string; noHistory?: boole
     <SeriesList sid={id} />
     {!noHistory && <><h2>{tr("Historia lekcji")}</h2>
     {ls.length ? ls.map((l) => <LessonItem key={l.id} l={l} quick={false} />) : <Empty icon="book" title={tr("Brak lekcji")} sub={tr("Dodaj pierwszą lekcję dla tego ucznia.")} />}</>}
-    <div className="mf"><button className="btn" onClick={() => modal(<StudentForm s={s} />)}>{tr("Edytuj")}</button><button className="btn" onClick={() => modal(<ShareModal id={id} />, true)}>{s.inviteCode ? tr("Kod ucznia") : tr("Udostępnij uczniowi")}</button><span style={{ flex: 1 }} /><button className="btn" onClick={close}>{tr("Zamknij")}</button><button className="btn p" onClick={() => modal(<LessonForm pre={id} />)}>{tr("Dodaj lekcję")}</button></div>
+    <div className="mf"><button className="btn" onClick={() => modal(<StudentForm s={s} />)}>{tr("Edytuj")}</button><button className="btn" onClick={() => modal(<ShareModal id={id} />, true)}>{s.inviteCode ? tr("Kod ucznia") : tr("Udostępnij uczniowi")}</button><button className="btn" onClick={() => user?.plan === "pro" || isDemo() ? modal(<ParentShareModal id={id} />, true) : proUp(tr("Dostęp dla rodzica"))}>{tr("Dostęp dla rodzica")}{user?.plan !== "pro" && <> <span className="tag ac">{tr("Pro")}</span></>}{!!s.parents && <> <span className="tag gr">{s.parents}</span></>}</button><span style={{ flex: 1 }} /><button className="btn" onClick={close}>{tr("Zamknij")}</button><button className="btn p" onClick={() => modal(<LessonForm pre={id} />)}>{tr("Dodaj lekcję")}</button></div>
   </>;
 }
 
@@ -372,6 +374,38 @@ export function ShareModal({ id }: { id: string }) {
     <div className="mf">
       <button className="btn d" onClick={() => confirm({ title: tr("Wyłączyć dostęp ucznia?"), text: tr("Uczeń przestanie widzieć lekcje w panelu ucznia. Twój dziennik się nie zmieni."), ok: tr("Wyłącz dostęp"), danger: true, onOk: () => { run(() => api("DELETE", `/api/students/${id}/invite`), tr("Dostęp ucznia wyłączony.")); } })}>{tr("Wyłącz dostęp")}</button>
       <button className="btn" onClick={() => confirm({ title: tr("Utworzyć nowy kod?"), text: tr("Stary kod przestanie działać, a połączone konto ucznia zostanie odłączone."), ok: tr("Utwórz nowy kod"), onOk: create })}>{tr("Nowy kod")}</button>
+      <button className="btn p" onClick={async () => { toast((await copyText(msg)) ? tr("Skopiowano.") : tr("Zaznacz tekst i skopiuj go ręcznie.")); }}>{tr("Kopiuj wiadomość")}</button>
+    </div>
+  </>;
+}
+
+/* ---------- parent access (Pro): read-only panel for up to two parents ---------- */
+export function ParentShareModal({ id }: { id: string }) {
+  const { stu } = useData();
+  const { run } = useTutor();
+  const { close, confirm, toast, modal } = useOverlay();
+  const s = stu(id);
+  if (!s) return null;
+  if (isDemo()) return <><h2>{tr("Dostęp dla rodzica")}</h2><p>{tr("W trybie demo nie można udostępniać danych rodzicom. Załóż konto, aby korzystać z panelu rodzica.")}</p><div className="mf"><button className="btn" onClick={close}>{tr("Zamknij")}</button></div></>;
+  const create = () => run(() => api("POST", `/api/students/${id}/parent-invite`)).then((ok) => { if (ok) modal(<ParentShareModal id={id} />); });
+  if (!s.parentCode) return <>
+    <h2>{tr("Dostęp dla rodzica")}</h2>
+    <p>{tr("Rodzic ucznia ({0}) założy bezpłatne konto rodzica i wpisze kod – zobaczy lekcje dziecka, notatki po zajęciach, prace domowe i płatności.", s.name)}</p>
+    <p className="hint">{tr("Rodzic widzi: terminy, tematy i statusy lekcji, notatki po zajęciach, prace domowe, kwoty i status płatności. Nie widzi notatek przed zajęciami ani innych uczniów i niczego nie może zmieniać. Kod mogą wpisać maksymalnie dwa konta rodziców.")}</p>
+    <div className="mf"><button className="btn" onClick={close}>{tr("Anuluj")}</button><button className="btn p" onClick={create}>{tr("Utwórz kod dla rodzica")}</button></div>
+  </>;
+  const msg = tr("Dzień dobry! Lekcje, notatki i płatności ucznia ({0}) można śledzić w panelu rodzica TutorTrack.\n1. Proszę założyć bezpłatne konto: {1}/rodzic/rejestracja\n2. Wpisać kod dla rodzica: {2}", s.name, APP_URL, s.parentCode);
+  const n = s.parents || 0;
+  return <>
+    <h2>{tr("Dostęp dla rodzica –")}{" "}{s.name}</h2>
+    <p className="hint" style={{ margin: "0 0 4px" }}>{tr("Kod dla rodzica")}</p>
+    <div className="code">{s.parentCode}</div>
+    <p className="hint" aria-live="polite">{n ? <span className="tag gr">{n === 1 ? tr("Połączony rodzic: 1 z 2") : tr("Połączeni rodzice: 2 z 2")}</span> : tr("Rodzic jeszcze nie wpisał kodu.")}{" "}{tr("Zmiany w dzienniku są widoczne u rodzica od razu.")}</p>
+    <div className="f"><label htmlFor="phm">{tr("Wiadomość dla rodzica")}</label><textarea id="phm" rows={5} readOnly value={msg} /></div>
+    <p className="hint">{tr("Kod działa dla dwóch kont rodziców. Jeśli wycieknie, utwórz nowy – stary przestanie działać, a połączeni rodzice zostaną odłączeni.")}</p>
+    <div className="mf">
+      <button className="btn d" onClick={() => confirm({ title: tr("Wyłączyć dostęp rodzica?"), text: tr("Rodzice przestaną widzieć lekcje tego ucznia. Twój dziennik się nie zmieni."), ok: tr("Wyłącz dostęp"), danger: true, onOk: () => { run(() => api("DELETE", `/api/students/${id}/parent-invite`), tr("Dostęp rodzica wyłączony.")); } })}>{tr("Wyłącz dostęp")}</button>
+      <button className="btn" onClick={() => confirm({ title: tr("Utworzyć nowy kod?"), text: tr("Stary kod przestanie działać, a połączeni rodzice zostaną odłączeni."), ok: tr("Utwórz nowy kod"), onOk: create })}>{tr("Nowy kod")}</button>
       <button className="btn p" onClick={async () => { toast((await copyText(msg)) ? tr("Skopiowano.") : tr("Zaznacz tekst i skopiuj go ręcznie.")); }}>{tr("Kopiuj wiadomość")}</button>
     </div>
   </>;

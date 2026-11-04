@@ -5,6 +5,7 @@ import { Login, Register, ResetPassword } from "./pages/Auth";
 import { Home, Legal, StudentHome } from "./pages/Public";
 import { useAuth, TutorProvider } from "./state";
 import { StudentPanel } from "./student/Panel";
+import { ParentPanel } from "./parent/Panel";
 import { AdminPanel } from "./admin/AdminPanel";
 import { ModalHost } from "./ui/overlay";
 import { useApplyTheme } from "./ui/themes";
@@ -13,7 +14,10 @@ import { LANG, setLang, tr } from "./lib/i18n";
 const TITLES: Record<string, string> = {
   "/": tr("TutorTrack – dziennik korepetytora"), "/uczen": tr("TutorTrack – dla ucznia"), "/rejestracja": tr("Załóż konto – TutorTrack"), "/logowanie": tr("Zaloguj się – TutorTrack"),
   "/uczen/rejestracja": tr("Rejestracja ucznia – TutorTrack"), "/uczen/logowanie": tr("Logowanie ucznia – TutorTrack"), "/regulamin": tr("Regulamin – TutorTrack"), "/prywatnosc": tr("Polityka prywatności – TutorTrack"), "/reset-hasla": tr("Nowe hasło – TutorTrack"),
+  "/rodzic/rejestracja": tr("Rejestracja rodzica – TutorTrack"), "/rodzic/logowanie": tr("Logowanie rodzica – TutorTrack"),
 };
+
+const home = (r: string) => (r === "tutor" ? "/aplikacja/dash" : r === "parent" ? "/rodzic/panel" : "/uczen/panel");
 
 function Redirect({ to }: { to: string }) {
   useEffect(() => { navigate(to, true); }, [to]);
@@ -31,11 +35,11 @@ function Routes({ path }: { path: string }) {
 
   // page-level body state: demo grayscale and the user's colour theme inside the panels
   const inApp = path.startsWith("/aplikacja");
-  const inPanel = inApp || path === "/uczen/panel" || path === "/admin";
+  const inPanel = inApp || path === "/uczen/panel" || path === "/rodzic/panel" || path === "/admin";
   useApplyTheme(inPanel && user && !demo ? user.settings.theme || "light" : "");
   useEffect(() => {
     document.body.classList.toggle("demo", demo && inApp);
-    document.body.classList.toggle("stu", path === "/uczen/panel");
+    document.body.classList.toggle("stu", path === "/uczen/panel" || path === "/rodzic/panel");
     document.body.classList.toggle("pubp", !inPanel);
     if (TITLES[path]) document.title = TITLES[path];
   }, [path, demo, inApp, inPanel]);
@@ -47,18 +51,23 @@ function Routes({ path }: { path: string }) {
 
   if (path.startsWith("/aplikacja")) {
     if (!user) return <><Login role="tutor" notice /><ModalHost /></>;
-    if (user.role !== "tutor") return <Redirect to="/uczen/panel" />;
+    if (user.role !== "tutor") return <Redirect to={home(user.role)} />;
     return <TutorProvider><TutorApp view={path.split("/")[2] || "dash"} /></TutorProvider>;
   }
   if (path === "/admin") {
     if (!user || demo) return <Login role="tutor" notice />;
-    if (!user.isAdmin) return <Redirect to={user.role === "tutor" ? "/aplikacja/dash" : "/uczen/panel"} />;
+    if (!user.isAdmin) return <Redirect to={home(user.role)} />;
     return <AdminPanel />;
   }
   if (path === "/uczen/panel") {
     if (!user || demo) return <Login role="student" notice />;
-    if (user.role !== "student") return <Redirect to="/aplikacja/dash" />;
+    if (user.role !== "student") return <Redirect to={home(user.role)} />;
     return <StudentPanel />;
+  }
+  if (path === "/rodzic/panel") {
+    if (!user || demo) return <Login role="parent" notice />;
+    if (user.role !== "parent") return <Redirect to={home(user.role)} />;
+    return <ParentPanel />;
   }
   switch (path) {
     case "/uczen": return <StudentHome />;
@@ -66,6 +75,8 @@ function Routes({ path }: { path: string }) {
     case "/logowanie": return <Login role="tutor" />;
     case "/uczen/rejestracja": return <Register role="student" />;
     case "/uczen/logowanie": return <Login role="student" />;
+    case "/rodzic": case "/rodzic/rejestracja": return <Register role="parent" />;
+    case "/rodzic/logowanie": return <Login role="parent" />;
     case "/regulamin": return <Legal kind="regulamin" />;
     case "/prywatnosc": return <Legal kind="prywatnosc" />;
     case "/reset-hasla": return <ResetPassword />;

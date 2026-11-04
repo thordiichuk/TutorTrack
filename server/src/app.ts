@@ -13,7 +13,7 @@ const FREE_LIMIT = 3;
 const COOKIE = "tt_session";
 const TRASH_MS = 30 * 864e5;
 
-type User = { id: string; email: string; role: "tutor" | "student"; name: string; brand: string; plan: "free" | "pro"; settings: Record<string, unknown>; isAdmin: boolean };
+type User = { id: string; email: string; role: "tutor" | "student" | "parent"; name: string; brand: string; plan: "free" | "pro"; settings: Record<string, unknown>; isAdmin: boolean };
 
 class HttpError extends Error {
   constructor(public status: number, message: string) { super(message); }
@@ -103,6 +103,7 @@ const mapStudent = (r: any) => ({
   id: r.id, name: r.name, subject: r.subject, email: r.email, phone: r.phone, rate: r.rate, rates: r.rates || {}, note: r.note,
   cancelMode: r.cancel_mode, cancelPct: r.cancel_pct, cancelFixed: r.cancel_fixed, active: r.active,
   inviteCode: r.invite_code ? fmtCode(r.invite_code) : null, linked: !!r.linked_user_id,
+  parentCode: r.parent_code ? fmtCode(r.parent_code) : null, parents: r.parents ?? 0,
 });
 /** Student's request to cancel a lesson (null when there is none). */
 const mapCr = (r: any) => (r.cr_status ? { status: r.cr_status, kind: r.cr_kind || "cancel", reason: r.cr_reason, note: r.cr_note, at: r.cr_at ? new Date(r.cr_at).getTime() : 0 } : null);
@@ -132,10 +133,10 @@ async function currentUser(req: FastifyRequest): Promise<User | null> {
   return rows[0] ? mapUser(rows[0]) : null;
 }
 
-async function need(req: FastifyRequest, role?: "tutor" | "student"): Promise<User> {
+async function need(req: FastifyRequest, role?: "tutor" | "student" | "parent"): Promise<User> {
   const u = await currentUser(req);
   if (!u) return fail(401, "Zaloguj się, aby kontynuować.");
-  if (role && u.role !== role) fail(403, role === "tutor" ? "Ta funkcja jest dostępna tylko dla korepetytorów." : "Ta funkcja jest dostępna tylko dla uczniów.");
+  if (role && u.role !== role) fail(403, role === "tutor" ? "Ta funkcja jest dostępna tylko dla korepetytorów." : role === "parent" ? "Ta funkcja jest dostępna tylko dla rodziców." : "Ta funkcja jest dostępna tylko dla uczniów.");
   return u;
 }
 
@@ -164,7 +165,7 @@ async function ownLesson(tutorId: string, id: string, db = pool as any) {
 async function tutorData(u: User) {
   await q("DELETE FROM students WHERE tutor_id=$1 AND deleted_at < now() - interval '30 days'", [u.id]);
   await q("DELETE FROM lessons WHERE tutor_id=$1 AND deleted_at < now() - interval '30 days'", [u.id]);
-  const students = await q("SELECT * FROM students WHERE tutor_id=$1 AND deleted_at IS NULL ORDER BY created_at", [u.id]);
+  const students = await q("SELECT s.*, (SELECT count(*)::int FROM student_parents p WHERE p.student_id=s.id) AS parents FROM students s WHERE s.tutor_id=$1 AND s.deleted_at IS NULL ORDER BY s.created_at", [u.id]);
   const lessons = await q("SELECT l.* FROM lessons l JOIN students s ON s.id=l.student_id WHERE l.tutor_id=$1 AND l.deleted_at IS NULL AND s.deleted_at IS NULL ORDER BY l.date, l.time", [u.id]);
   const ts = await q("SELECT s.id, s.name, s.deleted_at, (SELECT count(*)::int FROM lessons l WHERE l.student_id=s.id AND l.deleted_at IS NULL) AS n FROM students s WHERE s.tutor_id=$1 AND s.deleted_at IS NOT NULL", [u.id]);
   const tl = await q("SELECT l.id, l.date, l.time, l.deleted_at, s.name FROM lessons l JOIN students s ON s.id=l.student_id WHERE l.tutor_id=$1 AND l.deleted_at IS NOT NULL AND s.deleted_at IS NULL", [u.id]);
@@ -174,6 +175,19 @@ async function tutorData(u: User) {
   ].sort((a, b) => b.deletedAt - a.deletedAt);
   const series = await q("SELECT id, student_id, freq FROM lesson_series WHERE tutor_id=$1", [u.id]);
   return { students: students.map(mapStudent), lessons: lessons.map(mapLesson), trash, series: series.map((r: any) => ({ id: r.id, sid: r.student_id, freq: r.freq })) };
+}
+
+/** Connect a parent account with a child through the child's parent code (max. 2 parents per child). */
+async function linkParent(userId: string, code: string, db = pool as any) {
+  const n = normCode(code);
+  if (n.length !== 16) fail(400, "Kod ma 16 znaków (litery i cyfry), np. ABCD-EFGH-JKLM-NPQR.");
+  const s = (await q("SELECT * FROM students WHERE parent_code=$1 AND deleted_at IS NULL", [n], db))[0];
+  if (!s) fail(404, "Nie znaleziono kodu. Sprawdź kod lub poproś korepetytora o nowy.");
+  const ps = await q("SELECT user_id FROM student_parents WHERE student_id=$1", [s.id], db);
+  if (ps.some((p: any) => p.user_id === userId)) return s;
+  if (ps.length >= 2) fail(409, "Do tego ucznia są już połączone dwa konta rodziców.");
+  await q("INSERT INTO student_parents(student_id,user_id) VALUES ($1,$2)", [s.id, userId], db);
+  return s;
 }
 
 async function linkCode(userId: string, code: string, db = pool as any) {
@@ -225,7 +239,7 @@ export async function buildApp(opts: { logger?: boolean; authRateLimit?: number 
   /* ----- auth ----- */
   app.post("/api/auth/register", authLimit, async (req, reply) => {
     const b = parse(z.object({
-      role: z.enum(["tutor", "student"]), name: str(120).min(1), email: z.string().trim().toLowerCase().max(200).regex(/^\S+@\S+\.\S+$/),
+      role: z.enum(["tutor", "student", "parent"]), name: str(120).min(1), email: z.string().trim().toLowerCase().max(200).regex(/^\S+@\S+\.\S+$/),
       password: z.string(), brand: str(120).default(""), code: z.string().max(40).default(""), remember: z.boolean().default(true),
     }), req.body);
     if (!passwordOk(b.password)) fail(400, "Hasło musi mieć co najmniej 8 znaków oraz literę i cyfrę.");
@@ -234,6 +248,7 @@ export async function buildApp(opts: { logger?: boolean; authRateLimit?: number 
     const user = await tx(async (c) => {
       const u = (await q("INSERT INTO users(email,password_hash,role,name,brand) VALUES ($1,$2,$3,$4,$5) RETURNING *", [b.email, hash, b.role, b.name, b.role === "tutor" ? b.brand : ""], c))[0];
       if (b.role === "student" && b.code.trim()) await linkCode(u.id, b.code, c);
+      if (b.role === "parent" && b.code.trim()) await linkParent(u.id, b.code, c);
       return u;
     });
     await createSession(reply, user.id, b.remember);
@@ -584,6 +599,68 @@ export async function buildApp(opts: { logger?: boolean; authRateLimit?: number 
     return tutorData(u);
   });
 
+  /* ----- parent access (tutor's Pro plan) ----- */
+  app.post("/api/students/:id/parent-invite", async (req) => {
+    const u = await need(req, "tutor");
+    if (u.plan !== "pro") fail(402, "Dostęp dla rodzica jest dostępny w planie Pro.");
+    const id = (req.params as any).id;
+    await ownStudent(u.id, id);
+    for (let i = 0; i < 5; i++) {
+      try {
+        await q("DELETE FROM student_parents WHERE student_id=$1", [id]);
+        const r = (await q("UPDATE students SET parent_code=$2 WHERE id=$1 RETURNING *, 0 AS parents", [id, newInviteCode()]))[0];
+        return { student: mapStudent(r) };
+      } catch (e: any) { if (e.code !== "23505") throw e; }
+    }
+    return fail(500, "Nie udało się utworzyć kodu.");
+  });
+  app.delete("/api/students/:id/parent-invite", async (req) => {
+    const u = await need(req, "tutor");
+    const id = (req.params as any).id;
+    await ownStudent(u.id, id);
+    await q("DELETE FROM student_parents WHERE student_id=$1", [id]);
+    const r = (await q("UPDATE students SET parent_code=NULL WHERE id=$1 RETURNING *, 0 AS parents", [id]))[0];
+    return { student: mapStudent(r) };
+  });
+
+  app.get("/api/parent/data", async (req) => {
+    const u = await need(req, "parent");
+    const kids = await q(`SELECT s.id, s.name, s.subject, t.plan AS tutor_plan, t.name AS tutor_name, t.brand AS tutor_brand, t.email AS tutor_email, t.settings AS tutor_settings
+      FROM student_parents p JOIN students s ON s.id=p.student_id JOIN users t ON t.id=s.tutor_id
+      WHERE p.user_id=$1 AND s.deleted_at IS NULL AND t.blocked_at IS NULL ORDER BY p.created_at`, [u.id]);
+    const ids = kids.filter((k: any) => k.tutor_plan === "pro").map((k: any) => k.id);
+    const ls = ids.length ? await q("SELECT * FROM lessons WHERE student_id = ANY($1::uuid[]) AND deleted_at IS NULL ORDER BY date, time", [ids]) : [];
+    return {
+      children: kids.map((k: any) => ({
+        sid: k.id, name: k.name, subject: k.subject, tutor: k.tutor_brand || k.tutor_name,
+        // the tutor turned Pro off: the parent keeps the connection but sees no data
+        locked: k.tutor_plan !== "pro",
+        contact: {
+          email: k.tutor_settings?.showEmail ? k.tutor_settings.cEmail || k.tutor_email : "",
+          phone: k.tutor_settings?.showPhone ? k.tutor_settings.cPhone || "" : "",
+        },
+        lessons: k.tutor_plan !== "pro" ? [] : ls.filter((l: any) => l.student_id === k.id).map((l: any) => ({
+          id: l.id, date: l.date, time: l.time, min: l.min, subject: l.subject || k.subject.split(",")[0].trim(), topic: l.topic, status: l.status,
+          notes: l.status === "done" ? l.notes : "", hw: l.status === "done" ? l.hw : "", hd: l.status === "done" ? l.hw_due || "" : "",
+          amount: l.status === "cancelled" ? l.fee : l.amount, paid: l.paid,
+        })),
+      })),
+    };
+  });
+  app.post("/api/parent/link", authLimit, async (req) => {
+    const u = await need(req, "parent");
+    const b = parse(z.object({ code: z.string().max(40) }), req.body);
+    await linkParent(u.id, b.code);
+    return { ok: true };
+  });
+  app.delete("/api/parent/link/:sid", async (req) => {
+    const u = await need(req, "parent");
+    const sid = (req.params as any).sid;
+    if (!UUID.test(sid)) fail(404, "Nie znaleziono połączenia.");
+    await q("DELETE FROM student_parents WHERE student_id=$1 AND user_id=$2", [sid, u.id]);
+    return { ok: true };
+  });
+
   /* ----- student ----- */
   app.get("/api/student/data", async (req) => {
     const u = await need(req, "student");
@@ -725,6 +802,7 @@ export async function buildApp(opts: { logger?: boolean; authRateLimit?: number 
         count(*) FILTER (WHERE role='tutor')::int AS tutors,
         count(*) FILTER (WHERE role='tutor' AND plan='pro')::int AS pro,
         count(*) FILTER (WHERE role='student')::int AS student_accounts,
+        count(*) FILTER (WHERE role='parent')::int AS parent_accounts,
         count(*) FILTER (WHERE created_at > now() - interval '7 days')::int AS new7,
         count(*) FILTER (WHERE created_at > now() - interval '30 days')::int AS new30,
         count(*) FILTER (WHERE last_login_at > now() - interval '7 days')::int AS active7,
@@ -743,21 +821,22 @@ export async function buildApp(opts: { logger?: boolean; authRateLimit?: number 
 
   app.get("/api/admin/users", async (req) => {
     await needAdmin(req);
-    const b = parse(z.object({ q: z.string().max(200).default(""), role: z.enum(["", "tutor", "student"]).default(""), status: z.enum(["", "blocked"]).default(""), offset: z.coerce.number().int().min(0).default(0) }), req.query);
+    const b = parse(z.object({ q: z.string().max(200).default(""), role: z.enum(["", "tutor", "student", "parent"]).default(""), status: z.enum(["", "blocked"]).default(""), offset: z.coerce.number().int().min(0).default(0) }), req.query);
     const term = b.q.trim() ? "%" + b.q.trim().replace(/[%_\\]/g, "\\$&") + "%" : "";
     const where = `($1 = '' OR u.name ILIKE $1 OR u.email ILIKE $1) AND ($2 = '' OR u.role = $2) AND ($3 = '' OR u.blocked_at IS NOT NULL)`;
     const total = (await q(`SELECT count(*)::int AS n FROM users u WHERE ${where}`, [term, b.role, b.status]))[0].n;
     const rows = await q(`SELECT u.id, u.name, u.brand, u.email, u.role, u.plan, u.created_at, u.last_login_at, u.blocked_at,
         (SELECT count(*)::int FROM students s WHERE s.tutor_id=u.id AND s.deleted_at IS NULL) AS students,
         (SELECT count(*)::int FROM lessons l WHERE l.tutor_id=u.id AND l.deleted_at IS NULL) AS lessons,
-        (SELECT count(*)::int FROM students s WHERE s.linked_user_id=u.id AND s.deleted_at IS NULL) AS tutors
+        (SELECT count(*)::int FROM students s WHERE s.linked_user_id=u.id AND s.deleted_at IS NULL) AS tutors,
+        (SELECT count(*)::int FROM student_parents p WHERE p.user_id=u.id) AS kids
       FROM users u WHERE ${where} ORDER BY u.created_at DESC LIMIT 50 OFFSET $4`, [term, b.role, b.status, b.offset]);
     return {
       total,
       users: rows.map((r: any) => ({
         id: r.id, name: r.name, brand: r.brand, email: r.email, role: r.role, plan: r.plan,
         createdAt: new Date(r.created_at).getTime(), lastLoginAt: r.last_login_at ? new Date(r.last_login_at).getTime() : null,
-        blocked: !!r.blocked_at, isAdmin: isAdminEmail(r.email), students: r.students, lessons: r.lessons, tutors: r.tutors,
+        blocked: !!r.blocked_at, isAdmin: isAdminEmail(r.email), students: r.students, lessons: r.lessons, tutors: r.tutors, kids: r.kids,
       })),
     };
   });

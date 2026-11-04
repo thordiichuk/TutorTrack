@@ -1,7 +1,7 @@
 import { LANG } from "./i18n";
 /* Shared types and pure helpers (ported 1:1 from the original single-file app). */
 
-export type Role = "tutor" | "student";
+export type Role = "tutor" | "student" | "parent";
 export type Settings = {
   theme?: "light" | "auto" | "dark" | "graphite" | "blue" | "green" | "pink" | "orange" | "purple";
   dur?: number; time?: string; rate?: number; wk?: "mon" | "sun"; late?: boolean; goal?: number;
@@ -11,7 +11,7 @@ export type Settings = {
 export type User = { id: string; email: string; role: Role; name: string; brand: string; plan: "free" | "pro"; settings: Settings; isAdmin?: boolean };
 export type Student = {
   id: string; name: string; subject: string; email: string; phone: string; rate: number; rates: Record<string, number>; note: string;
-  cancelMode: "off" | "percent" | "fixed"; cancelPct: number; cancelFixed: number; active: boolean; inviteCode: string | null; linked: boolean;
+  cancelMode: "off" | "percent" | "fixed"; cancelPct: number; cancelFixed: number; active: boolean; inviteCode: string | null; linked: boolean; parentCode?: string | null; parents?: number;
 };
 export type Status = "planned" | "done" | "cancelled";
 export type Lesson = {

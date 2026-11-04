@@ -508,3 +508,7 @@ body[data-th] .brow:has(.bexp)>.strow{background:color-mix(in srgb,var(--bg) 88%
 .sthead>.btn{align-self:flex-start}
 .stseg{display:flex;margin-bottom:14px}.stseg button{flex:1}.segn{opacity:.7;font-weight:600;margin-left:2px}
 body[data-th=dark] .stpick,body[data-th=graphite] .stpick{border-color:var(--bd)}
+/* parent panel */
+.pkids{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 0 14px}.pkids::-webkit-scrollbar{display:none}
+.pmh{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:0 4px 6px}.pmh b{font-size:15px}.pmh span{font-size:13px;color:var(--mu)}
+button.tile{text-align:left;font:inherit;cursor:pointer;width:100%}

@@ -8,7 +8,7 @@ import { PubPage } from "./Public";
 import { LANG, tr } from "../lib/i18n";
 
 type Errs = Record<string, string>;
-const dest = (u: User) => (u.role === "tutor" ? "/aplikacja/dash" : "/uczen/panel");
+const dest = (u: User) => (u.role === "tutor" ? "/aplikacja/dash" : u.role === "parent" ? "/rodzic/panel" : "/uczen/panel");
 
 function PwRules({ p, q }: { p: string; q: string }) {
   const ok = { len: p.length >= 8, let: /\p{L}/u.test(p), num: /\d/.test(p) };
@@ -25,14 +25,14 @@ function Shortcut({ u }: { u: User }) {
   return <div className="au"><div className="card"><h2>{tr("Jesteś zalogowany")}</h2><p>{tr("Zalogowano jako")}{" "}{u.name}.</p><a className="btn p" href={dest(u)}>{tr("Przejdź do panelu")}</a></div></div>;
 }
 
-export function Register({ role }: { role: "tutor" | "student" }) {
+export function Register({ role }: { role: "tutor" | "student" | "parent" }) {
   const { user, demo, setUser } = useAuth();
   const { toast } = useOverlay();
-  const [f, setF] = useState({ name: "", email: "", pw: "", pw2: "", brand: "", code: "", terms: false, show: false });
+  const [f, setF] = useState({ name: "", email: "", pw: "", pw2: "", brand: "", code: role === "parent" ? new URLSearchParams(location.search).get("kod") || "" : "", terms: false, show: false });
   const [e, setE] = useState<Errs>({});
   const [busy, setBusy] = useState(false);
   const set = (k: string) => (v: string) => setF({ ...f, [k]: v });
-  const st = role === "student";
+  const pa = role === "parent", st = role === "student" || pa;
   if (user && !demo) return <PubPage aud={st ? "student" : "tutor"}><Shortcut u={user} /></PubPage>;
 
   async function submit(ev: FormEvent) {
@@ -52,8 +52,8 @@ export function Register({ role }: { role: "tutor" | "student" }) {
     try {
       const r = await api<{ user: User }>("POST", "/api/auth/register", { role, name: f.name.trim(), email: em, password: f.pw, brand: f.brand.trim(), code: f.code.trim(), remember: true });
       setUser(r.user);
-      toast(st ? tr("Konto ucznia utworzone.") : tr("Konto utworzone."));
-      navigate(st ? "/uczen/panel" : "/aplikacja/welcome");
+      toast(pa ? tr("Konto rodzica utworzone.") : st ? tr("Konto ucznia utworzone.") : tr("Konto utworzone."));
+      navigate(dest(r.user) === "/aplikacja/dash" ? "/aplikacja/welcome" : dest(r.user));
     } catch (x) {
       const m = errMsg(x);
       if (/kod/i.test(m)) setE({ code: m }); else if (/istnieje/.test(m)) setE({ email: m }); else toast(m);
@@ -62,8 +62,8 @@ export function Register({ role }: { role: "tutor" | "student" }) {
 
   return (
     <PubPage aud={st ? "student" : "tutor"}><div className="au">
-      <h1>{st ? tr("Załóż konto ucznia") : tr("Utwórz konto")}</h1>
-      <p className="hint">{st ? tr("Bezpłatnie. Po rejestracji wpisz kod od korepetytora, aby zobaczyć swoje lekcje.") : tr("Bezpłatnie, bez karty. Plan Free obejmuje do 3 aktywnych uczniów.")}</p>
+      <h1>{pa ? tr("Załóż konto rodzica") : st ? tr("Załóż konto ucznia") : tr("Utwórz konto")}</h1>
+      <p className="hint">{pa ? tr("Bezpłatnie. Wpisz kod dla rodzica od korepetytora dziecka, aby widzieć jego lekcje, notatki i płatności.") : st ? tr("Bezpłatnie. Po rejestracji wpisz kod od korepetytora, aby zobaczyć swoje lekcje.") : tr("Bezpłatnie, bez karty. Plan Free obejmuje do 3 aktywnych uczniów.")}</p>
       <form onSubmit={submit} noValidate>
         <Field id="r_name" label={st ? tr("Imię *") : tr("Imię lub imię i nazwisko *")} value={f.name} onChange={set("name")} error={e.name} autoComplete="name" />
         <Field id="r_email" label={tr("Adres e-mail *")} type="email" value={f.email} onChange={set("email")} error={e.email} autoComplete="email" />
@@ -72,26 +72,26 @@ export function Register({ role }: { role: "tutor" | "student" }) {
         <Field id="r_pw2" label={tr("Powtórz hasło *")} type={f.show ? "text" : "password"} value={f.pw2} onChange={set("pw2")} error={e.pw2} autoComplete="new-password" />
         <div className="hint" aria-live="polite" style={{ margin: "-6px 0 8px", color: f.pw2 && f.pw2 === f.pw ? "var(--gr)" : "var(--mu)" }}>{!f.pw2 ? "" : f.pw2 === f.pw ? tr("Hasła są takie same.") : tr("Hasła nie są jeszcze takie same.")}</div>
         <div className="chk"><input type="checkbox" id="spw" checked={f.show} onChange={(x) => setF({ ...f, show: x.target.checked })} /><label htmlFor="spw">{tr("Pokaż hasło")}</label></div>
-        {st ? <Field id="r_code" label={tr("Kod od korepetytora (opcjonalnie)")} value={f.code} onChange={set("code")} error={e.code} placeholder={tr("XXXX-XXXX-XXXX-XXXX")} autoComplete="off" spellCheck={false} />
+        {st ? <Field id="r_code" label={pa ? tr("Kod dla rodzica (opcjonalnie)") : tr("Kod od korepetytora (opcjonalnie)")} value={f.code} onChange={set("code")} error={e.code} placeholder={tr("XXXX-XXXX-XXXX-XXXX")} autoComplete="off" spellCheck={false} />
           : <Field id="r_brand" label={tr("Nazwa lub marka korepetytora (opcjonalnie)")} value={f.brand} onChange={set("brand")} />}
         <div className="chk"><input type="checkbox" id="r_terms" checked={f.terms} onChange={(x) => setF({ ...f, terms: x.target.checked })} aria-describedby="e_r_terms" /><label htmlFor="r_terms">{tr("Akceptuję")}{" "}<a href="/regulamin" target="_blank" rel="noopener">{tr("regulamin")}</a>{" "}{tr("i")}{" "}<a href="/prywatnosc" target="_blank" rel="noopener">{tr("politykę prywatności")}</a> *</label></div>
         <div className="er" id="e_r_terms" role="alert" style={{ marginBottom: 12, color: "var(--rd)", fontSize: 12 }}>{e.terms || ""}</div>
         <button className="btn p" type="submit" disabled={busy} style={{ width: "100%", justifyContent: "center" }}>{st ? tr("Zarejestruj się") : tr("Utwórz konto")}</button>
       </form>
-      <p className="hint" style={{ textAlign: "center" }}>{tr("Masz już konto?")}{" "}<a href={st ? "/uczen/logowanie" : "/logowanie"}>{tr("Zaloguj się")}</a></p>
-      <p className="hint" style={{ textAlign: "center" }}>{st ? <>{tr("Jesteś korepetytorem?")}{" "}<a href="/rejestracja">{tr("Załóż konto korepetytora")}</a></> : <>{tr("Jesteś uczniem?")}{" "}<a href="/uczen/rejestracja">{tr("Załóż konto ucznia")}</a></>}</p>
+      <p className="hint" style={{ textAlign: "center" }}>{tr("Masz już konto?")}{" "}<a href={pa ? "/rodzic/logowanie" : st ? "/uczen/logowanie" : "/logowanie"}>{tr("Zaloguj się")}</a></p>
+      <p className="hint" style={{ textAlign: "center" }}>{pa ? <>{tr("Jesteś uczniem?")}{" "}<a href="/uczen/rejestracja">{tr("Załóż konto ucznia")}</a></> : st ? <>{tr("Jesteś korepetytorem?")}{" "}<a href="/rejestracja">{tr("Załóż konto korepetytora")}</a></> : <>{tr("Jesteś uczniem?")}{" "}<a href="/uczen/rejestracja">{tr("Załóż konto ucznia")}</a></>}</p>
     </div></PubPage>
   );
 }
 
-export function Login({ role, notice }: { role: "tutor" | "student"; notice?: boolean }) {
+export function Login({ role, notice }: { role: "tutor" | "student" | "parent"; notice?: boolean }) {
   const { user, demo, setUser } = useAuth();
   const { modal } = useOverlay();
   const [f, setF] = useState({ email: "", pw: "", remember: true });
   const [e, setE] = useState<Errs>({});
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
-  const st = role === "student";
+  const pa = role === "parent", st = role === "student" || pa;
   if (user && !demo) return <PubPage aud={st ? "student" : "tutor"}><Shortcut u={user} /></PubPage>;
 
   async function submit(ev: FormEvent) {
@@ -110,8 +110,8 @@ export function Login({ role, notice }: { role: "tutor" | "student"; notice?: bo
 
   return (
     <PubPage aud={st ? "student" : "tutor"}><div className="au">
-      <h1>{st ? tr("Zaloguj się jako uczeń") : tr("Zaloguj się")}</h1>
-      {notice && <div className="nt" role="alert">{st ? tr("Aby wejść do panelu ucznia, zaloguj się.") : tr("Aby wejść do panelu, zaloguj się.")}</div>}
+      <h1>{pa ? tr("Zaloguj się jako rodzic") : st ? tr("Zaloguj się jako uczeń") : tr("Zaloguj się")}</h1>
+      {notice && <div className="nt" role="alert">{pa ? tr("Aby wejść do panelu rodzica, zaloguj się.") : st ? tr("Aby wejść do panelu ucznia, zaloguj się.") : tr("Aby wejść do panelu, zaloguj się.")}</div>}
       <form onSubmit={submit} noValidate>
         <div className="lerr" role="alert">{msg}</div>
         <Field id="l_email" label={tr("Adres e-mail")} type="email" value={f.email} onChange={(v) => setF({ ...f, email: v })} error={e.email} autoComplete="email" />
@@ -120,7 +120,8 @@ export function Login({ role, notice }: { role: "tutor" | "student"; notice?: bo
         <button className="btn p" type="submit" disabled={busy} style={{ width: "100%", justifyContent: "center", marginTop: 10 }}>{tr("Zaloguj się")}</button>
       </form>
       <p style={{ textAlign: "center" }}><button className="lk" type="button" onClick={() => modal(<Forgot />)}>{tr("Nie pamiętasz hasła?")}</button></p>
-      <p className="hint" style={{ textAlign: "center" }}>{tr("Nie masz konta?")}{" "}<a href={st ? "/uczen/rejestracja" : "/rejestracja"}>{tr("Zarejestruj się")}</a></p>
+      <p className="hint" style={{ textAlign: "center" }}>{tr("Nie masz konta?")}{" "}<a href={pa ? "/rodzic/rejestracja" : st ? "/uczen/rejestracja" : "/rejestracja"}>{tr("Zarejestruj się")}</a></p>
+      {st && !pa && <p className="hint" style={{ textAlign: "center" }}>{tr("Jesteś rodzicem?")}{" "}<a href="/rodzic/logowanie">{tr("Zaloguj się jako rodzic")}</a></p>}
     </div></PubPage>
   );
 }

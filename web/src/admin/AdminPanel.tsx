@@ -7,13 +7,13 @@ import { errMsg, Field, useOverlay } from "../ui/overlay";
 import { tr } from "../lib/i18n";
 
 type Stats = {
-  users: { tutors: number; pro: number; student_accounts: number; new7: number; new30: number; active7: number; blocked: number };
+  users: { tutors: number; pro: number; student_accounts: number; parent_accounts?: number; new7: number; new30: number; active7: number; blocked: number };
   students: { records: number; linked: number };
   lessons: { total: number; last30: number };
   days: { day: string; tutors: number; students: number }[];
 };
 type AUser = {
-  id: string; name: string; brand: string; email: string; role: "tutor" | "student"; plan: "free" | "pro"; createdAt: number; lastLoginAt: number | null;
+  id: string; name: string; brand: string; email: string; role: "tutor" | "student" | "parent"; kids?: number; plan: "free" | "pro"; createdAt: number; lastLoginAt: number | null;
   blocked: boolean; isAdmin: boolean; students: number; lessons: number; tutors: number;
 };
 type Action = { admin: string; action: string; target: string; details: Record<string, string>; at: number };
@@ -29,7 +29,7 @@ export function AdminPanel() {
   const ov = useOverlay();
   const [tab, setTab] = useState("stats");
   useEffect(() => { document.title = tr("Panel administratora – TutorTrack"); }, []);
-  const home = user!.role === "tutor" ? "/aplikacja/dash" : "/uczen/panel";
+  const home = user!.role === "tutor" ? "/aplikacja/dash" : user!.role === "parent" ? "/rodzic/panel" : "/uczen/panel";
   return <>
     <header className="ph"><div className="pi phi">
       <a className="logo" href="/"><i><Logo /></i>{tr("TutorTrack")}</a><span className="hint hide-sm">{tr("Panel administratora")}</span>
@@ -62,6 +62,7 @@ function StatsTab() {
     <div className="grid g4">
       <Stat l={tr("Korepetytorzy")} v={d.users.tutors} sub={tr("w tym Pro: {0}", d.users.pro)} />
       <Stat l={tr("Konta uczniów")} v={d.users.student_accounts} />
+      <Stat l={tr("Konta rodziców")} v={d.users.parent_accounts || 0} />
       <Stat l={tr("Nowe konta (7 dni)")} v={d.users.new7} c="gr" sub={tr("30 dni: {0}", d.users.new30)} />
       <Stat l={tr("Aktywni (7 dni)")} v={d.users.active7} sub={tr("logowanie w ostatnim tygodniu")} />
     </div>
@@ -102,7 +103,7 @@ function UsersTab() {
   return <>
     <div className="bar">
       <input type="search" placeholder={tr("Szukaj: imię, nazwisko, e-mail")} value={f.q} aria-label={tr("Szukaj konta")} onChange={(e) => setF({ ...f, q: e.target.value })} />
-      <select aria-label={tr("Rodzaj konta")} value={f.role} onChange={(e) => setF({ ...f, role: e.target.value })}><option value="">{tr("Wszystkie konta")}</option><option value="tutor">{tr("Korepetytorzy")}</option><option value="student">{tr("Uczniowie")}</option></select>
+      <select aria-label={tr("Rodzaj konta")} value={f.role} onChange={(e) => setF({ ...f, role: e.target.value })}><option value="">{tr("Wszystkie konta")}</option><option value="tutor">{tr("Korepetytorzy")}</option><option value="student">{tr("Uczniowie")}</option><option value="parent">{tr("Rodzice")}</option></select>
       <select aria-label={tr("Status konta")} value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })}><option value="">{tr("Każdy status")}</option><option value="blocked">{tr("Zablokowane")}</option></select>
     </div>
     {err && <div className="nt">{err}</div>}
@@ -114,9 +115,9 @@ function UsersTab() {
           <div className="av">{(u.name || "?").charAt(0).toUpperCase()}</div>
           <div className="m"><b>{u.name}{u.brand ? " · " + u.brand : ""}</b><span>{u.email}</span>
             <span style={{ display: "block" }}>{tr("Konto od")}{" "}{fd(ymd(new Date(u.createdAt)))} · {u.lastLoginAt ? tr("ostatnie logowanie ") + fdt(u.lastLoginAt) : tr("brak logowania")}</span>
-            <span style={{ display: "block" }}>{u.role === "tutor" ? tr("Uczniów: {0} · lekcji: {1}", u.students, u.lessons) : tr("Połączonych korepetytorów: {0}", u.tutors)}</span></div>
+            <span style={{ display: "block" }}>{u.role === "tutor" ? tr("Uczniów: {0} · lekcji: {1}", u.students, u.lessons) : u.role === "parent" ? tr("Połączonych dzieci: {0}", u.kids || 0) : tr("Połączonych korepetytorów: {0}", u.tutors)}</span></div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            <span className={"tag " + (u.role === "tutor" ? "ac" : "gr")}>{u.role === "tutor" ? tr("Korepetytor") : tr("Uczeń")}</span>
+            <span className={"tag " + (u.role === "tutor" ? "ac" : u.role === "parent" ? "am" : "gr")}>{u.role === "tutor" ? tr("Korepetytor") : u.role === "parent" ? tr("Rodzic") : tr("Uczeń")}</span>
             {u.role === "tutor" && <span className="tag">{u.plan === "pro" ? tr("Pro") : tr("Free")}</span>}
             {u.isAdmin && <span className="tag am">{tr("Administrator")}</span>}
             {self && <span className="tag">{tr("Ty")}</span>}
@@ -142,7 +143,7 @@ function DeleteUser({ u, onDone }: { u: AUser; onDone: () => void }) {
   const { close, toast } = useOverlay();
   const [v, setV] = useState(""), [err, setErr] = useState("");
   return <><h2>{tr("Usunąć konto na stałe?")}</h2>
-    <p>{tr("Zostanie trwale usunięte konto")}{" "}<b>{u.email}</b>{u.role === "tutor" ? <>{" "}{tr("razem z uczniami (")}{u.students}{tr(") i lekcjami (")}{u.lessons}).</> : <>{" "}{tr("razem z jego grafikiem.")}</>}{" "}{tr("Tej operacji nie można cofnąć.")}</p>
+    <p>{tr("Zostanie trwale usunięte konto")}{" "}<b>{u.email}</b>{u.role === "tutor" ? <>{" "}{tr("razem z uczniami (")}{u.students}{tr(") i lekcjami (")}{u.lessons}).</> : u.role === "parent" ? <>.</> : <>{" "}{tr("razem z jego grafikiem.")}</>}{" "}{tr("Tej operacji nie można cofnąć.")}</p>
     <Field id="dconf" label={tr("Wpisz adres e-mail konta, aby potwierdzić")} value={v} onChange={setV} error={err} autoComplete="off" />
     <div className="mf"><button className="btn" onClick={close}>{tr("Anuluj")}</button><button className="btn p" style={{ background: "var(--rd)", borderColor: "var(--rd)" }} onClick={async () => {
       try { await api("DELETE", "/api/admin/users/" + u.id, { confirmEmail: v }); close(); toast(tr("Konto usunięte.")); onDone(); } catch (e) { setErr(errMsg(e)); }

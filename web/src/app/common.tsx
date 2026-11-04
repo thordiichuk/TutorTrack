@@ -31,7 +31,7 @@ export function useUpsell() {
   const go = () => { close(); navigate("/aplikacja/plan"); };
   return {
     upsell: () => modal(<><h2>{tr("Limit planu Free został osiągnięty")}</h2><p>{tr("Plan Free pozwala mieć do")}{" "}{FREE}{" "}{tr("aktywnych uczniów. Zarchiwizuj jednego z uczniów lub przetestuj Pro, aby dodawać bez limitu.")}</p><div className="mf"><button className="btn" onClick={close}>{tr("Zamknij")}</button><button className="btn p" onClick={go}>{tr("Zobacz plan Pro")}</button></div></>),
-    proUp: (f: string) => modal(<><h2>{tr("Funkcja planu Pro")}</h2><p>{f}{" "}{tr("jest dostępna w planie Pro (")}{pln(PRO_PLN).replace(",00", "")}{" "}{tr("miesięcznie). Możesz włączyć Pro w trybie testowym – żadna płatność nie zostanie pobrana.")}</p><div className="mf"><button className="btn" onClick={close}>{tr("Zamknij")}</button><button className="btn p" onClick={go}>{tr("Zobacz plan Pro")}</button></div></>),
+    proUp: (f: string) => modal(<><h2>{tr("Funkcja planu Pro")}</h2><p><b>{f}</b>{" – "}{tr("funkcja dostępna w planie Pro (")}{pln(PRO_PLN).replace(",00", "")}{" "}{tr("miesięcznie). Możesz włączyć Pro w trybie testowym – żadna płatność nie zostanie pobrana.")}</p><div className="mf"><button className="btn" onClick={close}>{tr("Zamknij")}</button><button className="btn p" onClick={go}>{tr("Zobacz plan Pro")}</button></div></>),
   };
 }
 
