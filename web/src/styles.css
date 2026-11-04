@@ -2,7 +2,7 @@
 *{box-sizing:border-box}html,body{margin:0}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-body{font-family:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--tx);line-height:1.5;font-size:15px;overflow-x:hidden}
+body{font-family:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--tx);line-height:1.5;font-size:15px;overflow-x:hidden;overflow-x:clip}
 button,input,select,textarea{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 .app{display:flex;min-height:100vh}
@@ -433,7 +433,7 @@ body.stu .mx{border-radius:12px}
 input,select,textarea{max-width:100%;min-width:0}
 input[type=date],input[type=time],input[type=month]{-webkit-appearance:none;appearance:none;display:block;width:100%;min-height:42px;text-align:left}
 input[type=date]::-webkit-date-and-time-value,input[type=time]::-webkit-date-and-time-value{text-align:left}
-html,body{overflow-x:hidden;max-width:100%}
+html,body{overflow-x:hidden;overflow-x:clip;max-width:100%}
 .ov{overflow:hidden;touch-action:none}.ov .modal{touch-action:pan-y}
 .slogout{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:20px;padding:14px;border:1px solid #f3c7c2;border-radius:14px;background:var(--card);color:var(--rd);font:inherit;font-weight:700;font-size:15px;cursor:pointer}.slogout:hover{background:var(--rdl)}
 body[data-th=dark] .slogout,body[data-th=graphite] .slogout{border-color:var(--bd)}
