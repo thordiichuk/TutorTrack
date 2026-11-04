@@ -327,7 +327,8 @@ export function LessonActions({ l }: { l: Lesson }) {
 function DoneBtn() { const { close } = useOverlay(); return <div className="mf"><button className="btn p" onClick={close}>{tr("Rozumiem")}</button></div>; }
 
 /* ---------- student detail ---------- */
-export function StudentDetail({ id }: { id: string }) {
+/** Student window. `noHistory`: opened from the Lessons tab, where the lessons are already listed. */
+export function StudentDetail({ id, noHistory }: { id: string; noHistory?: boolean }) {
   const { stu, lessons } = useData();
   const { close, modal } = useOverlay();
   const s = stu(id);
@@ -339,8 +340,8 @@ export function StudentDetail({ id }: { id: string }) {
     <p>{tr("E-mail:")}{" "}{s.email || tr("brak")}<br />{tr("Telefon:")}{" "}{s.phone || tr("brak")}{s.note && <><br />{tr("Notatka:")}{" "}{s.note}</>}</p>
     <div className="grid g2" style={{ marginBottom: 12 }}><div className="card stat"><div className="l">{tr("Przeprowadzone lekcje")}</div><div className="v">{dn.length}</div></div><div className="card stat"><div className="l">{tr("Do zapłaty")}</div><div className="v am">{pln(sumAmt(ls.filter(billable), (l) => !l.paid))}</div></div></div>
     <SeriesList sid={id} />
-    <h2>{tr("Historia lekcji")}</h2>
-    {ls.length ? ls.map((l) => <LessonItem key={l.id} l={l} quick={false} />) : <Empty icon="book" title={tr("Brak lekcji")} sub={tr("Dodaj pierwszą lekcję dla tego ucznia.")} />}
+    {!noHistory && <><h2>{tr("Historia lekcji")}</h2>
+    {ls.length ? ls.map((l) => <LessonItem key={l.id} l={l} quick={false} />) : <Empty icon="book" title={tr("Brak lekcji")} sub={tr("Dodaj pierwszą lekcję dla tego ucznia.")} />}</>}
     <div className="mf"><button className="btn" onClick={() => modal(<StudentForm s={s} />)}>{tr("Edytuj")}</button><button className="btn" onClick={() => modal(<ShareModal id={id} />, true)}>{s.inviteCode ? tr("Kod ucznia") : tr("Udostępnij uczniowi")}</button><span style={{ flex: 1 }} /><button className="btn" onClick={close}>{tr("Zamknij")}</button><button className="btn p" onClick={() => modal(<LessonForm pre={id} />)}>{tr("Dodaj lekcję")}</button></div>
   </>;
 }

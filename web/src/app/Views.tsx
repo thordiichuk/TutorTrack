@@ -277,7 +277,7 @@ function StudentLessons({ sid, list, view, setView, clear }: { sid: string; list
         <div><span>{tr("Przeprowadzone")}</span><b>{done}</b></div>
         <div><span>{tr("Do zapłaty")}</span><b className={due ? "am" : "gr"}>{pln(due).replace(",00", "")}</b></div>
       </div>
-      <button className="btn s" onClick={() => modal(<StudentDetail id={sid} />, true)}>{tr("Szczegóły ucznia")}</button>
+      <button className="btn s" onClick={() => modal(<StudentDetail id={sid} noHistory />, true)}>{tr("Szczegóły ucznia")}</button>
     </div>
     <div className="seg stseg" role="group" aria-label={tr("Pokaż lekcje")}>{V.map(([k, t, n]) => <button key={k} aria-pressed={view === k} onClick={() => setView(k)}>{t} <span className="segn">{n}</span></button>)}</div>
     {!months.length ? <div className="card"><Empty icon="book" title={view === "up" ? tr("Brak zaplanowanych lekcji") : tr("Brak lekcji")} sub={view === "up" ? tr("Dodaj lekcję przyciskiem „+”.") : tr("Żadna lekcja nie pasuje do filtrów.")} /></div>
