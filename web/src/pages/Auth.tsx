@@ -131,8 +131,7 @@ export function Login({ role, notice }: { role: "tutor" | "student" | "parent"; 
         <button className="btn p" type="submit" disabled={busy} style={{ width: "100%", justifyContent: "center", marginTop: 10 }}>{tr("Zaloguj się")}</button>
       </form>
       <p style={{ textAlign: "center" }}><button className="lk" type="button" onClick={() => modal(<Forgot />)}>{tr("Nie pamiętasz hasła?")}</button></p>
-      {pa ? <div style={{ borderTop: "1px solid var(--bd)", marginTop: 20, paddingTop: 16, textAlign: "center" }}><p className="hint" style={{ margin: "0 0 10px" }}>{tr("Nie masz jeszcze konta rodzica?")}</p><a className="btn" href="/rodzic/rejestracja" style={{ width: "100%", justifyContent: "center" }}>{tr("Zarejestruj się")}</a></div>
-        : <p className="hint" style={{ textAlign: "center" }}>{tr("Nie masz konta?")}{" "}<a href={st ? "/uczen/rejestracja" : "/rejestracja"}>{tr("Zarejestruj się")}</a></p>}
+      <p className="hint" style={{ textAlign: "center" }}>{tr("Nie masz konta?")}{" "}<a href={pa ? "/rodzic/rejestracja" : st ? "/uczen/rejestracja" : "/rejestracja"}>{tr("Zarejestruj się")}</a></p>
       <OtherRoles role={role} kind="log" />
     </div></PubPage>
   );
