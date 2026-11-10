@@ -2,21 +2,27 @@ import { useEffect, useRef, useState } from "react";
 import { LANG, LANGS, Lang, setLang, tr } from "../lib/i18n";
 import { useAuth } from "../state";
 
-/** Language list used in tutor and student settings. */
-export function LangPicker() {
+/** Switch the language; when logged in, also save it on the account (the account's language wins after a reload). */
+function useLangPick() {
   const { user, demo, updateMe } = useAuth();
-  const pick = async (l: Lang) => {
+  return async (l: Lang) => {
     if (l === LANG) return;
     if (user && !demo) { try { await updateMe({ settings: { lang: l } }); } catch { /* still switch locally */ } }
     setLang(l);
   };
+}
+
+/** Language list used in tutor and student settings. */
+export function LangPicker() {
+  const pick = useLangPick();
   return <div className="card"><h2>{tr("Język")}</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>{tr("Język interfejsu. Zapisuje się na Twoim koncie.")}</p>
     <div className="langs">{LANGS.map(([k, n]) => <button key={k} className={"langb" + (k === LANG ? " on" : "")} aria-pressed={k === LANG} onClick={() => pick(k)}><span className="lflag">{k.toUpperCase()}</span>{n}{k === LANG && <span className="lok">✓</span>}</button>)}</div></div>;
 }
 
 /** Compact switch for public pages (footer). */
 export function LangSelect() {
-  return <select className="lsel" aria-label={tr("Język")} value={LANG} onChange={(e) => setLang(e.target.value as Lang)}>{LANGS.map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select>;
+  const pick = useLangPick();
+  return <select className="lsel" aria-label={tr("Język")} value={LANG} onChange={(e) => pick(e.target.value as Lang)}>{LANGS.map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select>;
 }
 
 export const langName = () => LANGS.find((x) => x[0] === LANG)![1];
@@ -30,6 +36,7 @@ export function Flag({ l }: { l: Lang }) {
 
 /** Language switch with flags for the public header. */
 export function LangFlags() {
+  const pick = useLangPick();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -41,6 +48,6 @@ export function LangFlags() {
   }, [open]);
   return <div className="lflags" ref={ref}>
     <button type="button" className="lfbtn" aria-haspopup="listbox" aria-expanded={open} aria-label={tr("Język") + ": " + langName()} onClick={() => setOpen(!open)}><Flag l={LANG} /><span>{LANG.toUpperCase()}</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button>
-    {open && <ul className="lfmenu" role="listbox" aria-label={tr("Język")}>{LANGS.map(([k, n]) => <li key={k}><button type="button" role="option" aria-selected={k === LANG} className={k === LANG ? "on" : ""} onClick={() => { setOpen(false); setLang(k); }}><Flag l={k} />{n}</button></li>)}</ul>}
+    {open && <ul className="lfmenu" role="listbox" aria-label={tr("Język")}>{LANGS.map(([k, n]) => <li key={k}><button type="button" role="option" aria-selected={k === LANG} className={k === LANG ? "on" : ""} onClick={() => { setOpen(false); pick(k); }}><Flag l={k} />{n}</button></li>)}</ul>}
   </div>;
 }
