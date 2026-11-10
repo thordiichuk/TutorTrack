@@ -1193,7 +1193,6 @@
 "Szczegóły ucznia": "Деталі учня",
 "Przeprowadzone": "Проведені",
 "Aby wejść do panelu rodzica, zaloguj się.": "Щоб увійти до панелі батьків, увійдіть в обліковий запис.",
-"Bezpłatnie. Wpisz kod dla rodzica od korepetytora dziecka, aby widzieć jego lekcje, notatki i płatności.": "Безкоштовно. Введіть код для батьків від репетитора дитини, щоб бачити її уроки, нотатки та оплати.",
 "Brak przeprowadzonych lekcji w tym miesiącu.": "У цьому місяці немає проведених уроків.",
 "Dostęp dla rodzica": "Доступ для батьків",
 "Dostęp dla rodzica –": "Доступ для батьків –",
@@ -1201,10 +1200,6 @@
 "Dostęp rodzica wyłączony.": "Доступ для батьків вимкнено.",
 "Dzieci i kody": "Діти та коди",
 "Dziecko": "Дитина",
-"Dzień dobry! Lekcje, notatki i płatności ucznia ({0}) można śledzić w panelu rodzica TutorTrack.\n1. Proszę założyć bezpłatne konto: {1}/rodzic/rejestracja\n2. Wpisać kod dla rodzica: {2}": "Добрий день! Уроки, нотатки та оплати учня ({0}) можна переглядати в панелі батьків TutorTrack.\n1. Створіть безкоштовний обліковий запис: {1}/rodzic/rejestracja\n2. Введіть код для батьків: {2}",
-"Kod dla rodzica": "Код для батьків",
-"Kod dla rodzica (16 znaków) dostajesz od korepetytora dziecka. Po jego wpisaniu zobaczysz lekcje, notatki i płatności.": "Код для батьків (16 символів) ви отримуєте від репетитора дитини. Після його введення ви побачите уроки, нотатки та оплати.",
-"Kod dla rodzica (opcjonalnie)": "Код для батьків (необов'язково)",
 "Kod działa dla dwóch kont rodziców. Jeśli wycieknie, utwórz nowy – stary przestanie działać, a połączeni rodzice zostaną odłączeni.": "Код діє для двох облікових записів батьків. Якщо він потрапить до сторонніх, створіть новий – старий перестане діяти, а підключених батьків буде від'єднано.",
 "Konta rodziców": "Облікові записи батьків",
 "Konto rodzica utworzone.": "Обліковий запис батьків створено.",
@@ -1237,7 +1232,6 @@
 "Stary kod przestanie działać, a połączeni rodzice zostaną odłączeni.": "Старий код перестане діяти, а підключених батьків буде від'єднано.",
 "Status płatności zaznacza korepetytor. Płatności odbywają się bezpośrednio między Tobą a korepetytorem.": "Статус оплати позначає репетитор. Оплата відбувається напряму між вами та репетитором.",
 "Tu pojawią się notatki korepetytora po lekcjach.": "Тут з'являться нотатки репетитора після уроків.",
-"Utwórz kod dla rodzica": "Створити код для батьків",
 "W trybie demo nie można udostępniać danych rodzicom. Załóż konto, aby korzystać z panelu rodzica.": "У демо-режимі не можна ділитися даними з батьками. Створіть обліковий запис, щоб користуватися панеллю батьків.",
 "Wiadomość dla rodzica": "Повідомлення для батьків",
 "Wyłączyć dostęp rodzica?": "Вимкнути доступ для батьків?",
@@ -1255,5 +1249,10 @@
 "funkcja dostępna w planie Pro (": "функція доступна в тарифі Pro (",
 "Jestem rodzicem": "Я батьки",
 "Nie masz jeszcze konta rodzica?": "Ще не маєте облікового запису батьків?",
-"Utwórz konto korepetytora": "Створити обліковий запис репетитора"
+"Utwórz konto korepetytora": "Створити обліковий запис репетитора",
+"Kod od korepetytora (16 znaków) dostajesz od korepetytora dziecka. Po jego wpisaniu zobaczysz lekcje, notatki i płatności.": "Код від репетитора (16 символів) ви отримуєте від репетитора дитини. Після його введення ви побачите уроки, нотатки та оплати.",
+"Kod od korepetytora": "Код від репетитора",
+"Utwórz kod od korepetytora": "Створити код від репетитора",
+"Dzień dobry! Lekcje, notatki i płatności ucznia ({0}) można śledzić w panelu rodzica TutorTrack.\n1. Proszę założyć bezpłatne konto: {1}/rodzic/rejestracja\n2. Wpisać kod od korepetytora: {2}": "Добрий день! Уроки, нотатки та оплати учня ({0}) можна переглядати в панелі батьків TutorTrack.\n1. Створіть безкоштовний обліковий запис: {1}/rodzic/rejestracja\n2. Введіть код від репетитора: {2}",
+"Bezpłatnie. Wpisz kod od korepetytora dziecka, aby widzieć jego lekcje, notatki i płatności.": "Безкоштовно. Введіть код від репетитора дитини, щоб бачити її уроки, нотатки та оплати."
 }

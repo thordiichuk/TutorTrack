@@ -30,8 +30,8 @@ function AddCode({ onDone }: { onDone: () => Promise<void> }) {
     setBusy(true);
     try { await api("POST", "/api/parent/link", { code }); setCode(""); setE(""); await onDone(); ov.toast(tr("Połączono z kontem dziecka.")); } catch (x) { setE(errMsg(x)); } finally { setBusy(false); }
   };
-  return <div className="card"><h2>{tr("Dodaj kod od korepetytora")}</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>{tr("Kod dla rodzica (16 znaków) dostajesz od korepetytora dziecka. Po jego wpisaniu zobaczysz lekcje, notatki i płatności.")}</p>
-    <form className="bar" style={{ margin: 0 }} onSubmit={(x) => { x.preventDefault(); add(); }}><input id="pcode" value={code} onChange={(x) => setCode(x.target.value)} placeholder={tr("XXXX-XXXX-XXXX-XXXX")} autoComplete="off" spellCheck={false} aria-label={tr("Kod dla rodzica")} aria-describedby="e_pcode" style={{ fontFamily: "ui-monospace,Menlo,Consolas,monospace", letterSpacing: 1 }} /><button className="btn p" type="submit" disabled={busy}>{tr("Dodaj kod")}</button></form>
+  return <div className="card"><h2>{tr("Dodaj kod od korepetytora")}</h2><p className="hint" style={{ margin: "-6px 0 12px" }}>{tr("Kod od korepetytora (16 znaków) dostajesz od korepetytora dziecka. Po jego wpisaniu zobaczysz lekcje, notatki i płatności.")}</p>
+    <form className="bar" style={{ margin: 0 }} onSubmit={(x) => { x.preventDefault(); add(); }}><input id="pcode" value={code} onChange={(x) => setCode(x.target.value)} placeholder={tr("XXXX-XXXX-XXXX-XXXX")} autoComplete="off" spellCheck={false} aria-label={tr("Kod od korepetytora")} aria-describedby="e_pcode" style={{ fontFamily: "ui-monospace,Menlo,Consolas,monospace", letterSpacing: 1 }} /><button className="btn p" type="submit" disabled={busy}>{tr("Dodaj kod")}</button></form>
     <div className="er" id="e_pcode" role="alert" style={{ color: "var(--rd)", fontSize: 13, marginTop: 6 }}>{e}</div></div>;
 }
 

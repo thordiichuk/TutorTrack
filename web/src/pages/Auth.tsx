@@ -74,7 +74,7 @@ export function Register({ role }: { role: "tutor" | "student" | "parent" }) {
   return (
     <PubPage aud={st ? "student" : "tutor"}><div className="au">
       <h1>{pa ? tr("Załóż konto rodzica") : st ? tr("Załóż konto ucznia") : tr("Utwórz konto korepetytora")}</h1>
-      <p className="hint">{pa ? tr("Bezpłatnie. Wpisz kod dla rodzica od korepetytora dziecka, aby widzieć jego lekcje, notatki i płatności.") : st ? tr("Bezpłatnie. Po rejestracji wpisz kod od korepetytora, aby zobaczyć swoje lekcje.") : tr("Bezpłatnie, bez karty. Plan Free obejmuje do 3 aktywnych uczniów.")}</p>
+      <p className="hint">{pa ? tr("Bezpłatnie. Wpisz kod od korepetytora dziecka, aby widzieć jego lekcje, notatki i płatności.") : st ? tr("Bezpłatnie. Po rejestracji wpisz kod od korepetytora, aby zobaczyć swoje lekcje.") : tr("Bezpłatnie, bez karty. Plan Free obejmuje do 3 aktywnych uczniów.")}</p>
       <form onSubmit={submit} noValidate>
         <Field id="r_name" label={st ? tr("Imię *") : tr("Imię lub imię i nazwisko *")} value={f.name} onChange={set("name")} error={e.name} autoComplete="name" />
         <Field id="r_email" label={tr("Adres e-mail *")} type="email" value={f.email} onChange={set("email")} error={e.email} autoComplete="email" />

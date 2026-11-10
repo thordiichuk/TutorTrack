@@ -1168,7 +1168,6 @@
 "Szczegóły ucznia": "Student details",
 "Przeprowadzone": "Done",
 "Aby wejść do panelu rodzica, zaloguj się.": "Log in to open the parent panel.",
-"Bezpłatnie. Wpisz kod dla rodzica od korepetytora dziecka, aby widzieć jego lekcje, notatki i płatności.": "Free. Enter the parent code from your child's tutor to see their lessons, notes and payments.",
 "Brak przeprowadzonych lekcji w tym miesiącu.": "No completed lessons this month.",
 "Dostęp dla rodzica": "Parent access",
 "Dostęp dla rodzica –": "Parent access –",
@@ -1176,10 +1175,6 @@
 "Dostęp rodzica wyłączony.": "Parent access turned off.",
 "Dzieci i kody": "Children and codes",
 "Dziecko": "Child",
-"Dzień dobry! Lekcje, notatki i płatności ucznia ({0}) można śledzić w panelu rodzica TutorTrack.\n1. Proszę założyć bezpłatne konto: {1}/rodzic/rejestracja\n2. Wpisać kod dla rodzica: {2}": "Hello! You can follow the lessons, notes and payments of {0} in the TutorTrack parent panel.\n1. Create a free account: {1}/rodzic/rejestracja\n2. Enter the parent code: {2}",
-"Kod dla rodzica": "Parent code",
-"Kod dla rodzica (16 znaków) dostajesz od korepetytora dziecka. Po jego wpisaniu zobaczysz lekcje, notatki i płatności.": "You get the parent code (16 characters) from your child's tutor. Once entered, you'll see lessons, notes and payments.",
-"Kod dla rodzica (opcjonalnie)": "Parent code (optional)",
 "Kod działa dla dwóch kont rodziców. Jeśli wycieknie, utwórz nowy – stary przestanie działać, a połączeni rodzice zostaną odłączeni.": "The code works for two parent accounts. If it leaks, create a new one – the old one stops working and connected parents are disconnected.",
 "Konta rodziców": "Parent accounts",
 "Konto rodzica utworzone.": "Parent account created.",
@@ -1212,7 +1207,6 @@
 "Stary kod przestanie działać, a połączeni rodzice zostaną odłączeni.": "The old code will stop working and connected parents will be disconnected.",
 "Status płatności zaznacza korepetytor. Płatności odbywają się bezpośrednio między Tobą a korepetytorem.": "The tutor marks the payment status. Payments are made directly between you and the tutor.",
 "Tu pojawią się notatki korepetytora po lekcjach.": "The tutor's post-lesson notes will appear here.",
-"Utwórz kod dla rodzica": "Create parent code",
 "W trybie demo nie można udostępniać danych rodzicom. Załóż konto, aby korzystać z panelu rodzica.": "You can't share data with parents in demo mode. Create an account to use the parent panel.",
 "Wiadomość dla rodzica": "Message for the parent",
 "Wyłączyć dostęp rodzica?": "Turn off parent access?",
@@ -1230,5 +1224,10 @@
 "funkcja dostępna w planie Pro (": "a feature available on the Pro plan (",
 "Jestem rodzicem": "I'm a parent",
 "Nie masz jeszcze konta rodzica?": "Don't have a parent account yet?",
-"Utwórz konto korepetytora": "Create a tutor account"
+"Utwórz konto korepetytora": "Create a tutor account",
+"Kod od korepetytora (16 znaków) dostajesz od korepetytora dziecka. Po jego wpisaniu zobaczysz lekcje, notatki i płatności.": "You get the code from the tutor (16 characters) from your child's tutor. Once entered, you'll see lessons, notes and payments.",
+"Kod od korepetytora": "Code from the tutor",
+"Utwórz kod od korepetytora": "Create tutor code",
+"Dzień dobry! Lekcje, notatki i płatności ucznia ({0}) można śledzić w panelu rodzica TutorTrack.\n1. Proszę założyć bezpłatne konto: {1}/rodzic/rejestracja\n2. Wpisać kod od korepetytora: {2}": "Hello! You can follow the lessons, notes and payments of {0} in the TutorTrack parent panel.\n1. Create a free account: {1}/rodzic/rejestracja\n2. Enter the code from the tutor: {2}",
+"Bezpłatnie. Wpisz kod od korepetytora dziecka, aby widzieć jego lekcje, notatki i płatności.": "Free. Enter the code from your child's tutor to see their lessons, notes and payments."
 }
