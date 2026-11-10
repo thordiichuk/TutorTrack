@@ -540,3 +540,4 @@ body.stu .pgrp{border:2px dashed var(--bdh);border-radius:16px;padding:0 8px 8px
 .pgrp.c-school .pblk.sub{background:color-mix(in srgb,#3b82f6 11%,var(--card))}.pgrp.c-extra .pblk.sub{background:color-mix(in srgb,#16a34a 11%,var(--card))}
 .pgrp .pblk.sub b{font-size:13px}.pgrp .pblk.sub .ptm{font-size:11px}
 .srow.psubrow{margin-left:14px;width:calc(100% - 14px);background:color-mix(in srgb,#3b82f6 8%,var(--card))}
+.sttoggle{display:flex;align-items:center;gap:10px;width:100%;margin:24px 0 12px;padding:14px 18px;background:var(--card);border:1px solid var(--bd);border-radius:14px;font:inherit;color:var(--tx);cursor:pointer;text-align:left}.sttoggle>span:first-child{flex:1;font-size:20px;font-weight:700}.sttoggle .hint{font-size:13px;font-weight:600}.sttoggle:hover{border-color:var(--ac)}

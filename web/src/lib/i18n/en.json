@@ -1263,5 +1263,7 @@
 "Nie znaleziono kodu. Sprawdź kod lub poproś dziecko o nowy.": "Code not found. Check it or ask your child for a new one.",
 "Z kontem tego ucznia są już połączone dwa konta rodziców.": "Two parent accounts are already connected to this student.",
 "w trakcie": "during",
-"w trakcie: {0}": "during: {0}"
+"w trakcie: {0}": "during: {0}",
+"Ukryj": "Hide",
+"Pokaż": "Show"
 }

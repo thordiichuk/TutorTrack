@@ -27,8 +27,8 @@ function MonthInput({ v, on }: { v: string; on: (m: string) => void }) {
   </div>;
 }
 const monthDone = (ls: Lesson[], m: string) => ls.filter((l) => billable(l) && l.date.slice(0, 7) === m);
-function BarList({ o, ff }: { o: Record<string, number>; ff: (n: number) => string }) {
-  const e = Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, 8), mx = e.length ? e[0][1] : 1;
+function BarList({ o, ff, byKey }: { o: Record<string, number>; ff: (n: number) => string; byKey?: boolean }) {
+  const e = byKey ? Object.entries(o).sort((a, b) => a[0].localeCompare(b[0])) : Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, 8), mx = e.length ? Math.max(...e.map((x) => x[1])) : 1;
   if (!e.length) return <p className="hint">{tr("Brak danych w wybranym okresie.")}</p>;
   return <>{e.map((x) => <div className="bl" key={x[0]}><span>{x[0]}</span><b>{ff(x[1])}</b><div className="bb"><i style={{ width: Math.round(x[1] / mx * 100) + "%" }} /></div></div>)}</>;
 }
@@ -326,6 +326,7 @@ const csvRows = (list: Lesson[], name: (id: string) => string) =>
     ...sortL(list, 1).map((l) => [name(l.sid), l.date, l.time, l.min, l.topic, l.status === "cancelled" ? tr("odwołana (opłata)") : tr("przeprowadzona"), gStr(amt(l)), l.paid ? tr("opłacona") : tr("nieopłacona")].map(cq).join(";"))].join("\r\n");
 
 export function Billing() {
+  const [stOpen, setStOpen] = useState(false);
   const { user } = useAuth();
   const { lessons, stu } = useData();
   const { run } = useTutor();
@@ -372,8 +373,8 @@ export function Billing() {
         </div>}
       </div>; })}</div></>}
     <RevenueChart />
-    <h2 className="sect" id="stats">{tr("Statystyki")}</h2>
-    <Stats />
+    <button type="button" className="sttoggle" id="stats" aria-expanded={stOpen} onClick={() => setStOpen(!stOpen)}><span>{tr("Statystyki")}</span><span className="hint">{stOpen ? tr("Ukryj") : tr("Pokaż")}</span><Ic n={stOpen ? "chevd" : "chev"} s={18} /></button>
+    {stOpen && <Stats />}
   </>;
 }
 
@@ -414,7 +415,7 @@ export function Stats() {
       <div className="card"><h2>{tr("Przychód według przedmiotu")}</h2><BarList o={bs} ff={pln} /></div>
       <div className="card"><h2>{tr("Przychód według ucznia")}</h2><BarList o={bt} ff={pln} /></div>
       <div className="card"><h2>{tr("Dni tygodnia")}</h2><BarList o={wd} ff={String} /></div>
-      <div className="card"><h2>{tr("Godziny rozpoczęcia")}</h2><BarList o={hr} ff={String} /></div>
+      <div className="card"><h2>{tr("Godziny rozpoczęcia")}</h2><BarList o={hr} ff={String} byKey /></div>
     </div>
     <p className="hint">{tr("Przychód według dat lekcji, razem z opłatami za odwołanie. Obłożenie liczone z lekcji zaplanowanych i przeprowadzonych (liczba lekcji).")}</p>
   </>;
