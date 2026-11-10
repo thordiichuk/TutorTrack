@@ -161,19 +161,27 @@ export function StudentPanel() {
     const mon = new Date(); mon.setHours(0, 0, 0, 0); mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7) + 7 * wk);
     const end = new Date(mon); end.setDate(end.getDate() + 6);
     const td = ymd(new Date());
-    type It = { s: string; e: string; l?: L; ev?: Ev; bad?: boolean };
+    type It = { s: string; e: string; l?: L; ev?: Ev; bad?: boolean; host?: It; subs?: It[] };
     const days = Array.from({ length: 7 }, (_, i) => {
       const day = new Date(mon); day.setDate(day.getDate() + i); const ds = ymd(day);
       const it: It[] = [...all.filter((l) => l.date === ds).map((l) => ({ s: l.time, e: te(l.time, l.min), l })), ...d!.events.filter((e) => (e.repeat === "w" ? e.weekday === i : e.date === ds)).map((e) => ({ s: e.start, e: e.end, ev: e }))].sort((a, b) => a.s.localeCompare(b.s));
       const live = (x: It) => !x.l || x.l.status !== "cancelled";
-      it.forEach((x, j) => { x.bad = live(x) && it.some((y, k) => k !== j && live(y) && clash(x.s, x.e, y.s, y.e)); });
-      return { day, ds, it };
+      // own activities of the same kind never clash (a test during school is part of school)
+      const same = (x: It, y: It) => !!x.ev && !!y.ev && x.ev.cat === y.ev.cat;
+      it.forEach((x, j) => { x.bad = live(x) && it.some((y, k) => k !== j && live(y) && !same(x, y) && clash(x.s, x.e, y.s, y.e)); });
+      // show such an activity inside the longer one that contains it
+      it.forEach((x) => { if (!x.ev) return; const h = it.filter((y) => y !== x && same(x, y) && y.s <= x.s && y.e >= x.e && (y.s < x.s || y.e > x.e || it.indexOf(y) < it.indexOf(x))).sort((a, b) => (a.s > b.s ? -1 : 1))[0]; if (h) x.host = h; });
+      it.forEach((x) => { if (x.host) { let h = x.host; while (h.host) h = h.host; x.host = h; (h.subs = h.subs || []).push(x); } });
+      return { day, ds, it: it.filter((x) => !x.host) };
     });
     const todayIdx = days.findIndex((x) => x.ds === td);
     const cur = sel >= 0 ? sel : todayIdx >= 0 ? todayIdx : 0;
     const block = (x: It, k: number) => x.l
       ? <button type="button" key={k} className={"pblk les" + (x.bad ? " clash" : "") + (x.l.status === "cancelled" ? " cx" : "")} style={{ ["--sc" as any]: subjColor(x.l.subject) }} onClick={() => lessonModal(x.l!.id)}>
           <span className="ptm">{x.s}–{x.e}</span><b>{x.l.subject || tr("Lekcja")}</b><span className="ps">{x.l.tutor}</span>{shortTag(x.l, !!x.bad)}</button>
+      : x.subs ? <div key={k} className={"pgrp c-" + x.ev!.cat + (x.bad ? " clash" : "")}>
+          <button type="button" className="pblk own in" onClick={() => evForm(x.ev)}><span className="ptm">{x.s}–{x.e}</span><b>{x.ev!.title}</b>{x.bad && <span className="tag rd">{tr("Nakłada się")}</span>}</button>
+          {x.subs.map((y, n) => <button type="button" key={n} className={"pblk own sub" + (y.bad ? " clash" : "")} onClick={() => evForm(y.ev)}><span className="ptm">{y.s}–{y.e} · {tr("w trakcie")}</span><b>{y.ev!.title}</b>{y.bad && <span className="tag rd">{tr("Nakłada się")}</span>}</button>)}</div>
       : <button type="button" key={k} className={"pblk own c-" + x.ev!.cat + (x.bad ? " clash" : "")} onClick={() => evForm(x.ev)}>
           <span className="ptm">{x.s}–{x.e}</span><b>{x.ev!.title}</b>{x.bad && <span className="tag rd">{tr("Nakłada się")}</span>}</button>;
     return <>
@@ -301,7 +309,7 @@ function EvForm({ e, lessons, events, par, onSave, onDel }: { e?: Ev; lessons: L
     const list = [
       ...lessons.filter((l) => l.status !== "cancelled" && sameDay(l.date) && clash(f.start, f.end, l.time, te(l.time, l.min)))
         .map((l) => `${l.subject || tr("Lekcja")} (${l.tutor}) – ${fd(l.date)}, ${l.time}–${te(l.time, l.min)}`),
-      ...events.filter((o) => o.id !== e?.id && (o.repeat === "w" ? o.weekday === wd : sameDay(o.date)) && clash(f.start, f.end, o.start, o.end))
+      ...events.filter((o) => o.id !== e?.id && o.cat !== f.cat && (o.repeat === "w" ? o.weekday === wd : sameDay(o.date)) && clash(f.start, f.end, o.start, o.end))
         .map((o) => `${o.title} – ${o.repeat === "w" ? WDL[o.weekday].toLowerCase() + tr(", co tydzień") : fd(o.date)}, ${o.start}–${o.end}`),
     ];
     const key = JSON.stringify([f.repeat, f.weekday, f.date, f.start, f.end]);

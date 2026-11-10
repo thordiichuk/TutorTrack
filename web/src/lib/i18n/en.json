@@ -1261,5 +1261,7 @@
 "{0} nie ma jeszcze połączonych korepetytorów w TutorTrack. Lekcje pojawią się tu same, gdy dziecko wpisze kod od korepetytora.": "{0} has no tutors connected in TutorTrack yet. Lessons will appear here once your child enters a code from a tutor.",
 "{0} przestanie widzieć Twoje lekcje i plan.": "{0} will no longer see your lessons and schedule.",
 "Nie znaleziono kodu. Sprawdź kod lub poproś dziecko o nowy.": "Code not found. Check it or ask your child for a new one.",
-"Z kontem tego ucznia są już połączone dwa konta rodziców.": "Two parent accounts are already connected to this student."
+"Z kontem tego ucznia są już połączone dwa konta rodziców.": "Two parent accounts are already connected to this student.",
+"w trakcie": "during",
+"w trakcie: {0}": "during: {0}"
 }

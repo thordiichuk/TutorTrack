@@ -179,14 +179,17 @@ export function ParentPanel() {
         const items = [
           ...ls.filter((l) => l.date === dd).map((l) => ({ s: l.time, e: te(l.time, l.min), l })),
           ...c!.events.filter((e) => (e.repeat === "w" ? e.weekday === i : e.date === dd)).map((e) => ({ s: e.start, e: e.end, ev: e })),
-        ].sort((a, b) => a.s.localeCompare(b.s));
+        ].sort((a, b) => a.s.localeCompare(b.s)) as { s: string; e: string; l?: PLesson; ev?: Ev; host?: Ev }[];
+        // an activity inside a longer one of the same kind (e.g. a test during school) is shown as part of it
+        items.forEach((x) => { if (!x.ev) return; const h = items.find((y) => y !== x && y.ev && y.ev.cat === x.ev!.cat && y.s <= x.s && y.e >= x.e && (y.s < x.s || y.e > x.e || items.indexOf(y) < items.indexOf(x))); if (h) x.host = h.ev; });
+        items.sort((a, b) => { const ka = (a.host ? items.find((y) => y.ev === a.host)!.s : a.s) + (a.host ? "1" : "0") + a.s, kb = (b.host ? items.find((y) => y.ev === b.host)!.s : b.s) + (b.host ? "1" : "0") + b.s; return ka.localeCompare(kb); });
         return <section key={dd} className={"dgrp pdg" + (dd === td ? " today" : "")} style={{ marginTop: 12 }}><div className={"dgh" + (dd === td ? " td" : "")}><b>{dd === td ? tr("Dziś") : WDL[i]}</b>{dd === td && <i className="tdtag">{tr("dzisiaj")}</i>}<span>{sdate(dd)}</span></div>
           <div className="card dgl" style={{ padding: "4px 14px" }}>{items.length ? items.map((x, k) => "l" in x && x.l
             ? <button type="button" key={k} className={"srow" + (x.l.status === "cancelled" ? " cx" : "")} onClick={() => lessonModal(x.l!)}><span className="tm">{x.s}<small>{x.e}</small></span><span className="sb" /><span className="m"><b>{x.l.subject || tr("Lekcja")}{x.l.topic ? " · " + x.l.topic : ""}</b><span>{x.l.tutor}</span></span>{x.l.status === "cancelled" && <span className="tag rd">{tr("Odwołana")}</span>}</button>
-            : <div key={k} className="srow" style={{ cursor: "default" }}><span className="tm">{x.s}<small>{x.e}</small></span><span className="sb o" /><span className="m"><b>{(x as any).ev.title}</b><span>{CATS[(x as any).ev.cat] || tr("Inne")}</span></span></div>)
+            : <div key={k} className={"srow" + (x.host ? " psubrow" : "")} style={{ cursor: "default" }}><span className="tm">{x.s}<small>{x.e}</small></span><span className="sb o" /><span className="m"><b>{x.ev!.title}</b><span>{x.host ? tr("w trakcie: {0}", x.host.title) : CATS[x.ev!.cat] || tr("Inne")}</span></span></div>)
             : <p className="hint" style={{ margin: "10px 0" }}>{tr("Brak zajęć.")}</p>}</div></section>;
       })}
-      <p className="hint" style={{ marginTop: 12 }}><span className="sb" style={{ display: "inline-block", width: 4, height: 12, verticalAlign: "middle", marginRight: 6 }} />{tr("lekcje od korepetytorów")}{"  "}<span className="sb o" style={{ display: "inline-block", width: 4, height: 12, verticalAlign: "middle", margin: "0 6px 0 12px" }} />{tr("własne zajęcia dziecka")}</p>
+      <div className="plegend" style={{ marginTop: 12 }}><span><i className="les" />{tr("lekcje od korepetytorów")}</span><span><i className="own" />{tr("własne zajęcia dziecka")}</span></div>
     </>;
   }
 
