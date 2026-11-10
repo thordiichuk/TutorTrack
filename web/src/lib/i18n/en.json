@@ -1268,5 +1268,8 @@
 "Pokaż": "Show",
 "Kolejność": "Order",
 "Od najnowszych": "Newest first",
-"Od najstarszych": "Oldest first"
+"Od najstarszych": "Oldest first",
+"Tylko nieopłacone": "Unpaid only",
+"Brak nieopłaconych lekcji": "No unpaid lessons",
+"Wszystkie lekcje w tym widoku są rozliczone.": "All lessons in this view are settled."
 }
