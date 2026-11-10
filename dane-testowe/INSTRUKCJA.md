@@ -7,7 +7,7 @@ Wszystkie dane są fikcyjne. Daty: maj 2026 – styczeń 2027 (lekcje do 9 listo
 | `tutortrack-dane-testowe-korepetytor.json` | Korepetytor nr 1 (plan **Pro**) | 8 uczniów (7 aktywnych, 1 zarchiwizowany), 352 lekcje |
 | `tutortrack-dane-testowe-korepetytor-2.json` | Korepetytor nr 2 (plan Free) | 2 uczniów, 44 lekcje – ta sama uczennica Ola Kowalska |
 | `tutortrack-dane-testowe-uczen-grafik.json` | Uczennica Ola Kowalska | 14 własnych zajęć: szkoła, basen, pianino, harcerstwo, sprawdziany, wycieczka |
-| — | Rodzic Anna Kowalska | Rodzic nie importuje pliku – widzi lekcje Oli przez kod od korepetytora nr 1 |
+| — | Rodzic Anna Kowalska | Rodzic nie importuje pliku – widzi wszystko przez kod od Oli |
 
 Na adresy e-mail kont testowych możesz użyć np. `kor1.test@example.com`, `kor2.test@example.com`, `ola.test@example.com`, `anna.test@example.com` (wiadomości z resetem hasła na nie nie dojdą).
 
@@ -32,11 +32,9 @@ Na adresy e-mail kont testowych możesz użyć np. `kor1.test@example.com`, `kor
 - **Rozliczenia:** nieopłacone lekcje z października i listopada, kilka odwołanych z opłatą, kilka lekcji opłaconych z góry.
 - **Notatki przed zajęciami** są wpisane przy lekcjach na najbliższe 2 tygodnie – **uczeń i rodzic nie mogą ich widzieć**.
 
-## 2. Kody dla Oli Kowalskiej
+## 2. Kod dla Oli Kowalskiej
 
-U korepetytora nr 1: **Uczniowie → Ola Kowalska**:
-- **„Udostępnij uczniowi”** → **„Utwórz kod dostępu”** → zapisz kod (dla ucznia).
-- **„Dostęp dla rodzica”** → **„Utwórz kod dostępu”** → zapisz kod (dla rodzica).
+U korepetytora nr 1: **Uczniowie → Ola Kowalska → „Udostępnij uczniowi”** → **„Utwórz kod dostępu”** → zapisz kod.
 
 ## 3. Korepetytor nr 2 (Free) – drugi korepetytor tej samej uczennicy
 
@@ -45,7 +43,7 @@ U korepetytora nr 1: **Uczniowie → Ola Kowalska**:
 3. Importuj `tutortrack-dane-testowe-korepetytor-2.json`.
 4. **Uczniowie → Ola Kowalska → „Udostępnij uczniowi”** → utwórz i zapisz kod.
 
-Do sprawdzenia: limit planu Free (dodanie 2 kolejnych aktywnych uczniów powinno pokazać informację o Pro), okno „Dostęp dla rodzica” ze znaczkiem Pro.
+Do sprawdzenia: limit planu Free (dodanie 2 kolejnych aktywnych uczniów powinno pokazać informację o Pro).
 
 ## 4. Uczennica
 
@@ -64,15 +62,21 @@ Do sprawdzenia: limit planu Free (dodanie 2 kolejnych aktywnych uczniów powinno
 
 ## 5. Rodzic
 
-1. Wejdź na stronę główną → **„Dla ucznia” → „Jestem rodzicem”** (lub od razu **/rodzic/rejestracja**).
-2. Załóż konto (np. „Anna Kowalska”), w polu „Kod od korepetytora” wpisz **kod dla rodzica** z kroku 2.
+Kod dla rodzica tworzy **uczennica**, a nie korepetytor.
+
+1. U Oli: **Ustawienia → Dostęp dla rodzica → „Utwórz kod dostępu”** → skopiuj kod.
+2. Wejdź na stronę główną → **„Dla ucznia” → „Jestem rodzicem”** (lub od razu **/rodzic/rejestracja**).
+3. Załóż konto (np. „Anna Kowalska”), w polu „Kod od dziecka” wpisz kod z punktu 1.
 
 **Co sprawdzić:**
-- **Pulpit:** najbliższa lekcja Oli, do zapłaty, ostatnie notatki i zadania.
-- **Lekcje:** Nadchodzące / Minione, pogrupowane po miesiącach; w oknie lekcji brak notatek przed zajęciami.
-- **Płatności:** miesiące ‹ ›, nieopłacone z wcześniejszych miesięcy, podsumowanie do skopiowania.
+- **Pulpit:** najbliższa lekcja, do zapłaty, ostatnie notatki i zadania – od **obu** korepetytorów.
+- **Plan:** tydzień z lekcjami od korepetytorów i własnymi zajęciami Oli.
+- **Lekcje:** Nadchodzące / Minione, przy każdej lekcji imię korepetytora; w oknie lekcji status zadania (zrobione / niezrobione) i brak notatek przed zajęciami.
+- **Płatności:** suma miesiąca i osobna karta dla każdego korepetytora z „Podsumowaniem do wysłania”.
+- **Ukrywanie zajęć:** u Oli otwórz w Planie np. „Basen”, zaznacz **„Ukryj te zajęcia przed rodzicem”** → po odświeżeniu basen znika z planu rodzica.
+- **Status zadań:** Ola oznacza zadanie jako zrobione → u rodzica tag zmienia się na „Zadanie zrobione”.
+- **Bez Pro:** panel rodzica działa także, gdy korepetytorzy mają plan Free.
+- **Korepetytor:** w szczegółach Oli widać znacznik „Rodzic ma podgląd”.
 - **Brak edycji:** rodzic niczego nie zmienia i nie wysyła próśb.
-- **Lekcje od korepetytora nr 2 nie są widoczne** – kod rodzica dotyczy tylko korepetytora nr 1.
-- **Blokada:** u korepetytora nr 1 wyłącz Pro → panel rodzica pokazuje „Dostęp jest chwilowo wyłączony”; po ponownym włączeniu dane wracają.
 - **Limit:** trzecie konto rodzica z tym samym kodem dostanie komunikat, że połączone są już dwa konta.
-- **„Nowy kod” / „Wyłącz dostęp”** u korepetytora odłącza rodzica.
+- **Odłączanie:** u Oli w „Dostęp dla rodzica” można odłączyć jednego rodzica, utworzyć nowy kod albo wyłączyć dostęp – rodzic traci podgląd.

@@ -87,6 +87,7 @@ const eventIn = z.object({
   date: z.union([z.string().regex(DATE), z.literal("")]).default(""),
   start: z.string().regex(TIME),
   end: z.string().regex(TIME),
+  hideParent: z.boolean().default(false),
 }).refine((e) => e.end > e.start, { message: "Koniec musi być po początku." })
   .refine((e) => e.repeat === "w" || !!e.date, { message: "Wybierz datę." });
 
@@ -103,7 +104,7 @@ const mapStudent = (r: any) => ({
   id: r.id, name: r.name, subject: r.subject, email: r.email, phone: r.phone, rate: r.rate, rates: r.rates || {}, note: r.note,
   cancelMode: r.cancel_mode, cancelPct: r.cancel_pct, cancelFixed: r.cancel_fixed, active: r.active,
   inviteCode: r.invite_code ? fmtCode(r.invite_code) : null, linked: !!r.linked_user_id,
-  parentCode: r.parent_code ? fmtCode(r.parent_code) : null, parents: r.parents ?? 0,
+  parents: r.parents ?? 0,
 });
 /** Student's request to cancel a lesson (null when there is none). */
 const mapCr = (r: any) => (r.cr_status ? { status: r.cr_status, kind: r.cr_kind || "cancel", reason: r.cr_reason, note: r.cr_note, at: r.cr_at ? new Date(r.cr_at).getTime() : 0 } : null);
@@ -112,7 +113,7 @@ const mapLesson = (r: any) => ({
   notes: r.notes, hw: r.hw, hd: r.hw_due || "", status: r.status, paid: r.paid, amount: r.amount, fee: r.fee,
   cr: mapCr(r), seriesId: r.series_id || null,
 });
-const mapEvent = (r: any) => ({ id: r.id, title: r.title, cat: r.cat, repeat: r.repeat, weekday: r.weekday, date: r.date || "", start: r.start_time, end: r.end_time });
+const mapEvent = (r: any) => ({ id: r.id, title: r.title, cat: r.cat, repeat: r.repeat, weekday: r.weekday, date: r.date || "", start: r.start_time, end: r.end_time, hideParent: !!r.hide_parent });
 
 /* ---------- sessions ---------- */
 async function createSession(reply: FastifyReply, userId: string, remember: boolean) {
@@ -165,7 +166,7 @@ async function ownLesson(tutorId: string, id: string, db = pool as any) {
 async function tutorData(u: User) {
   await q("DELETE FROM students WHERE tutor_id=$1 AND deleted_at < now() - interval '30 days'", [u.id]);
   await q("DELETE FROM lessons WHERE tutor_id=$1 AND deleted_at < now() - interval '30 days'", [u.id]);
-  const students = await q("SELECT s.*, (SELECT count(*)::int FROM student_parents p WHERE p.student_id=s.id) AS parents FROM students s WHERE s.tutor_id=$1 AND s.deleted_at IS NULL ORDER BY s.created_at", [u.id]);
+  const students = await q("SELECT s.*, (SELECT count(*)::int FROM child_parents p WHERE s.linked_user_id IS NOT NULL AND p.child_id=s.linked_user_id) AS parents FROM students s WHERE s.tutor_id=$1 AND s.deleted_at IS NULL ORDER BY s.created_at", [u.id]);
   const lessons = await q("SELECT l.* FROM lessons l JOIN students s ON s.id=l.student_id WHERE l.tutor_id=$1 AND l.deleted_at IS NULL AND s.deleted_at IS NULL ORDER BY l.date, l.time", [u.id]);
   const ts = await q("SELECT s.id, s.name, s.deleted_at, (SELECT count(*)::int FROM lessons l WHERE l.student_id=s.id AND l.deleted_at IS NULL) AS n FROM students s WHERE s.tutor_id=$1 AND s.deleted_at IS NOT NULL", [u.id]);
   const tl = await q("SELECT l.id, l.date, l.time, l.deleted_at, s.name FROM lessons l JOIN students s ON s.id=l.student_id WHERE l.tutor_id=$1 AND l.deleted_at IS NOT NULL AND s.deleted_at IS NULL", [u.id]);
@@ -177,17 +178,16 @@ async function tutorData(u: User) {
   return { students: students.map(mapStudent), lessons: lessons.map(mapLesson), trash, series: series.map((r: any) => ({ id: r.id, sid: r.student_id, freq: r.freq })) };
 }
 
-/** Connect a parent account with a child through the child's parent code (max. 2 parents per child). */
+/** Connect a parent account with a child's student account through the child's parent code (max. 2 parents per child). */
 async function linkParent(userId: string, code: string, db = pool as any) {
   const n = normCode(code);
   if (n.length !== 16) fail(400, "Kod ma 16 znaków (litery i cyfry), np. ABCD-EFGH-JKLM-NPQR.");
-  const s = (await q("SELECT * FROM students WHERE parent_code=$1 AND deleted_at IS NULL", [n], db))[0];
-  if (!s) fail(404, "Nie znaleziono kodu. Sprawdź kod lub poproś korepetytora o nowy.");
-  const ps = await q("SELECT user_id FROM student_parents WHERE student_id=$1", [s.id], db);
-  if (ps.some((p: any) => p.user_id === userId)) return s;
-  if (ps.length >= 2) fail(409, "Do tego ucznia są już połączone dwa konta rodziców.");
-  await q("INSERT INTO student_parents(student_id,user_id) VALUES ($1,$2)", [s.id, userId], db);
-  return s;
+  const c = (await q("SELECT id FROM users WHERE parent_code=$1 AND role='student' AND blocked_at IS NULL", [n], db))[0];
+  if (!c) fail(404, "Nie znaleziono kodu. Sprawdź kod lub poproś dziecko o nowy.");
+  const ps = await q("SELECT parent_id FROM child_parents WHERE child_id=$1", [c.id], db);
+  if (ps.some((p: any) => p.parent_id === userId)) return;
+  if (ps.length >= 2) fail(409, "Z kontem tego ucznia są już połączone dwa konta rodziców.");
+  await q("INSERT INTO child_parents(child_id,parent_id) VALUES ($1,$2)", [c.id, userId], db);
 }
 
 async function linkCode(userId: string, code: string, db = pool as any) {
@@ -599,52 +599,39 @@ export async function buildApp(opts: { logger?: boolean; authRateLimit?: number 
     return tutorData(u);
   });
 
-  /* ----- parent access (tutor's Pro plan) ----- */
-  app.post("/api/students/:id/parent-invite", async (req) => {
-    const u = await need(req, "tutor");
-    if (u.plan !== "pro") fail(402, "Dostęp dla rodzica jest dostępny w planie Pro.");
-    const id = (req.params as any).id;
-    await ownStudent(u.id, id);
-    for (let i = 0; i < 5; i++) {
-      try {
-        await q("DELETE FROM student_parents WHERE student_id=$1", [id]);
-        const r = (await q("UPDATE students SET parent_code=$2 WHERE id=$1 RETURNING *, 0 AS parents", [id, newInviteCode()]))[0];
-        return { student: mapStudent(r) };
-      } catch (e: any) { if (e.code !== "23505") throw e; }
-    }
-    return fail(500, "Nie udało się utworzyć kodu.");
-  });
-  app.delete("/api/students/:id/parent-invite", async (req) => {
-    const u = await need(req, "tutor");
-    const id = (req.params as any).id;
-    await ownStudent(u.id, id);
-    await q("DELETE FROM student_parents WHERE student_id=$1", [id]);
-    const r = (await q("UPDATE students SET parent_code=NULL WHERE id=$1 RETURNING *, 0 AS parents", [id]))[0];
-    return { student: mapStudent(r) };
-  });
-
+  /* ----- parent access (code created by the child in the student panel) ----- */
   app.get("/api/parent/data", async (req) => {
     const u = await need(req, "parent");
-    const kids = await q(`SELECT s.id, s.name, s.subject, t.plan AS tutor_plan, t.name AS tutor_name, t.brand AS tutor_brand, t.email AS tutor_email, t.settings AS tutor_settings
-      FROM student_parents p JOIN students s ON s.id=p.student_id JOIN users t ON t.id=s.tutor_id
-      WHERE p.user_id=$1 AND s.deleted_at IS NULL AND t.blocked_at IS NULL ORDER BY p.created_at`, [u.id]);
-    const ids = kids.filter((k: any) => k.tutor_plan === "pro").map((k: any) => k.id);
-    const ls = ids.length ? await q("SELECT * FROM lessons WHERE student_id = ANY($1::uuid[]) AND deleted_at IS NULL ORDER BY date, time", [ids]) : [];
+    const kids = await q(`SELECT c.id, c.name FROM child_parents p JOIN users c ON c.id=p.child_id
+      WHERE p.parent_id=$1 AND c.blocked_at IS NULL ORDER BY p.created_at`, [u.id]);
+    const ids = kids.map((k: any) => k.id);
+    const links = ids.length ? await q(`SELECT s.id, s.subject, s.linked_user_id, t.name AS tutor_name, t.brand AS tutor_brand, t.email AS tutor_email, t.settings AS tutor_settings
+      FROM students s JOIN users t ON t.id=s.tutor_id WHERE s.linked_user_id = ANY($1::uuid[]) AND s.deleted_at IS NULL AND t.blocked_at IS NULL ORDER BY s.created_at`, [ids]) : [];
+    const sids = links.map((s: any) => s.id);
+    const ls = sids.length ? await q("SELECT * FROM lessons WHERE student_id = ANY($1::uuid[]) AND deleted_at IS NULL ORDER BY date, time", [sids]) : [];
+    const ev = ids.length ? await q("SELECT * FROM student_events WHERE user_id = ANY($1::uuid[]) AND NOT hide_parent ORDER BY created_at", [ids]) : [];
+    const done = ids.length ? await q("SELECT user_id, lesson_id FROM homework_done WHERE user_id = ANY($1::uuid[])", [ids]) : [];
     return {
-      children: kids.map((k: any) => ({
-        sid: k.id, name: k.name, subject: k.subject, tutor: k.tutor_brand || k.tutor_name,
-        // the tutor turned Pro off: the parent keeps the connection but sees no data
-        locked: k.tutor_plan !== "pro",
-        contact: {
-          email: k.tutor_settings?.showEmail ? k.tutor_settings.cEmail || k.tutor_email : "",
-          phone: k.tutor_settings?.showPhone ? k.tutor_settings.cPhone || "" : "",
-        },
-        lessons: k.tutor_plan !== "pro" ? [] : ls.filter((l: any) => l.student_id === k.id).map((l: any) => ({
-          id: l.id, date: l.date, time: l.time, min: l.min, subject: l.subject || k.subject.split(",")[0].trim(), topic: l.topic, status: l.status,
-          notes: l.status === "done" ? l.notes : "", hw: l.status === "done" ? l.hw : "", hd: l.status === "done" ? l.hw_due || "" : "",
-          amount: l.status === "cancelled" ? l.fee : l.amount, paid: l.paid,
-        })),
-      })),
+      children: kids.map((k: any) => {
+        const ks = links.filter((s: any) => s.linked_user_id === k.id);
+        const dn = new Set(done.filter((d: any) => d.user_id === k.id).map((d: any) => d.lesson_id));
+        return {
+          cid: k.id, name: k.name,
+          tutors: ks.map((s: any) => ({
+            sid: s.id, tutor: s.tutor_brand || s.tutor_name, subject: s.subject,
+            contact: { email: s.tutor_settings?.showEmail ? s.tutor_settings.cEmail || s.tutor_email : "", phone: s.tutor_settings?.showPhone ? s.tutor_settings.cPhone || "" : "" },
+          })),
+          lessons: ls.filter((l: any) => ks.some((s: any) => s.id === l.student_id)).map((l: any) => {
+            const s = ks.find((x: any) => x.id === l.student_id);
+            return {
+              id: l.id, sid: s.id, tutor: s.tutor_brand || s.tutor_name, date: l.date, time: l.time, min: l.min, subject: l.subject || s.subject.split(",")[0].trim(), topic: l.topic, status: l.status,
+              notes: l.status === "done" ? l.notes : "", hw: l.status === "done" ? l.hw : "", hd: l.status === "done" ? l.hw_due || "" : "", hwDone: dn.has(l.id),
+              amount: l.status === "cancelled" ? l.fee : l.amount, paid: l.paid,
+            };
+          }),
+          events: ev.filter((e: any) => e.user_id === k.id).map(mapEvent),
+        };
+      }),
     };
   });
   app.post("/api/parent/link", authLimit, async (req) => {
@@ -653,12 +640,39 @@ export async function buildApp(opts: { logger?: boolean; authRateLimit?: number 
     await linkParent(u.id, b.code);
     return { ok: true };
   });
-  app.delete("/api/parent/link/:sid", async (req) => {
+  app.delete("/api/parent/link/:cid", async (req) => {
     const u = await need(req, "parent");
-    const sid = (req.params as any).sid;
-    if (!UUID.test(sid)) fail(404, "Nie znaleziono połączenia.");
-    await q("DELETE FROM student_parents WHERE student_id=$1 AND user_id=$2", [sid, u.id]);
+    const cid = (req.params as any).cid;
+    if (!UUID.test(cid)) fail(404, "Nie znaleziono połączenia.");
+    await q("DELETE FROM child_parents WHERE child_id=$1 AND parent_id=$2", [cid, u.id]);
     return { ok: true };
+  });
+
+  /* child side: the student creates the code and manages connected parents */
+  const parentInfo = async (id: string) => {
+    const me = (await q("SELECT parent_code FROM users WHERE id=$1", [id]))[0];
+    const ps = await q("SELECT u.id, u.name, u.email FROM child_parents p JOIN users u ON u.id=p.parent_id WHERE p.child_id=$1 ORDER BY p.created_at", [id]);
+    return { parentCode: me?.parent_code ? fmtCode(me.parent_code) : null, parents: ps.map((p: any) => ({ id: p.id, name: p.name, email: p.email })) };
+  };
+  app.post("/api/student/parent-code", async (req) => {
+    const u = await need(req, "student");
+    await tx(async (c) => {
+      await q("DELETE FROM child_parents WHERE child_id=$1", [u.id], c);
+      await q("UPDATE users SET parent_code=$2 WHERE id=$1", [u.id, newInviteCode()], c);
+    });
+    return parentInfo(u.id);
+  });
+  app.delete("/api/student/parent-code", async (req) => {
+    const u = await need(req, "student");
+    await q("DELETE FROM child_parents WHERE child_id=$1", [u.id]);
+    await q("UPDATE users SET parent_code=NULL WHERE id=$1", [u.id]);
+    return parentInfo(u.id);
+  });
+  app.delete("/api/student/parents/:id", async (req) => {
+    const u = await need(req, "student");
+    const id = (req.params as any).id;
+    if (UUID.test(id)) await q("DELETE FROM child_parents WHERE child_id=$1 AND parent_id=$2", [u.id, id]);
+    return parentInfo(u.id);
   });
 
   /* ----- student ----- */
@@ -685,6 +699,7 @@ export async function buildApp(opts: { logger?: boolean; authRateLimit?: number 
       })),
       events: ev.map(mapEvent),
       done: done.map((d: any) => d.lesson_id),
+      ...(await parentInfo(u.id)),
     };
   });
 
@@ -708,8 +723,8 @@ export async function buildApp(opts: { logger?: boolean; authRateLimit?: number 
     const u = await need(req, "student");
     const b = parse(eventIn, req.body);
     if ((await q("SELECT count(*)::int AS n FROM student_events WHERE user_id=$1", [u.id]))[0].n >= 500) fail(400, "Osiągnięto limit zajęć w grafiku.");
-    const r = (await q("INSERT INTO student_events(user_id,title,cat,repeat,weekday,date,start_time,end_time) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *",
-      [u.id, b.title, b.cat, b.repeat, b.weekday, b.repeat === "o" ? b.date : null, b.start, b.end]))[0];
+    const r = (await q("INSERT INTO student_events(user_id,title,cat,repeat,weekday,date,start_time,end_time,hide_parent) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *",
+      [u.id, b.title, b.cat, b.repeat, b.weekday, b.repeat === "o" ? b.date : null, b.start, b.end, b.hideParent]))[0];
     return { event: mapEvent(r) };
   });
 
@@ -718,8 +733,8 @@ export async function buildApp(opts: { logger?: boolean; authRateLimit?: number 
     const id = (req.params as any).id;
     if (!UUID.test(id)) fail(404, "Nie znaleziono zajęć.");
     const b = parse(eventIn, req.body);
-    const r = (await q("UPDATE student_events SET title=$3,cat=$4,repeat=$5,weekday=$6,date=$7,start_time=$8,end_time=$9 WHERE id=$1 AND user_id=$2 RETURNING *",
-      [id, u.id, b.title, b.cat, b.repeat, b.weekday, b.repeat === "o" ? b.date : null, b.start, b.end]))[0];
+    const r = (await q("UPDATE student_events SET title=$3,cat=$4,repeat=$5,weekday=$6,date=$7,start_time=$8,end_time=$9,hide_parent=$10 WHERE id=$1 AND user_id=$2 RETURNING *",
+      [id, u.id, b.title, b.cat, b.repeat, b.weekday, b.repeat === "o" ? b.date : null, b.start, b.end, b.hideParent]))[0];
     if (!r) fail(404, "Nie znaleziono zajęć.");
     return { event: mapEvent(r) };
   });
@@ -738,8 +753,8 @@ export async function buildApp(opts: { logger?: boolean; authRateLimit?: number 
     const evs = b.events.map((e: any) => parse(eventIn, e));
     await tx(async (c) => {
       await q("DELETE FROM student_events WHERE user_id=$1", [u.id], c);
-      for (const e of evs) await q("INSERT INTO student_events(user_id,title,cat,repeat,weekday,date,start_time,end_time) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)",
-        [u.id, e.title, e.cat, e.repeat, e.weekday, e.repeat === "o" ? e.date : null, e.start, e.end], c);
+      for (const e of evs) await q("INSERT INTO student_events(user_id,title,cat,repeat,weekday,date,start_time,end_time,hide_parent) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+        [u.id, e.title, e.cat, e.repeat, e.weekday, e.repeat === "o" ? e.date : null, e.start, e.end, e.hideParent], c);
     });
     return { ok: true, count: evs.length };
   });
@@ -829,7 +844,7 @@ export async function buildApp(opts: { logger?: boolean; authRateLimit?: number 
         (SELECT count(*)::int FROM students s WHERE s.tutor_id=u.id AND s.deleted_at IS NULL) AS students,
         (SELECT count(*)::int FROM lessons l WHERE l.tutor_id=u.id AND l.deleted_at IS NULL) AS lessons,
         (SELECT count(*)::int FROM students s WHERE s.linked_user_id=u.id AND s.deleted_at IS NULL) AS tutors,
-        (SELECT count(*)::int FROM student_parents p WHERE p.user_id=u.id) AS kids
+        (SELECT count(*)::int FROM child_parents p WHERE p.parent_id=u.id) AS kids
       FROM users u WHERE ${where} ORDER BY u.created_at DESC LIMIT 50 OFFSET $4`, [term, b.role, b.status, b.offset]);
     return {
       total,

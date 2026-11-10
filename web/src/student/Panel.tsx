@@ -12,8 +12,9 @@ import { tr } from "../lib/i18n";
 
 type SLesson = { id: string; date: string; time: string; min: number; subject: string; topic: string; status: "planned" | "done" | "cancelled"; notes: string; hw: string; hd: string; amount: number; paid: boolean; cr: CancelRequest | null };
 type Link = { sid: string; tutor: string; studentName: string; subject: string; contact?: { email: string; phone: string }; lessons: SLesson[] };
-type Ev = { id: string; title: string; cat: string; repeat: "w" | "o"; weekday: number; date: string; start: string; end: string };
-type Data = { links: Link[]; events: Ev[]; done: string[] };
+type Ev = { id: string; title: string; cat: string; repeat: "w" | "o"; weekday: number; date: string; start: string; end: string; hideParent?: boolean };
+type Parent = { id: string; name: string; email: string };
+type Data = { links: Link[]; events: Ev[]; done: string[]; parentCode: string | null; parents: Parent[] };
 type L = SLesson & { tutor: string; sid: string };
 const CATS: Record<string, string> = { school: tr("Szkoła"), tutor: tr("Korepetycje spoza TutorTrack"), extra: tr("Zajęcia dodatkowe"), other: tr("Inne") };
 /** Two time ranges ("HH:MM") overlap. */
@@ -110,7 +111,7 @@ export function StudentPanel() {
         {l.cr?.status === "pending" && <button className="btn d" style={{ marginRight: "auto" }} onClick={() => { ov.close(); run(() => api("DELETE", `/api/student/lessons/${l.id}/cancel-request`), tr("Prośba o odwołanie wycofana.")); }}>{tr("Wycofaj prośbę")}</button>}
         <button className="btn" onClick={ov.close}>{tr("Zamknij")}</button>{l.hw && <button className="btn p" onClick={() => toggleHw(l.id, true)}>{done.has(l.id) ? tr("Cofnij: niezrobione") : tr("Oznacz zadanie jako zrobione")}</button>}</div></>);
   };
-  const evForm = (e?: Ev) => ov.modal(<EvForm e={e} lessons={all} events={d!.events} onSave={(b) => run(() => (e ? api("PATCH", "/api/student/events/" + e.id, b) : api("POST", "/api/student/events", b)), e ? tr("Zapisano zmiany.") : tr("Dodano zajęcia."))}
+  const evForm = (e?: Ev) => ov.modal(<EvForm e={e} lessons={all} events={d!.events} par={d!.parents.length > 0} onSave={(b) => run(() => (e ? api("PATCH", "/api/student/events/" + e.id, b) : api("POST", "/api/student/events", b)), e ? tr("Zapisano zmiany.") : tr("Dodano zajęcia."))}
     onDel={e ? () => ov.confirm({ title: tr("Usunąć zajęcia?"), text: tr("Zajęcia znikną z Twojej listy zajęć."), ok: tr("Usuń"), danger: true, onOk: () => { run(() => api("DELETE", "/api/student/events/" + e.id), tr("Usunięto zajęcia.")); } }) : undefined} />);
   const out = () => ov.confirm({ title: tr("Wylogować się?"), text: tr("Twoje dane są bezpiecznie zapisane na koncie."), ok: tr("Wyloguj się"), onOk: logout });
 
@@ -283,10 +284,10 @@ export function StudentPanel() {
   </>;
 }
 
-function EvForm({ e, lessons, events, onSave, onDel }: { e?: Ev; lessons: L[]; events: Ev[]; onSave: (b: object) => Promise<boolean>; onDel?: () => void }) {
+function EvForm({ e, lessons, events, par, onSave, onDel }: { e?: Ev; lessons: L[]; events: Ev[]; par: boolean; onSave: (b: object) => Promise<boolean>; onDel?: () => void }) {
   const { close } = useOverlay();
   const [conf, setConf] = useState<{ key: string; list: string[] } | null>(null);
-  const [f, setF] = useState(e ? { ...e } : { title: "", cat: "school", repeat: "w" as "w" | "o", weekday: (new Date().getDay() + 6) % 7, date: ymd(new Date()), start: "16:00", end: "17:00" });
+  const [f, setF] = useState(e ? { ...e } : { title: "", cat: "school", repeat: "w" as "w" | "o", weekday: (new Date().getDay() + 6) % 7, date: ymd(new Date()), start: "16:00", end: "17:00", hideParent: false });
   const [er, setEr] = useState<Record<string, string>>({});
   // any change of day or time invalidates an earlier overlap warning
   useEffect(() => { setConf(null); }, [f.repeat, f.weekday, f.date, f.start, f.end]);
@@ -304,7 +305,7 @@ function EvForm({ e, lessons, events, onSave, onDel }: { e?: Ev; lessons: L[]; e
     ];
     const key = JSON.stringify([f.repeat, f.weekday, f.date, f.start, f.end]);
     if (list.length && conf?.key !== key) { setConf({ key, list }); return; }
-    if (await onSave({ title: f.title.trim(), cat: f.cat, repeat: f.repeat, weekday: f.weekday, date: f.repeat === "o" ? f.date : "", start: f.start, end: f.end })) close();
+    if (await onSave({ title: f.title.trim(), cat: f.cat, repeat: f.repeat, weekday: f.weekday, date: f.repeat === "o" ? f.date : "", start: f.start, end: f.end, hideParent: !!f.hideParent })) close();
   };
   return <><h2>{e ? tr("Edytuj zajęcia") : tr("Dodaj zajęcia")}</h2>
     <Field id="et" label={tr("Nazwa *")} value={f.title} onChange={(v) => setF({ ...f, title: v })} error={er.title} placeholder={tr("Np. Szkoła, Basen, Chemia u p. Kowalskiej")} />
@@ -313,6 +314,7 @@ function EvForm({ e, lessons, events, onSave, onDel }: { e?: Ev; lessons: L[]; e
     {f.repeat === "w" ? <div className="f"><label htmlFor="ewd">{tr("Dzień tygodnia")}</label><select id="ewd" value={f.weekday} onChange={(x) => setF({ ...f, weekday: +x.target.value })}>{WDL.map((n, i) => <option key={i} value={i}>{n}</option>)}</select></div>
       : <Field id="edt" label={tr("Data *")} type="date" value={f.date} onChange={(v) => setF({ ...f, date: v })} error={er.date} />}
     <div className="f2"><Field id="es" label={tr("Od *")} type="time" value={f.start} onChange={(v) => setF({ ...f, start: v })} error={er.start} /><Field id="ee" label={tr("Do *")} type="time" value={f.end} onChange={(v) => setF({ ...f, end: v })} error={er.end} /></div>
+    {par && <div className="chk" style={{ margin: "4px 0 10px" }}><input type="checkbox" id="ehp" checked={!!f.hideParent} onChange={(x) => setF({ ...f, hideParent: x.target.checked })} /><label htmlFor="ehp">{tr("Ukryj te zajęcia przed rodzicem")}</label></div>}
     {conf && <div className="lerr" role="alert"><b>{tr("Te zajęcia nakładają się na:")}</b><ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>{conf.list.slice(0, 5).map((t) => <li key={t}>{t}</li>)}</ul>{conf.list.length > 5 && <div>{tr("…i jeszcze")}{" "}{conf.list.length - 5}</div>}<div style={{ marginTop: 6 }}>{tr("Zmień godzinę albo zapisz mimo to.")}</div></div>}
     <div className="mf">{onDel && <button className="btn d" style={{ marginRight: "auto" }} onClick={onDel}>{tr("Usuń")}</button>}<button className="btn" onClick={close}>{tr("Anuluj")}</button><button className="btn p" onClick={save}>{conf && conf.key === JSON.stringify([f.repeat, f.weekday, f.date, f.start, f.end]) ? tr("Zapisz mimo to") : tr("Zapisz")}</button></div></>;
 }
@@ -360,6 +362,7 @@ function KontoTab({ out, d, load, go }: { out: () => void; d: Data; load: () => 
             }); };
             f.click();
           }}>{tr("Importuj zajęcia")}</button></div></div>,
+    rodzic: <ParentAccess d={d} load={load} />,
     haslo: <div className="card"><h2>{tr("Konto i bezpieczeństwo")}</h2><div className="acts"><button className="btn" onClick={() => ov.modal(<ChangePassword />)}>{tr("Zmień hasło")}</button><button className="btn d" onClick={() => ov.modal(<DeleteAccount onDone={() => { setUser(null); logout(); }} />)}>{tr("Usuń konto")}</button></div></div>,
   };
   if (sec && SEC[sec]) return <div className="ssec">
@@ -369,7 +372,7 @@ function KontoTab({ out, d, load, go }: { out: () => void; d: Data; load: () => 
   return <div className="slist">
     <div className="sgrp"><button className="sitem sme" onClick={() => setSec("profil")}><span className="sav">{(user!.name || "?").charAt(0).toUpperCase()}</span><b>{user!.name}<small>{tr("Panel ucznia ·")}{" "}{user!.email}</small></b><Ic n="chev" s={16} /></button></div>
     <div className="sgt">{tr("Konto")}</div>
-    <div className="sgrp">{I("haslo", tr("Hasło i bezpieczeństwo"), "lock")}</div>
+    <div className="sgrp">{I("rodzic", tr("Dostęp dla rodzica"), "users", d.parents.length ? String(d.parents.length) : d.parentCode ? tr("włączony") : tr("wyłączony"))}{I("haslo", tr("Hasło i bezpieczeństwo"), "lock")}</div>
     <div className="sgt">{tr("Nauka")}</div>
     <div className="sgrp">{I("sum", tr("Podsumowanie miesiąca"), "chart", undefined, () => go("sum"))}{I("kopia", tr("Kopia zajęć"), "download", d.events.length ? String(d.events.length) + tr(" zajęć") : undefined)}</div>
     <div className="sgt">{tr("Aplikacja")}</div>
@@ -377,6 +380,33 @@ function KontoTab({ out, d, load, go }: { out: () => void; d: Data; load: () => 
     {user!.isAdmin && <div className="sgrp" style={{ marginTop: 16 }}>{I("adm", tr("Panel administratora"), "alert", undefined, () => navigate("/admin"))}</div>}
     <button className="slogout" onClick={out}><Ic n="out" s={18} />{tr("Wyloguj się")}</button>
   </div>;
+}
+
+/** The child creates a code for a parent and manages connected parents (max. 2). */
+function ParentAccess({ d, load }: { d: Data; load: () => Promise<void> }) {
+  const ov = useOverlay();
+  const { user } = useAuth();
+  const act = async (fn: () => Promise<unknown>, ok: string) => { try { await fn(); await load(); ov.toast(ok); } catch (x) { ov.toast(errMsg(x)); } };
+  const create = () => act(() => api("POST", "/api/student/parent-code"), tr("Kod utworzony."));
+  const intro = <p className="hint" style={{ margin: "-6px 0 12px" }}>{tr("Rodzic zobaczy Twoje lekcje od wszystkich korepetytorów, notatki po zajęciach, zadania (także czy są zrobione), kwoty i płatności oraz Twoje zajęcia z planu – poza tymi, które ukryjesz. Rodzic niczego nie może zmieniać.")}</p>;
+  if (!d.parentCode) return <div className="card"><h2>{tr("Dostęp dla rodzica")}</h2>{intro}
+    <button className="btn p" onClick={create}>{tr("Utwórz kod dostępu")}</button></div>;
+  const msg = tr("Cześć! Moje lekcje, zadania i plan zajęć zobaczysz w panelu rodzica TutorTrack.\n1. Załóż bezpłatne konto: {0}/rodzic/rejestracja\n2. Wpisz kod: {1}", location.origin, d.parentCode);
+  return <>
+    <div className="card"><h2>{tr("Dostęp dla rodzica")}</h2>{intro}
+      <p className="hint" style={{ margin: "0 0 4px" }}>{tr("Kod dostępu")}</p>
+      <div className="code">{d.parentCode}</div>
+      <div className="f" style={{ marginTop: 12 }}><label htmlFor="pmsg">{tr("Wiadomość dla rodzica")}</label><textarea id="pmsg" rows={4} readOnly value={msg} /></div>
+      <div className="acts"><button className="btn p" onClick={async () => ov.toast((await copyText(msg)) ? tr("Skopiowano.") : tr("Zaznacz tekst i skopiuj go ręcznie."))}>{tr("Kopiuj wiadomość")}</button>
+        <button className="btn only-m" onClick={() => shareText(tr("Panel rodzica – ") + user!.name, msg)}>{tr("Udostępnij")}</button>
+        <button className="btn" onClick={() => ov.confirm({ title: tr("Utworzyć nowy kod?"), text: tr("Stary kod przestanie działać, a połączeni rodzice zostaną odłączeni."), ok: tr("Utwórz nowy kod"), onOk: create })}>{tr("Nowy kod")}</button>
+        <button className="btn d" onClick={() => ov.confirm({ title: tr("Wyłączyć dostęp rodzica?"), text: tr("Rodzice przestaną widzieć Twoje lekcje i plan."), ok: tr("Wyłącz dostęp"), danger: true, onOk: () => act(() => api("DELETE", "/api/student/parent-code"), tr("Dostęp rodzica wyłączony.")) })}>{tr("Wyłącz dostęp")}</button></div></div>
+    <div className="card" style={{ marginTop: 16 }}><h2>{tr("Połączeni rodzice")}{" "}<span className="hint" style={{ fontWeight: 500 }}>{d.parents.length} / 2</span></h2>
+      {d.parents.length ? d.parents.map((p) => <div className="row" key={p.id}><div className="av">{(p.name || "?").charAt(0).toUpperCase()}</div><div className="m"><b>{p.name}</b><span>{p.email}</span></div>
+        <button className="btn s d" onClick={() => ov.confirm({ title: tr("Odłączyć rodzica?"), text: tr("{0} przestanie widzieć Twoje lekcje i plan.", p.name), ok: tr("Odłącz"), danger: true, onOk: () => act(() => api("DELETE", "/api/student/parents/" + p.id), tr("Odłączono.")) })}>{tr("Odłącz")}</button></div>)
+        : <p className="hint" style={{ margin: 0 }}>{tr("Nikt jeszcze nie wpisał kodu.")}</p>}
+      <p className="hint" style={{ marginTop: 12 }}>{tr("Zajęcia, których rodzic ma nie widzieć, ukryjesz w oknie zajęć: „Ukryj te zajęcia przed rodzicem”.")}</p></div>
+  </>;
 }
 
 function CancelRequestForm({ l, onSent }: { l: L; onSent: () => Promise<void> }) {
