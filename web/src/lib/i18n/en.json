@@ -1265,5 +1265,8 @@
 "w trakcie": "during",
 "w trakcie: {0}": "during: {0}",
 "Ukryj": "Hide",
-"Pokaż": "Show"
+"Pokaż": "Show",
+"Kolejność": "Order",
+"Od najnowszych": "Newest first",
+"Od najstarszych": "Oldest first"
 }

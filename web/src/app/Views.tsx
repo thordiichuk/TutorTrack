@@ -258,11 +258,12 @@ function LessonsList() {
 function StudentLessons({ sid, list, view, setView, clear }: { sid: string; list: Lesson[]; view: "up" | "past" | "all"; setView: (v: "up" | "past" | "all") => void; clear: () => void }) {
   const { stu } = useData();
   const { modal } = useOverlay();
+  const [ord, setOrd] = useState<1 | -1>(-1);
   const s = stu(sid);
   const td = ymd(new Date());
   const up = sortL(list.filter((l) => l.date >= td && l.status === "planned"), 1);
   const past = sortL(list.filter((l) => !(l.date >= td && l.status === "planned")), -1);
-  const shown = view === "up" ? up : view === "past" ? past : sortL(list, -1);
+  const shown = view === "up" ? up : view === "past" ? past : sortL(list, ord);
   const due = sumAmt(list.filter((l) => billable(l)), (l) => !l.paid);
   const done = list.filter((l) => l.status === "done").length;
   const months: [string, Lesson[]][] = [];
@@ -281,6 +282,7 @@ function StudentLessons({ sid, list, view, setView, clear }: { sid: string; list
       <button className="btn s" onClick={() => modal(<StudentDetail id={sid} noHistory />, true)}>{tr("Szczegóły ucznia")}</button>
     </div>
     <div className="seg stseg" role="group" aria-label={tr("Pokaż lekcje")}>{V.map(([k, t, n]) => <button key={k} aria-pressed={view === k} onClick={() => setView(k)}>{t} <span className="segn">{n}</span></button>)}</div>
+    {view === "all" && list.length > 1 && <div className="chips ordsw" role="group" aria-label={tr("Kolejność")}>{([[-1, tr("Od najnowszych")], [1, tr("Od najstarszych")]] as const).map(([o, t]) => <button key={o} type="button" className={"chip" + (ord === o ? " on" : "")} aria-pressed={ord === o} onClick={() => setOrd(o)}>{o === -1 ? "↓ " : "↑ "}{t}</button>)}</div>}
     {!months.length ? <div className="card"><Empty icon="book" title={view === "up" ? tr("Brak zaplanowanych lekcji") : tr("Brak lekcji")} sub={view === "up" ? tr("Dodaj lekcję przyciskiem „+”.") : tr("Żadna lekcja nie pasuje do filtrów.")} /></div>
       : <div className="days">{months.map(([k, ls]) => { const sum = sumAmt(ls.filter(billable), () => true); const t = fm(k);
         return <section className="dgrp" key={k}><div className="dgh"><b>{t.charAt(0).toUpperCase() + t.slice(1)}</b><span>{lekcje(ls.length)}{sum ? " · " + pln(sum).replace(",00", "") : ""}</span></div>
