@@ -36,7 +36,7 @@ Na adresy e-mail kont testowych możesz użyć np. `kor1.test@example.com`, `kor
 
 U korepetytora nr 1: **Uczniowie → Ola Kowalska**:
 - **„Udostępnij uczniowi”** → **„Utwórz kod dostępu”** → zapisz kod (dla ucznia).
-- **„Dostęp dla rodzica”** → **„Utwórz kod od korepetytora”** → zapisz kod (dla rodzica).
+- **„Dostęp dla rodzica”** → **„Utwórz kod dostępu”** → zapisz kod (dla rodzica).
 
 ## 3. Korepetytor nr 2 (Free) – drugi korepetytor tej samej uczennicy
 

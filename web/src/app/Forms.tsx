@@ -392,7 +392,7 @@ export function ParentShareModal({ id }: { id: string }) {
     <h2>{tr("Dostęp dla rodzica")}</h2>
     <p>{tr("Rodzic ucznia ({0}) założy bezpłatne konto rodzica i wpisze kod – zobaczy lekcje dziecka, notatki po zajęciach, prace domowe i płatności.", s.name)}</p>
     <p className="hint">{tr("Rodzic widzi: terminy, tematy i statusy lekcji, notatki po zajęciach, prace domowe, kwoty i status płatności. Nie widzi notatek przed zajęciami ani innych uczniów i niczego nie może zmieniać. Kod mogą wpisać maksymalnie dwa konta rodziców.")}</p>
-    <div className="mf"><button className="btn" onClick={close}>{tr("Anuluj")}</button><button className="btn p" onClick={create}>{tr("Utwórz kod od korepetytora")}</button></div>
+    <div className="mf"><button className="btn" onClick={close}>{tr("Anuluj")}</button><button className="btn p" onClick={create}>{tr("Utwórz kod dostępu")}</button></div>
   </>;
   const msg = tr("Dzień dobry! Lekcje, notatki i płatności ucznia ({0}) można śledzić w panelu rodzica TutorTrack.\n1. Proszę założyć bezpłatne konto: {1}/rodzic/rejestracja\n2. Wpisać kod od korepetytora: {2}", s.name, APP_URL, s.parentCode);
   const n = s.parents || 0;
