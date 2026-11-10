@@ -161,3 +161,10 @@ export async function shareText(title: string, text: string) {
   download(title.replace(/[^\p{L}\p{N} _-]+/gu, "").trim().replace(/\s+/g, "-") + ".txt", text, "text/plain;charset=utf-8");
   return "downloaded";
 }
+
+/** Compare people by surname (last word of the name), then by the full name. */
+export function bySurname(a: { name: string }, b: { name: string }) {
+  const last = (n: string) => { const p = n.trim().split(/\s+/); return p[p.length - 1]; };
+  const cmp = (x: string, y: string) => x.localeCompare(y, "pl", { sensitivity: "base" });
+  return cmp(last(a.name), last(b.name)) || cmp(a.name, b.name);
+}

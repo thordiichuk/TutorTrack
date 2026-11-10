@@ -5,6 +5,7 @@ import { navigate } from "../lib/router";
 import {
   amt, billable, cq, download, fd, fm, FREE, gStr, Lesson, MSHORT, pad, pd, pln, PRO_PLN, sortL, subjList, sumAmt, te, toG, ym, ymd, pwOk, copyText, subjRates,
   lekcje, addDays, WDL, subjColor, WDSHORT, MGEN,
+  bySurname,
 } from "../lib/util";
 import { useAuth, useTutor } from "../state";
 import { errMsg, Field, useOverlay } from "../ui/overlay";
@@ -130,7 +131,7 @@ export function Students() {
   const cmp = (a: string, b: string) => a.localeCompare(b, "pl", { sensitivity: "base" });
   if (ui.so === "az") list.sort((a, b) => cmp(a.name, b.name));
   else if (ui.so === "za") list.sort((a, b) => cmp(b.name, a.name));
-  else if (ui.so === "ln") list.sort((a, b) => cmp(last(a.name), last(b.name)) || cmp(a.name, b.name));
+  else if (ui.so === "ln") list.sort(bySurname);
   const pro = user?.plan === "pro";
   return <>
     <div className="bar sbar"><input type="search" placeholder={tr("Szukaj: imię, nazwisko, przedmiot")} value={ui.q} aria-label={tr("Szukaj ucznia")} onChange={(e) => setUi((u) => ({ ...u, q: e.target.value }))} />
@@ -227,7 +228,7 @@ function LessonsList() {
         <button className={"chip" + (mode === "pay" ? " on" : "")} aria-pressed={mode === "pay"} onClick={() => setF({ m: "pay" })}>{tr("Do opłacenia") + (nPay ? " · " + nPay : "")}</button></div>
     </div>
     <div className="lbar3">
-      <label className="stpick"><Ic n="users" s={16} /><select aria-label={tr("Uczeń")} value={f.st} onChange={(e) => setF({ st: e.target.value, sv: "up" })}><option value="">{tr("Wszyscy uczniowie")}</option>{[...students].sort((a, b) => a.name.localeCompare(b.name, "pl")).map((s) => <option key={s.id} value={s.id}>{s.name}{s.active ? "" : tr(" (zarchiwizowany)")}</option>)}</select></label>
+      <label className="stpick"><Ic n="users" s={16} /><select aria-label={tr("Uczeń")} value={f.st} onChange={(e) => setF({ st: e.target.value, sv: "up" })}><option value="">{tr("Wszyscy uczniowie")}</option>{[...students].sort(bySurname).map((s) => <option key={s.id} value={s.id}>{s.name}{s.active ? "" : tr(" (zarchiwizowany)")}</option>)}</select></label>
       <button className={"btn s" + (nf - (f.st ? 1 : 0) ? " p" : "")} aria-expanded={open} onClick={() => setOpen(!open)}>{tr("Filtry")}{nf - (f.st ? 1 : 0) ? ` · ${nf - (f.st ? 1 : 0)}` : ""}</button>
     </div>
     {open && <div className="fpanel">

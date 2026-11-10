@@ -3,6 +3,7 @@ import { api, isDemo } from "../lib/api";
 import {
   printText, shareText, FREE, calc, cancelFee, copyText, emailOk, fd, fm, gStr, Lesson, lev, MSHORT, overlap, pd, pln, rateFor, sortL, Student, subjList, toG, ymd, amt, billable, sumAmt, te,
   subjRates,
+  bySurname,
 } from "../lib/util";
 import { useAuth, useTutor } from "../state";
 import { errMsg, Field, useOverlay } from "../ui/overlay";
@@ -114,7 +115,7 @@ export function LessonForm({ l, pre, draft }: { l?: Lesson; pre?: string; draft?
   const { students, lessons, stu } = useData();
   const { run } = useTutor();
   const { close, modal } = useOverlay();
-  const act = students.filter((s) => s.active || (l && s.id === l.sid));
+  const act = students.filter((s) => s.active || (l && s.id === l.sid)).sort(bySurname);
   const first = stu(pre || "") || act[0];
   const init: Lesson = l ? { ...l } : {
     id: "", sid: first.id, subject: subjList(first)[0] || "", date: ymd(new Date()), time: user?.settings.time || "16:00", min: user?.settings.dur || 60,
