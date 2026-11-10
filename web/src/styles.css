@@ -524,3 +524,9 @@ button.tile{text-align:left;font:inherit;cursor:pointer;width:100%}
 .ptut{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px}.ptut b.am{color:var(--am);font-size:17px}
 .pwk{display:flex;align-items:center;gap:8px;margin-bottom:4px}
 .ssec .code{font-size:clamp(16px,5.2vw,26px);letter-spacing:1px;white-space:nowrap}
+/* today highlight in student and parent panels (same as tutor list) */
+.srow.tday{background:var(--acl);box-shadow:inset 3px 0 0 var(--ac)}.srow.tday .tm{color:var(--ac)}
+.card.pday.today,.pdg.today .dgl{border:2px solid var(--ac)!important;box-shadow:0 0 0 4px var(--acl)!important}
+body.stu .pcol.td{border:2px solid var(--ac);box-shadow:0 0 0 4px var(--acl)}
+.pch .tdtag{font-size:10px;padding:1px 6px;vertical-align:middle;text-transform:none}
+.pdayh{display:none!important}@media (max-width:860px){.pdayh{display:flex!important}}

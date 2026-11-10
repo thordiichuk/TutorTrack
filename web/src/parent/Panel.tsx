@@ -81,7 +81,8 @@ export function ParentPanel() {
     {(() => { const k = contact(l.sid); return k && (k.email || k.phone) ? <p className="ktc" style={{ marginTop: 10 }}>{k.email && <a href={"mailto:" + k.email}>✉️ {k.email}</a>}{k.phone && <a href={"tel:" + k.phone.replace(/\s/g, "")}>📞 {k.phone}</a>}</p> : null; })()}
     <div className="mf"><button className="btn p" onClick={ov.close}>{tr("Zamknij")}</button></div></>);
   const multi = (c?.tutors.length || 0) > 1;
-  const lrow = (l: PLesson) => <button type="button" key={l.id} className={"srow" + (l.status === "cancelled" ? " cx" : "")} onClick={() => lessonModal(l)}>
+  const TD = ymd(new Date());
+  const lrow = (l: PLesson) => <button type="button" key={l.id} className={"srow" + (l.status === "cancelled" ? " cx" : "") + (l.date === TD ? " tday" : "")} onClick={() => lessonModal(l)}>
     <span className="tm">{sdate(l.date)}<small>{l.time}</small></span><span className="sb" />
     <span className="m"><b>{l.subject || tr("Lekcja")}{l.topic ? " · " + l.topic : ""}</b><span>{multi ? l.tutor + " · " : ""}{l.status === "done" ? l.notes || tr("bez notatki") : l.status === "cancelled" ? tr("Odwołana") : l.min + " " + tr("min")}</span></span>
     {l.status === "planned" ? null : billable(l) ? l.paid ? <span className="tag gr">{tr("Opłacona")}</span> : <span className="tag am">{pln(l.amount).replace(",00", "")}</span> : null}</button>;
@@ -179,11 +180,11 @@ export function ParentPanel() {
           ...ls.filter((l) => l.date === dd).map((l) => ({ s: l.time, e: te(l.time, l.min), l })),
           ...c!.events.filter((e) => (e.repeat === "w" ? e.weekday === i : e.date === dd)).map((e) => ({ s: e.start, e: e.end, ev: e })),
         ].sort((a, b) => a.s.localeCompare(b.s));
-        return <div key={dd} style={{ marginTop: 12 }}><div className="pmh"><b style={dd === td ? { color: "var(--ac)" } : undefined}>{dd === td ? tr("Dziś") : WDL[i]}</b><span>{sdate(dd)}</span></div>
-          <div className="card" style={{ padding: "4px 14px" }}>{items.length ? items.map((x, k) => "l" in x && x.l
+        return <section key={dd} className={"dgrp pdg" + (dd === td ? " today" : "")} style={{ marginTop: 12 }}><div className={"dgh" + (dd === td ? " td" : "")}><b>{dd === td ? tr("Dziś") : WDL[i]}</b>{dd === td && <i className="tdtag">{tr("dzisiaj")}</i>}<span>{sdate(dd)}</span></div>
+          <div className="card dgl" style={{ padding: "4px 14px" }}>{items.length ? items.map((x, k) => "l" in x && x.l
             ? <button type="button" key={k} className={"srow" + (x.l.status === "cancelled" ? " cx" : "")} onClick={() => lessonModal(x.l!)}><span className="tm">{x.s}<small>{x.e}</small></span><span className="sb" /><span className="m"><b>{x.l.subject || tr("Lekcja")}{x.l.topic ? " · " + x.l.topic : ""}</b><span>{x.l.tutor}</span></span>{x.l.status === "cancelled" && <span className="tag rd">{tr("Odwołana")}</span>}</button>
             : <div key={k} className="srow" style={{ cursor: "default" }}><span className="tm">{x.s}<small>{x.e}</small></span><span className="sb o" /><span className="m"><b>{(x as any).ev.title}</b><span>{CATS[(x as any).ev.cat] || tr("Inne")}</span></span></div>)
-            : <p className="hint" style={{ margin: "10px 0" }}>{tr("Brak zajęć.")}</p>}</div></div>;
+            : <p className="hint" style={{ margin: "10px 0" }}>{tr("Brak zajęć.")}</p>}</div></section>;
       })}
       <p className="hint" style={{ marginTop: 12 }}><span className="sb" style={{ display: "inline-block", width: 4, height: 12, verticalAlign: "middle", marginRight: 6 }} />{tr("lekcje od korepetytorów")}{"  "}<span className="sb o" style={{ display: "inline-block", width: 4, height: 12, verticalAlign: "middle", margin: "0 6px 0 12px" }} />{tr("własne zajęcia dziecka")}</p>
     </>;

@@ -130,7 +130,7 @@ export function StudentPanel() {
     const wdToday = (now.getDay() + 6) % 7;
     const today = [...all.filter((l) => l.date === td).map((l) => ({ s: l.time, e: te(l.time, l.min), l })), ...d!.events.filter((e) => (e.repeat === "w" ? e.weekday === wdToday : e.date === td)).map((e) => ({ s: e.start, e: e.end, ev: e }))].sort((a, b) => a.s.localeCompare(b.s));
     const nextLabel = next ? (next.date === td ? tr("dziś") : next.date === addDays(1) ? tr("jutro") : WDSHORT[pd(next.date).getDay()]) + " " + next.time : "—";
-    const lrow = (l: L, when = false) => <button type="button" key={l.id} className={"srow" + (l.status === "cancelled" ? " cx" : "")} onClick={() => lessonModal(l.id)}>
+    const lrow = (l: L, when = false) => <button type="button" key={l.id} className={"srow" + (l.status === "cancelled" ? " cx" : "") + (when && l.date === td ? " tday" : "")} onClick={() => lessonModal(l.id)}>
       <span className="tm">{when ? <>{l.date === td ? tr("Dziś") : l.date === addDays(1) ? tr("Jutro") : pd(l.date).getDate() + " " + MSHORT[pd(l.date).getMonth()]}<small>{l.time}</small></> : <>{l.time}<small>{te(l.time, l.min)}</small></>}</span><span className="sb" />
       <span className="m"><b>{l.subject || tr("Lekcja")}</b><span>{l.tutor}{l.topic ? " · " + l.topic : ""}</span></span>{shortTag(l, false)}</button>;
     return <>
@@ -182,10 +182,11 @@ export function StudentPanel() {
       {/* phone: day picker + agenda of one day */}
       <div className="dstrip" role="tablist" aria-label={tr("Dzień tygodnia")}>{days.map((x, i) => <button key={x.ds} role="tab" aria-selected={i === cur} className={(i === cur ? "on" : "") + (x.ds === td ? " td" : "")} onClick={() => setSel(i)}>
         <small>{WDSHORT[x.day.getDay()].replace(".", "")}</small><b>{x.day.getDate()}</b><span className="dots">{x.it.some((y) => y.l && y.l.status !== "cancelled") && <i className="les" />}{x.it.some((y) => y.ev) && <i className="own" />}</span></button>)}</div>
-      <div className="card pday">{days[cur].it.length ? days[cur].it.map(block) : <p className="hint" style={{ margin: 0, textAlign: "center" }}>{tr("Wolny dzień – brak lekcji i zajęć.")}</p>}</div>
+      <div className={"dgh pdayh" + (days[cur].ds === td ? " td" : "")} style={{ marginTop: 4 }}><b>{days[cur].ds === td ? tr("Dziś") : WDL[cur]}</b>{days[cur].ds === td && <i className="tdtag">{tr("dzisiaj")}</i>}<span>{days[cur].day.getDate()} {MSHORT[days[cur].day.getMonth()]}</span></div>
+      <div className={"card pday" + (days[cur].ds === td ? " today" : "")}>{days[cur].it.length ? days[cur].it.map(block) : <p className="hint" style={{ margin: 0, textAlign: "center" }}>{tr("Wolny dzień – brak lekcji i zajęć.")}</p>}</div>
       {/* desktop: whole week in columns */}
       <div className="pweek">{days.map((x) => <div key={x.ds} className={"pcol" + (x.ds === td ? " td" : "")}>
-        <div className="pch"><small>{WDSHORT[x.day.getDay()]}</small><b>{x.day.getDate()} {MSHORT[x.day.getMonth()]}</b></div>
+        <div className="pch"><small>{WDSHORT[x.day.getDay()]}{x.ds === td && <i className="tdtag" style={{ marginLeft: 6 }}>{tr("dzisiaj")}</i>}</small><b>{x.day.getDate()} {MSHORT[x.day.getMonth()]}</b></div>
         {x.it.length ? x.it.map(block) : <span className="pfree">{tr("wolne")}</span>}</div>)}</div>
     </>;
   }
