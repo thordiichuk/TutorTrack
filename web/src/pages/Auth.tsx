@@ -121,7 +121,7 @@ export function Login({ role, notice }: { role: "tutor" | "student" | "parent"; 
 
   return (
     <PubPage aud={st ? "student" : "tutor"}><div className="au">
-      <h1>{pa ? tr("Zaloguj się jako rodzic") : st ? tr("Zaloguj się jako uczeń") : tr("Zaloguj się")}</h1>
+      <h1>{tr("Zaloguj się")}</h1>
       {notice && <div className="nt" role="alert">{pa ? tr("Aby wejść do panelu rodzica, zaloguj się.") : st ? tr("Aby wejść do panelu ucznia, zaloguj się.") : tr("Aby wejść do panelu, zaloguj się.")}</div>}
       <form onSubmit={submit} noValidate>
         <div className="lerr" role="alert">{msg}</div>
