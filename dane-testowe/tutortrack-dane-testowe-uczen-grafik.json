@@ -18,7 +18,7 @@
    "weekday": 1,
    "date": "",
    "start": "08:00",
-   "end": "15:20"
+   "end": "15:15"
   },
   {
    "title": "Szkoła",
@@ -26,7 +26,7 @@
    "repeat": "w",
    "weekday": 2,
    "date": "",
-   "start": "08:55",
+   "start": "08:00",
    "end": "14:30"
   },
   {
@@ -36,7 +36,7 @@
    "weekday": 3,
    "date": "",
    "start": "08:00",
-   "end": "13:35"
+   "end": "13:40"
   },
   {
    "title": "Szkoła",
@@ -45,106 +45,88 @@
    "weekday": 4,
    "date": "",
    "start": "08:00",
-   "end": "12:40"
+   "end": "14:30"
   },
   {
    "title": "Basen",
    "cat": "extra",
    "repeat": "w",
-   "weekday": 1,
+   "weekday": 0,
    "date": "",
-   "start": "18:00",
-   "end": "19:00"
+   "start": "15:30",
+   "end": "16:30"
   },
   {
-   "title": "Gitara",
+   "title": "Szkoła muzyczna – pianino",
    "cat": "extra",
-   "repeat": "w",
-   "weekday": 3,
-   "date": "",
-   "start": "16:00",
-   "end": "17:00"
-  },
-  {
-   "title": "Trening piłki nożnej",
-   "cat": "extra",
-   "repeat": "w",
-   "weekday": 5,
-   "date": "",
-   "start": "09:00",
-   "end": "10:30"
-  },
-  {
-   "title": "Kółko szachowe",
-   "cat": "school",
    "repeat": "w",
    "weekday": 2,
    "date": "",
-   "start": "14:40",
-   "end": "15:25"
+   "start": "15:00",
+   "end": "16:30"
   },
   {
-   "title": "Korepetycje z chemii (poza TutorTrack)",
-   "cat": "tutor",
+   "title": "Harcerstwo",
+   "cat": "extra",
    "repeat": "w",
    "weekday": 4,
    "date": "",
-   "start": "15:00",
-   "end": "16:00"
+   "start": "18:00",
+   "end": "19:30"
   },
   {
-   "title": "Próbna matura – matematyka",
-   "cat": "school",
-   "repeat": "o",
-   "weekday": 0,
-   "date": "2026-11-04",
-   "start": "09:00",
-   "end": "12:00"
+   "title": "Korepetycje z biologii (poza TutorTrack)",
+   "cat": "tutor",
+   "repeat": "w",
+   "weekday": 3,
+   "date": "",
+   "start": "17:15",
+   "end": "18:15"
   },
   {
-   "title": "Dentysta",
+   "title": "Konflikt testowy: dentysta",
    "cat": "other",
    "repeat": "o",
    "weekday": 0,
-   "date": "2026-11-02",
-   "start": "17:00",
-   "end": "18:00"
+   "date": "2026-11-12",
+   "start": "15:45",
+   "end": "16:30"
+  },
+  {
+   "title": "Sprawdzian z matematyki",
+   "cat": "school",
+   "repeat": "o",
+   "weekday": 0,
+   "date": "2026-11-13",
+   "start": "09:00",
+   "end": "09:45"
   },
   {
    "title": "Wycieczka klasowa",
    "cat": "school",
    "repeat": "o",
    "weekday": 0,
-   "date": "2026-11-13",
-   "start": "07:30",
-   "end": "18:00"
+   "date": "2026-11-20",
+   "start": "08:00",
+   "end": "17:00"
+  },
+  {
+   "title": "Próbny egzamin ósmoklasisty",
+   "cat": "school",
+   "repeat": "o",
+   "weekday": 0,
+   "date": "2026-12-03",
+   "start": "09:00",
+   "end": "12:00"
   },
   {
    "title": "Urodziny babci",
    "cat": "other",
    "repeat": "o",
    "weekday": 0,
-   "date": "2026-11-07",
-   "start": "15:00",
-   "end": "19:00"
-  },
-  {
-   "title": "Konkurs fizyczny",
-   "cat": "school",
-   "repeat": "o",
-   "weekday": 0,
-   "date": "2026-11-19",
-   "start": "10:00",
-   "end": "13:00"
-  },
-  {
-   "title": "Kino z klasą",
-   "cat": "other",
-   "repeat": "o",
-   "weekday": 0,
-   "date": "2026-10-27",
-   "start": "18:00",
-   "end": "20:30"
+   "date": "2026-11-22",
+   "start": "14:00",
+   "end": "18:00"
   }
  ]
 }
