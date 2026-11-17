@@ -9,7 +9,7 @@ import { navigate } from "../lib/router";
 import { ThemePicker } from "../ui/themes";
 import { LangPicker, langName } from "../ui/lang";
 import { tr } from "../lib/i18n";
-import { VSheet } from "../ui/lessons";
+import { VSheet, WeekPlan } from "../ui/lessons";
 
 type PLesson = { id: string; sid: string; tutor: string; date: string; time: string; min: number; subject: string; topic: string; status: "planned" | "done" | "cancelled"; notes: string; hw: string; hd: string; hwDone: boolean; amount: number; paid: boolean };
 type Tutor = { sid: string; tutor: string; subject: string; contact: { email: string; phone: string } };
@@ -161,28 +161,7 @@ export function ParentPanel() {
   }
 
   function Plan() {
-    const td = ymd(new Date());
-    const mon = new Date(); mon.setHours(0, 0, 0, 0); mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7) + wk * 7);
-    const days = [...Array(7)].map((_, i) => { const x = new Date(mon); x.setDate(x.getDate() + i); return ymd(x); });
-    const label = sdate(days[0]) + " – " + sdate(days[6]);
-    return <>{switcher}{noTutors}
-      <div className="pwk"><div className="mpick" role="group" aria-label={tr("Tydzień")}><button type="button" aria-label={tr("Poprzedni tydzień")} onClick={() => setWk(wk - 1)}>‹</button><span aria-live="polite">{label}</span><button type="button" aria-label={tr("Następny tydzień")} onClick={() => setWk(wk + 1)}>›</button></div>{wk !== 0 && <button className="btn s" onClick={() => setWk(0)}>{tr("Dziś")}</button>}</div>
-      {days.map((dd, i) => {
-        const items = [
-          ...ls.filter((l) => l.date === dd).map((l) => ({ s: l.time, e: te(l.time, l.min), l })),
-          ...c!.events.filter((e) => (e.repeat === "w" ? e.weekday === i : e.date === dd)).map((e) => ({ s: e.start, e: e.end, ev: e })),
-        ].sort((a, b) => a.s.localeCompare(b.s)) as { s: string; e: string; l?: PLesson; ev?: Ev; host?: Ev }[];
-        // an activity inside a longer one of the same kind (e.g. a test during school) is shown as part of it
-        items.forEach((x) => { if (!x.ev) return; const h = items.find((y) => y !== x && y.ev && y.ev.cat === x.ev!.cat && y.s <= x.s && y.e >= x.e && (y.s < x.s || y.e > x.e || items.indexOf(y) < items.indexOf(x))); if (h) x.host = h.ev; });
-        items.sort((a, b) => { const ka = (a.host ? items.find((y) => y.ev === a.host)!.s : a.s) + (a.host ? "1" : "0") + a.s, kb = (b.host ? items.find((y) => y.ev === b.host)!.s : b.s) + (b.host ? "1" : "0") + b.s; return ka.localeCompare(kb); });
-        return <section key={dd} className={"dgrp pdg" + (dd === td ? " today" : "")} style={{ marginTop: 12 }}><div className={"dgh" + (dd === td ? " td" : "")}><b>{dd === td ? tr("Dziś") : WDL[i]}</b>{dd === td && <i className="tdtag">{tr("dzisiaj")}</i>}<span>{sdate(dd)}</span></div>
-          <div className="card dgl" style={{ padding: "4px 14px" }}>{items.length ? items.map((x, k) => "l" in x && x.l
-            ? <button type="button" key={k} className={"srow" + (x.l.status === "cancelled" ? " cx" : "")} onClick={() => lessonModal(x.l!)}><span className="tm">{x.s}<small>{x.e}</small></span><span className="sb" /><span className="m"><b>{x.l.subject || tr("Lekcja")}{x.l.topic ? " · " + x.l.topic : ""}</b><span>{x.l.tutor}</span></span>{x.l.status === "cancelled" && <span className="tag rd">{tr("Odwołana")}</span>}</button>
-            : <div key={k} className={"srow" + (x.host ? " psubrow" : "")} style={{ cursor: "default" }}><span className="tm">{x.s}<small>{x.e}</small></span><span className="sb o" /><span className="m"><b>{x.ev!.title}</b><span>{x.host ? tr("w trakcie: {0}", x.host.title) : CATS[x.ev!.cat] || tr("Inne")}</span></span></div>)
-            : <p className="hint" style={{ margin: "10px 0" }}>{tr("Brak zajęć.")}</p>}</div></section>;
-      })}
-      <div className="plegend" style={{ marginTop: 12 }}><span><i className="les" />{tr("lekcje od korepetytorów")}</span><span><i className="own" />{tr("własne zajęcia dziecka")}</span></div>
-    </>;
+    return <>{switcher}{noTutors}<WeekPlan lessons={ls} events={c!.events} wk={wk} setWk={setWk} onLesson={(l) => lessonModal(l as PLesson)} ownLabel={tr("własne zajęcia dziecka")} /></>;
   }
 
   return <>
