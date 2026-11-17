@@ -550,3 +550,8 @@ body.stu .pgrp{border:2px dashed var(--bdh);border-radius:16px;padding:0 8px 8px
 .lrow2.esub{margin-left:0;padding-left:0}.lrow2.esub .ltm{padding-left:14px;width:66px}.lrow2.esub{background:color-mix(in srgb,var(--ec,#3b82f6) 6%,transparent)}
 .lrow2.esub .lwho b{font-size:14px}
 .pwlist{display:none}@media(max-width:860px){.pwlist{display:flex}.pwlist~.pweek{display:none}}
+/* lesson blocks in student / parent lists (look of the student's Plan) */
+.blist{display:flex;flex-direction:column;gap:8px}.blist .pblk{margin:0}
+.pblk.brow{gap:3px}.brw{display:flex;align-items:center;gap:8px;width:100%;min-width:0}.brw>b,.brw>.ps{flex:1;min-width:0}.brw>i{font-style:normal;font-weight:700;font-size:14px;white-space:nowrap}
+.pblk.btoday{box-shadow:inset 0 0 0 2px var(--ac)}.pblk.btoday .ptm{color:var(--ac)}
+.pblk.own.ro{cursor:default;opacity:1}

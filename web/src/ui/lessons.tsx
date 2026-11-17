@@ -1,6 +1,6 @@
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { tr } from "../lib/i18n";
-import { fd, fm, lekcje, MGEN as MLONG_G, MSHORT, pd, pln, subjColor, te, WDL, ymd } from "../lib/util";
+import { fd, fm, lekcje, MGEN as MLONG_G, MSHORT, pd, pln, subjColor, te, WDL, WDSHORT, ymd } from "../lib/util";
 
 /**
  * Lesson list pieces shared by the student and parent panels.
@@ -86,12 +86,12 @@ export function DayBlock({ ds, n, children }: { ds: string; n: number; children:
 }
 
 /** Lessons grouped by month with a total, like the tutor's lessons of one student. */
-export function MonthGroups({ list, row }: { list: VLesson[]; row: (l: VLesson) => ReactNode }) {
+export function MonthGroups({ list, row, blocks }: { list: VLesson[]; row: (l: VLesson) => ReactNode; blocks?: boolean }) {
   const months: [string, VLesson[]][] = [];
   list.forEach((l) => { const k = l.date.slice(0, 7); const g = months.find((x) => x[0] === k); if (g) g[1].push(l); else months.push([k, [l]]); });
   return <div className="days">{months.map(([k, ls]) => { const sum = ls.filter(vBillable).reduce((t, l) => t + l.amount, 0), t = fm(k);
     return <section className="dgrp" key={k}><div className="dgh"><b>{t.charAt(0).toUpperCase() + t.slice(1)}</b><span>{lekcje(ls.length)}{sum ? " · " + pln(sum).replace(",00", "") : ""}</span></div>
-      <div className="dgl">{ls.map(row)}</div></section>; })}</div>;
+      <div className={blocks ? "blist" : "dgl"}>{ls.map(row)}</div></section>; })}</div>;
 }
 
 export type LView = "up" | "past" | "all";
@@ -136,4 +136,71 @@ export function VSheet({ l, title, contact, hwDone, actions, noCr }: { l: VLesso
     {contact && (contact.email || contact.phone) && <p className="ktc" style={{ marginTop: 10 }}>{contact.email && <a href={"mailto:" + contact.email}>✉️ {contact.email}</a>}{contact.phone && <a href={"tel:" + contact.phone.replace(/\s/g, "")}>📞 {contact.phone}</a>}</p>}
     {actions}
   </div>;
+}
+
+/** Lesson as a block – the look of the student's Plan (pastel subject colour, time on top). */
+export function BRow({ l, date, clash, onClick }: { l: VLesson; date?: boolean; clash?: boolean; onClick: () => void }) {
+  const d = pd(l.date), chip = vChip(l, clash), today = l.date === ymd(new Date());
+  const money = l.status === "cancelled" ? (l.amount > 0 ? pln(l.amount) : "") : pln(l.amount);
+  return <button type="button" className={"pblk les brow" + (clash ? " clash" : "") + (l.status === "cancelled" ? " cx" : "") + (date && today ? " btoday" : "")} style={{ ["--sc" as any]: subjColor(l.subject) }} onClick={onClick}>
+    <span className="ptm">{date && <>{today ? tr("Dziś") : d.getDate() + " " + MSHORT[d.getMonth()]}{" · "}</>}{l.time}–{te(l.time, l.min)}</span>
+    <span className="brw"><b>{l.subject || tr("Lekcja")}</b>{money && <i>{money.replace(",00", "")}</i>}</span>
+    <span className="brw"><span className="ps">{[l.tutor, l.topic].filter(Boolean).join(" · ")}</span>{chip && <span className={"lchip " + chip[1]}>{chip[0]}</span>}</span>
+  </button>;
+}
+/** Own activity as a block (dashed), same as in the student's Plan. */
+export function BEv({ e, s, en, clash, onClick }: { e: VEvent; s: string; en: string; clash?: boolean; onClick?: () => void }) {
+  return <button type="button" className={"pblk own c-" + e.cat + (clash ? " clash" : "") + (onClick ? "" : " ro")} onClick={onClick} disabled={!onClick}>
+    <span className="ptm">{s}–{en}</span><b>{e.title}</b>{clash && <span className="tag rd">{tr("Nakłada się")}</span>}</button>;
+}
+
+const clashT = (aS: string, aE: string, bS: string, bE: string) => aS < bE && bS < aE;
+/**
+ * Week plan of lessons and own activities: on phones a strip of days and one day's blocks,
+ * on computers seven columns. Used by the student (editable activities) and the parent (read only).
+ */
+export function WeekPlan({ lessons, events, wk, setWk, onLesson, onEvent, ownLabel }: {
+  lessons: VLesson[]; events: VEvent[]; wk: number; setWk: (n: number) => void; onLesson: (l: VLesson) => void; onEvent?: (e: VEvent) => void; ownLabel: string;
+}) {
+  const [sel, setSel] = useState(-1);
+  const mon = new Date(); mon.setHours(0, 0, 0, 0); mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7) + 7 * wk);
+  const end = new Date(mon); end.setDate(end.getDate() + 6);
+  const td = ymd(new Date());
+  type It = { s: string; e: string; l?: VLesson; ev?: VEvent; bad?: boolean; host?: It; subs?: It[] };
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const day = new Date(mon); day.setDate(day.getDate() + i); const ds = ymd(day);
+    const it: It[] = [...lessons.filter((l) => l.date === ds).map((l) => ({ s: l.time, e: te(l.time, l.min), l })), ...events.filter((e) => (e.repeat === "w" ? e.weekday === i : e.date === ds)).map((e) => ({ s: e.start, e: e.end, ev: e }))].sort((a, b) => a.s.localeCompare(b.s));
+    const live = (x: It) => !x.l || x.l.status !== "cancelled";
+    // own activities of the same kind never clash (a test during school is part of school)
+    const same = (x: It, y: It) => !!x.ev && !!y.ev && x.ev.cat === y.ev.cat;
+    it.forEach((x, j) => { x.bad = live(x) && it.some((y, k) => k !== j && live(y) && !same(x, y) && clashT(x.s, x.e, y.s, y.e)); });
+    // show such an activity inside the longer one that contains it
+    it.forEach((x) => { if (!x.ev) return; const h = it.filter((y) => y !== x && same(x, y) && y.s <= x.s && y.e >= x.e && (y.s < x.s || y.e > x.e || it.indexOf(y) < it.indexOf(x))).sort((a, b) => (a.s > b.s ? -1 : 1))[0]; if (h) x.host = h; });
+    it.forEach((x) => { if (x.host) { let h = x.host; while (h.host) h = h.host; x.host = h; (h.subs = h.subs || []).push(x); } });
+    return { day, ds, it: it.filter((x) => !x.host) };
+  });
+  const todayIdx = days.findIndex((x) => x.ds === td);
+  const cur = sel >= 0 ? sel : todayIdx >= 0 ? todayIdx : 0;
+  const ev = (e: VEvent) => (onEvent ? () => onEvent(e) : undefined);
+  const block = (x: It, k: number) => {
+    if (x.l) { const chip = vChip(x.l, !!x.bad); return <button type="button" key={k} className={"pblk les" + (x.bad ? " clash" : "") + (x.l.status === "cancelled" ? " cx" : "")} style={{ ["--sc" as any]: subjColor(x.l.subject) }} onClick={() => onLesson(x.l!)}>
+      <span className="ptm">{x.s}–{x.e}</span><b>{x.l.subject || tr("Lekcja")}</b><span className="ps">{x.l.tutor}</span>{chip && <span className={"lchip " + chip[1]}>{chip[0]}</span>}</button>; }
+    if (x.subs) return <div key={k} className={"pgrp c-" + x.ev!.cat + (x.bad ? " clash" : "")}>
+      <button type="button" className={"pblk own in" + (onEvent ? "" : " ro")} disabled={!onEvent} onClick={ev(x.ev!)}><span className="ptm">{x.s}–{x.e}</span><b>{x.ev!.title}</b>{x.bad && <span className="tag rd">{tr("Nakłada się")}</span>}</button>
+      {x.subs.map((y, n) => <button type="button" key={n} className={"pblk own sub" + (y.bad ? " clash" : "") + (onEvent ? "" : " ro")} disabled={!onEvent} onClick={ev(y.ev!)}><span className="ptm">{y.s}–{y.e} · {tr("w trakcie")}</span><b>{y.ev!.title}</b>{y.bad && <span className="tag rd">{tr("Nakłada się")}</span>}</button>)}</div>;
+    return <BEv key={k} e={x.ev!} s={x.s} en={x.e} clash={!!x.bad} onClick={ev(x.ev!)} />;
+  };
+  return <>
+    <div className="wkbar"><button className="btn s" onClick={() => { setWk(wk - 1); setSel(-1); }} aria-label={tr("Poprzedni tydzień")}>‹</button><b>{mon.getDate()} {MSHORT[mon.getMonth()]} – {end.getDate()} {MSHORT[end.getMonth()]}</b><button className="btn s" onClick={() => { setWk(wk + 1); setSel(-1); }} aria-label={tr("Następny tydzień")}>›</button>{wk !== 0 && <button className="btn s" onClick={() => { setWk(0); setSel(-1); }}>{tr("Dziś")}</button>}</div>
+    <div className="plegend"><span><i className="les" />{tr("Lekcje od korepetytorów")}</span><span><i className="own" />{ownLabel}</span></div>
+    {/* phone: day picker + agenda of one day */}
+    <div className="dstrip" role="tablist" aria-label={tr("Dzień tygodnia")}>{days.map((x, i) => <button key={x.ds} role="tab" aria-selected={i === cur} className={(i === cur ? "on" : "") + (x.ds === td ? " td" : "")} onClick={() => setSel(i)}>
+      <small>{WDSHORT[x.day.getDay()].replace(".", "")}</small><b>{x.day.getDate()}</b><span className="dots">{x.it.some((y) => y.l && y.l.status !== "cancelled") && <i className="les" />}{x.it.some((y) => y.ev) && <i className="own" />}</span></button>)}</div>
+    <div className={"dgh pdayh" + (days[cur].ds === td ? " td" : "")} style={{ marginTop: 4 }}><b>{days[cur].ds === td ? tr("Dziś") : WDL[cur]}</b>{days[cur].ds === td && <i className="tdtag">{tr("dzisiaj")}</i>}<span>{days[cur].day.getDate()} {MSHORT[days[cur].day.getMonth()]}</span></div>
+    <div className={"card pday" + (days[cur].ds === td ? " today" : "")}>{days[cur].it.length ? days[cur].it.map(block) : <p className="hint" style={{ margin: 0, textAlign: "center" }}>{tr("Wolny dzień – brak lekcji i zajęć.")}</p>}</div>
+    {/* desktop: whole week in columns */}
+    <div className="pweek">{days.map((x) => <div key={x.ds} className={"pcol" + (x.ds === td ? " td" : "")}>
+      <div className="pch"><small>{WDSHORT[x.day.getDay()]}{x.ds === td && <i className="tdtag" style={{ marginLeft: 6 }}>{tr("dzisiaj")}</i>}</small><b>{x.day.getDate()} {MSHORT[x.day.getMonth()]}</b></div>
+      {x.it.length ? x.it.map(block) : <span className="pfree">{tr("wolne")}</span>}</div>)}</div>
+  </>;
 }

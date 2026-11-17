@@ -9,7 +9,7 @@ import { navigate } from "../lib/router";
 import { ThemePicker } from "../ui/themes";
 import { LangPicker, langName } from "../ui/lang";
 import { tr } from "../lib/i18n";
-import { DayBlock, ERow, LessonTabs, LView, MonthGroups, useLessonTabs, VRow, VSheet } from "../ui/lessons";
+import { BEv, BRow, LessonTabs, LView, MonthGroups, useLessonTabs, VSheet, WeekPlan } from "../ui/lessons";
 
 type SLesson = { id: string; date: string; time: string; min: number; subject: string; topic: string; status: "planned" | "done" | "cancelled"; notes: string; hw: string; hd: string; amount: number; paid: boolean; cr: CancelRequest | null };
 type Link = { sid: string; tutor: string; studentName: string; subject: string; contact?: { email: string; phone: string }; lessons: SLesson[] };
@@ -135,7 +135,7 @@ export function StudentPanel() {
     const wdToday = (now.getDay() + 6) % 7;
     const today = [...all.filter((l) => l.date === td).map((l) => ({ s: l.time, e: te(l.time, l.min), l })), ...d!.events.filter((e) => (e.repeat === "w" ? e.weekday === wdToday : e.date === td)).map((e) => ({ s: e.start, e: e.end, ev: e }))].sort((a, b) => a.s.localeCompare(b.s));
     const nextLabel = next ? (next.date === td ? tr("dziś") : next.date === addDays(1) ? tr("jutro") : WDSHORT[pd(next.date).getDay()]) + " " + next.time : "—";
-    const lrow = (l: L, when = false) => <VRow key={l.id} l={l} nd={!when} onClick={() => lessonModal(l.id)} />;
+    const lrow = (l: L, when = false) => <BRow key={l.id} l={l} date={when} onClick={() => lessonModal(l.id)} />;
     return <>
       <div className="bar"><div><h2 style={{ fontSize: 22, margin: 0 }}>{tr("Cześć,")}{" "}{(user!.name || "").split(" ")[0]}!</h2><span className="hint">{WDL[wdToday]}, {fd(td).split(", ")[1]}</span></div></div>
       {!d!.links.length && <div className="nt" style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>{tr("Połącz się z korepetytorem, aby widzieć swoje lekcje, notatki i prace domowe.")}{" "}<button className="btn s p" onClick={() => go("kor")}>{tr("Dodaj kod")}</button></div>}
@@ -152,53 +152,16 @@ export function StudentPanel() {
       <div className="bento" style={{ marginTop: 12 }}>
         <div className="card w2"><div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}><h2 style={{ margin: 0 }}>{tr("Do zrobienia")}</h2><span className="sp" style={{ flex: 1 }} />{todo.length > 4 && <button className="btn s" onClick={() => go("hw")}>{tr("Wszystkie (")}{todo.length})</button>}</div>
           {todo.length ? todo.slice(0, 4).map((l) => <div className="srow" key={l.id} style={{ cursor: "default" }}><button className="chkc" aria-label={tr("Oznacz jako zrobione")} onClick={() => toggleHw(l.id)} /><span className="m" onClick={() => lessonModal(l.id)} style={{ cursor: "pointer" }}><b>{l.hw}</b><span>{l.subject || tr("Lekcja")} · {l.tutor}</span></span>{due(l)}</div>) : <p className="hint" style={{ margin: 0 }}>{tr("Wszystkie prace domowe są zrobione.")}</p>}</div>
-        <div className="card w2"><h2>{tr("Dziś")}</h2>{today.length ? today.map((x, k) => "l" in x && x.l ? lrow(x.l) : <ERow key={k} e={(x as any).ev} s={x.s} en={x.e} onClick={() => evForm((x as any).ev)} />) : <p className="hint" style={{ margin: 0 }}>{tr("Dziś nie masz zaplanowanych zajęć.")}</p>}</div>
-        <div className="card w2"><h2>{tr("Najbliższe lekcje")}</h2>{upcoming.length ? upcoming.slice(0, 5).map((l) => lrow(l, true)) : <p className="hint" style={{ margin: 0 }}>{tr("Brak zaplanowanych lekcji.")}</p>}</div>
-        <div className="card w2"><h2>{tr("Ostatnie notatki")}</h2>{notes.length ? notes.map((l) => lrow(l, true)) : <p className="hint" style={{ margin: 0 }}>{tr("Tu pojawią się notatki od korepetytora po lekcjach.")}</p>}</div>
+        <div className="card w2"><h2>{tr("Dziś")}</h2>{today.length ? <div className="blist">{today.map((x, k) => "l" in x && x.l ? lrow(x.l) : <BEv key={k} e={(x as any).ev} s={x.s} en={x.e} onClick={() => evForm((x as any).ev)} />)}</div> : <p className="hint" style={{ margin: 0 }}>{tr("Dziś nie masz zaplanowanych zajęć.")}</p>}</div>
+        <div className="card w2"><h2>{tr("Najbliższe lekcje")}</h2>{upcoming.length ? <div className="blist">{upcoming.slice(0, 5).map((l) => lrow(l, true))}</div> : <p className="hint" style={{ margin: 0 }}>{tr("Brak zaplanowanych lekcji.")}</p>}</div>
+        <div className="card w2"><h2>{tr("Ostatnie notatki")}</h2>{notes.length ? <div className="blist">{notes.map((l) => lrow(l, true))}</div> : <p className="hint" style={{ margin: 0 }}>{tr("Tu pojawią się notatki od korepetytora po lekcjach.")}</p>}</div>
       </div>
     </>;
   }
   function Plan() {
     if (!d!.links.length && !d!.events.length) return <div className="card"><Empty icon="cal" title={tr("Twój plan jest pusty")} sub={tr("Dodaj kod od korepetytora albo własne zajęcia, aby zobaczyć plan tygodnia.")} />
       <div className="acts" style={{ justifyContent: "center" }}><button className="btn p" onClick={() => go("kor")}>{tr("Dodaj kod od korepetytora")}</button><button className="btn" onClick={() => evForm()}>{tr("Dodaj własne zajęcia")}</button></div></div>;
-    const mon = new Date(); mon.setHours(0, 0, 0, 0); mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7) + 7 * wk);
-    const end = new Date(mon); end.setDate(end.getDate() + 6);
-    const td = ymd(new Date());
-    type It = { s: string; e: string; l?: L; ev?: Ev; bad?: boolean; host?: It; subs?: It[] };
-    const days = Array.from({ length: 7 }, (_, i) => {
-      const day = new Date(mon); day.setDate(day.getDate() + i); const ds = ymd(day);
-      const it: It[] = [...all.filter((l) => l.date === ds).map((l) => ({ s: l.time, e: te(l.time, l.min), l })), ...d!.events.filter((e) => (e.repeat === "w" ? e.weekday === i : e.date === ds)).map((e) => ({ s: e.start, e: e.end, ev: e }))].sort((a, b) => a.s.localeCompare(b.s));
-      const live = (x: It) => !x.l || x.l.status !== "cancelled";
-      // own activities of the same kind never clash (a test during school is part of school)
-      const same = (x: It, y: It) => !!x.ev && !!y.ev && x.ev.cat === y.ev.cat;
-      it.forEach((x, j) => { x.bad = live(x) && it.some((y, k) => k !== j && live(y) && !same(x, y) && clash(x.s, x.e, y.s, y.e)); });
-      // show such an activity inside the longer one that contains it
-      it.forEach((x) => { if (!x.ev) return; const h = it.filter((y) => y !== x && same(x, y) && y.s <= x.s && y.e >= x.e && (y.s < x.s || y.e > x.e || it.indexOf(y) < it.indexOf(x))).sort((a, b) => (a.s > b.s ? -1 : 1))[0]; if (h) x.host = h; });
-      it.forEach((x) => { if (x.host) { let h = x.host; while (h.host) h = h.host; x.host = h; (h.subs = h.subs || []).push(x); } });
-      return { day, ds, it: it.filter((x) => !x.host) };
-    });
-    const todayIdx = days.findIndex((x) => x.ds === td);
-    const cur = sel >= 0 ? sel : todayIdx >= 0 ? todayIdx : 0;
-    const block = (x: It, k: number) => x.l
-      ? <button type="button" key={k} className={"pblk les" + (x.bad ? " clash" : "") + (x.l.status === "cancelled" ? " cx" : "")} style={{ ["--sc" as any]: subjColor(x.l.subject) }} onClick={() => lessonModal(x.l!.id)}>
-          <span className="ptm">{x.s}–{x.e}</span><b>{x.l.subject || tr("Lekcja")}</b><span className="ps">{x.l.tutor}</span>{shortTag(x.l, !!x.bad)}</button>
-      : x.subs ? <div key={k} className={"pgrp c-" + x.ev!.cat + (x.bad ? " clash" : "")}>
-          <button type="button" className="pblk own in" onClick={() => evForm(x.ev)}><span className="ptm">{x.s}–{x.e}</span><b>{x.ev!.title}</b>{x.bad && <span className="tag rd">{tr("Nakłada się")}</span>}</button>
-          {x.subs.map((y, n) => <button type="button" key={n} className={"pblk own sub" + (y.bad ? " clash" : "")} onClick={() => evForm(y.ev)}><span className="ptm">{y.s}–{y.e} · {tr("w trakcie")}</span><b>{y.ev!.title}</b>{y.bad && <span className="tag rd">{tr("Nakłada się")}</span>}</button>)}</div>
-      : <button type="button" key={k} className={"pblk own c-" + x.ev!.cat + (x.bad ? " clash" : "")} onClick={() => evForm(x.ev)}>
-          <span className="ptm">{x.s}–{x.e}</span><b>{x.ev!.title}</b>{x.bad && <span className="tag rd">{tr("Nakłada się")}</span>}</button>;
-    return <>
-      <div className="wkbar ltw"><button className="btn s" onClick={() => { setWk(wk - 1); setSel(-1); }} aria-label={tr("Poprzedni tydzień")}>‹</button><b>{mon.getDate()} {MSHORT[mon.getMonth()]} – {end.getDate()} {MSHORT[end.getMonth()]}<small>{lekcje(days.reduce((t, x) => t + x.it.filter((y) => y.l && y.l.status !== "cancelled").length, 0))}</small></b><button className="btn s" onClick={() => { setWk(wk + 1); setSel(-1); }} aria-label={tr("Następny tydzień")}>›</button>{wk !== 0 && <button className="btn s" onClick={() => { setWk(0); setSel(-1); }}>{tr("Dziś")}</button>}</div>
-      <div className="plegend"><span><i className="les" />{tr("Lekcje od korepetytorów")}</span><span><i className="own" />{tr("Moje zajęcia")}</span></div>
-      {/* phone: the whole week as a list of days, like the tutor's lesson list */}
-      <div className="days pwlist">{days.map((x) => <DayBlock key={x.ds} ds={x.ds} n={x.it.filter((y) => y.l && y.l.status !== "cancelled").length}>{x.it.length ? x.it.map((y, k) => y.l
-        ? <VRow key={k} l={y.l} nd clash={!!y.bad} onClick={() => lessonModal(y.l!.id)} />
-        : <Fragment key={k}><ERow e={y.ev!} s={y.s} en={y.e} clash={!!y.bad} onClick={() => evForm(y.ev)} />{(y.subs || []).map((z, n) => <ERow key={n} e={z.ev!} s={z.s} en={z.e} host={y.ev!.title} clash={!!z.bad} onClick={() => evForm(z.ev)} />)}</Fragment>) : null}</DayBlock>)}</div>
-      {/* desktop: whole week in columns */}
-      <div className="pweek">{days.map((x) => <div key={x.ds} className={"pcol" + (x.ds === td ? " td" : "")}>
-        <div className="pch"><small>{WDSHORT[x.day.getDay()]}{x.ds === td && <i className="tdtag" style={{ marginLeft: 6 }}>{tr("dzisiaj")}</i>}</small><b>{x.day.getDate()} {MSHORT[x.day.getMonth()]}</b></div>
-        {x.it.length ? x.it.map(block) : <span className="pfree">{tr("wolne")}</span>}</div>)}</div>
-    </>;
+    return <WeekPlan lessons={all} events={d!.events} wk={wk} setWk={setWk} onLesson={(l) => lessonModal(l.id)} onEvent={(e) => evForm(e as Ev)} ownLabel={tr("Moje zajęcia")} />;
   }
   function Graf() {
     const intro = <p className="hint" style={{ margin: "0 0 12px" }}>{tr("Tu zarządzasz własnymi zajęciami: szkołą, zajęciami dodatkowymi i korepetycjami spoza TutorTrack. Wszystko razem z lekcjami zobaczysz w zakładce Plan.")}</p>;
@@ -234,7 +197,7 @@ export function StudentPanel() {
     const { up, past, shown, nUnpaid } = useLessonTabs(all, lv, ord, onlyUnpaid);
     return <>
       <LessonTabs view={lv} setView={setLv} n={[up.length, past.length, all.length]} ord={ord} setOrd={setOrd} onlyUnpaid={onlyUnpaid} setOnlyUnpaid={setOnlyUnpaid} nUnpaid={nUnpaid} />
-      {shown.length ? <MonthGroups list={shown} row={(l) => <VRow key={l.id} l={l} onClick={() => lessonModal(l.id)} />} />
+      {shown.length ? <MonthGroups blocks list={shown} row={(l) => <BRow key={l.id} l={l} date onClick={() => lessonModal(l.id)} />} />
         : <div className="card"><Empty icon="book" title={onlyUnpaid && lv === "all" ? tr("Brak nieopłaconych lekcji") : lv === "up" ? tr("Brak zaplanowanych lekcji") : tr("Brak lekcji")} sub={tr("Lekcje dodaje korepetytor.")} /></div>}
       <div className="card sumc" style={{ marginTop: 16 }}><div><h2 style={{ margin: 0 }}>{tr("Podsumowanie miesiąca")}</h2><span className="hint">{tr("Czas nauki, kwoty, notatki i podsumowanie do wysłania.")}</span></div>
         <div className="acts"><button className="btn p" onClick={() => go("sum")}>{tr("Pokaż podsumowanie")}</button></div></div>
@@ -268,7 +231,7 @@ export function StudentPanel() {
       <div className="grid g4 st2"><div className="card stat"><div className="l">{tr("Lekcje")}</div><div className="v">{dn.length}</div></div><div className="card stat"><div className="l">{tr("Czas nauki")}</div><div className="v">{fmtH(min)}</div></div><div className="card stat"><div className="l">{tr("Odwołane")}</div><div className="v am">{cn.length}</div></div><div className="card stat"><div className="l">{tr("Zadania")}</div><div className="v">{hw.filter((l) => done.has(l.id)).length} / {hw.length}</div></div></div>
       {tot > 0 && <div className="grid g4 bst" style={{ gridTemplateColumns: "repeat(3,1fr)", marginTop: 16 }}><div className="card stat"><div className="l">{tr("Kwota")}</div><div className="v">{pln(tot).replace(",00", "")}</div></div><div className="card stat"><div className="l">{tr("Opłacone")}</div><div className="v gr">{pln(paid).replace(",00", "")}</div></div><div className="card stat"><div className="l">{tr("Do zapłaty")}</div><div className="v am">{pln(tot - paid).replace(",00", "")}</div></div></div>}
       <div className="card" style={{ marginTop: 16 }}><h2>{tr("Czas nauki według przedmiotu")}</h2>{e.length ? e.map((x) => <div className="bl" key={x[0]}><span>{x[0]}</span><b>{fmtH(x[1])}</b><div className="bb"><i style={{ width: Math.round(x[1] / mx * 100) + "%" }} /></div></div>) : <p className="hint">{tr("Brak danych w wybranym okresie.")}</p>}</div>
-      <div className="card" style={{ marginTop: 16 }}><h2>{tr("Lekcje i notatki")}</h2>{[...dn, ...cn].sort(byDate).map((l) => <VRow key={l.id} l={l} onClick={() => lessonModal(l.id)} />)}</div>
+      <div className="card" style={{ marginTop: 16 }}><h2>{tr("Lekcje i notatki")}</h2><div className="blist">{[...dn, ...cn].sort(byDate).map((l) => <BRow key={l.id} l={l} date onClick={() => lessonModal(l.id)} />)}</div></div>
       {tutors.length > 0 && <div className="card sumc" style={{ marginTop: 16 }}><div><h2 style={{ margin: 0 }}>{tr("Podsumowanie przeprowadzonych lekcji")}</h2><span className="hint">{tr("Lista lekcji z tematami i kwotami – do skopiowania lub wysłania.")}</span></div>
         <div className="acts">{tutors.map((t) => <button key={t} className="btn p" onClick={() => summary(t)}>{tutors.length > 1 ? tr("Od: ") + t : tr("Pokaż podsumowanie")}</button>)}</div></div>}
     </>;
