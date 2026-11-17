@@ -543,3 +543,10 @@ body.stu .pgrp{border:2px dashed var(--bdh);border-radius:16px;padding:0 8px 8px
 .sttoggle{display:flex;align-items:center;gap:10px;width:100%;margin:24px 0 12px;padding:14px 18px;background:var(--card);border:1px solid var(--bd);border-radius:14px;font:inherit;color:var(--tx);cursor:pointer;text-align:left}.sttoggle>span:first-child{flex:1;font-size:20px;font-weight:700}.sttoggle .hint{font-size:13px;font-weight:600}.sttoggle:hover{border-color:var(--ac)}
 .ordsw{margin:-4px 0 12px;flex:none;flex-wrap:wrap;overflow:visible}
 .chip.on.am{background:var(--am);border-color:var(--am);color:#fff}
+/* shared lesson rows in student and parent panels */
+.lrow2.tday{background:var(--acl);box-shadow:inset 3px 0 0 var(--ac)}.lrow2.tday .ltm{color:var(--ac)}
+.lrow2.erow .ebar{background:repeating-linear-gradient(180deg,var(--ec) 0 6px,transparent 6px 10px)}
+.lrow2.erow .lwho b{font-weight:600}.lrow2.erow.ro{cursor:default}.lrow2.erow.ro:hover{background:transparent}
+.lrow2.esub{margin-left:0;padding-left:0}.lrow2.esub .ltm{padding-left:14px;width:66px}.lrow2.esub{background:color-mix(in srgb,var(--ec,#3b82f6) 6%,transparent)}
+.lrow2.esub .lwho b{font-size:14px}
+.pwlist{display:none}@media(max-width:860px){.pwlist{display:flex}.pwlist~.pweek{display:none}}

@@ -9,6 +9,7 @@ import { navigate } from "../lib/router";
 import { ThemePicker } from "../ui/themes";
 import { LangPicker, langName } from "../ui/lang";
 import { tr } from "../lib/i18n";
+import { DayBlock, ERow, LessonTabs, LView, MonthGroups, useLessonTabs, VRow, VSheet, weekDays, WeekBar } from "../ui/lessons";
 
 type PLesson = { id: string; sid: string; tutor: string; date: string; time: string; min: number; subject: string; topic: string; status: "planned" | "done" | "cancelled"; notes: string; hw: string; hd: string; hwDone: boolean; amount: number; paid: boolean };
 type Tutor = { sid: string; tutor: string; subject: string; contact: { email: string; phone: string } };
@@ -45,7 +46,9 @@ export function ParentPanel() {
   const [err, setErr] = useState("");
   const [tab, setTab] = useState("dash");
   const [ci, setCi] = useState(0);
-  const [lv, setLv] = useState<"up" | "past">("up");
+  const [lv, setLv] = useState<LView>("up");
+  const [ord, setOrd] = useState<1 | -1>(-1);
+  const [onlyUnpaid, setOnlyUnpaid] = useState(false);
   const [m, setM] = useState(ym(new Date()));
   const [wk, setWk] = useState(0);
 
@@ -70,23 +73,8 @@ export function ParentPanel() {
   const contact = (sid: string) => c?.tutors.find((t) => t.sid === sid)?.contact;
   const first = (n: string) => (n || "").split(" ")[0];
 
-  const tags = (l: PLesson) => <>
-    {l.status === "planned" && <span className="tag ac">{tr("Zaplanowana")}</span>}{l.status === "done" && <span className="tag gr">{tr("Przeprowadzona")}</span>}{l.status === "cancelled" && <span className="tag rd">{tr("Odwołana")}</span>}{" "}
-    {l.notes && <><span className="tag gr">{tr("Notatka")}</span>{" "}</>}{l.hw && (l.hwDone ? <span className="tag gr">{tr("Zadanie zrobione")}</span> : <span className="tag am">{tr("Zadanie niezrobione")}</span>)}</>;
-  const lessonModal = (l: PLesson) => ov.modal(<><h2>{l.subject || tr("Lekcja")}</h2><p className="hint" style={{ margin: "-6px 0 10px" }}>{l.tutor} · {fd(l.date)}, {l.time}–{te(l.time, l.min)} ({l.min}{" "}{tr("min)")}</p>
-    <div style={{ marginBottom: 12 }}>{tags(l)}</div>{l.topic && <p><b>{tr("Temat:")}</b> {l.topic}</p>}
-    {l.status === "done" && <><h3 style={{ margin: "12px 0 4px", fontSize: 15 }}>{tr("Notatka po lekcji")}</h3><p className="pre" style={{ margin: 0 }}>{l.notes || <span className="hint">{tr("Brak notatki.")}</span>}</p></>}
-    {l.hw && <><h3 style={{ margin: "16px 0 4px", fontSize: 15 }}>{tr("Praca domowa")}</h3><p className="pre" style={{ margin: "0 0 6px" }}>{l.hw}</p>{l.hd && <span className="tag">{tr("Termin: ")}{fd(l.hd)}</span>}</>}
-    {(l.amount > 0 || l.status !== "cancelled") && <p className="hint" style={{ marginTop: 14 }}>{tr("Kwota:")}{" "}{pln(l.amount)}{l.status === "planned" ? "" : l.paid ? tr(" · opłacona") : tr(" · nieopłacona")}</p>}
-    {(() => { const k = contact(l.sid); return k && (k.email || k.phone) ? <p className="ktc" style={{ marginTop: 10 }}>{k.email && <a href={"mailto:" + k.email}>✉️ {k.email}</a>}{k.phone && <a href={"tel:" + k.phone.replace(/\s/g, "")}>📞 {k.phone}</a>}</p> : null; })()}
-    <div className="mf"><button className="btn p" onClick={ov.close}>{tr("Zamknij")}</button></div></>);
-  const multi = (c?.tutors.length || 0) > 1;
-  const TD = ymd(new Date());
-  const lrow = (l: PLesson) => <button type="button" key={l.id} className={"srow" + (l.status === "cancelled" ? " cx" : "") + (l.date === TD ? " tday" : "")} onClick={() => lessonModal(l)}>
-    <span className="tm">{sdate(l.date)}<small>{l.time}</small></span><span className="sb" />
-    <span className="m"><b>{l.subject || tr("Lekcja")}{l.topic ? " · " + l.topic : ""}</b><span>{multi ? l.tutor + " · " : ""}{l.status === "done" ? l.notes || tr("bez notatki") : l.status === "cancelled" ? tr("Odwołana") : l.min + " " + tr("min")}</span></span>
-    {l.status === "planned" ? null : billable(l) ? l.paid ? <span className="tag gr">{tr("Opłacona")}</span> : <span className="tag am">{pln(l.amount).replace(",00", "")}</span> : null}</button>;
-
+  const lessonModal = (l: PLesson) => ov.modal(<VSheet l={l} title={l.subject || tr("Lekcja")} hwDone={l.hw ? l.hwDone : undefined} contact={contact(l.sid)} />);
+  const lrow = (l: PLesson) => <VRow key={l.id} l={l} onClick={() => lessonModal(l)} />;
   const switcher = kids.length > 1 && <div className="pkids" role="group" aria-label={tr("Dziecko")}>{kids.map((k, i) => <button key={k.cid} type="button" className={"chip" + (k === c ? " on" : "")} aria-pressed={k === c} onClick={() => setCi(i)}>{k.name}</button>)}</div>;
   const noTutors = c && !c.tutors.length && <div className="nt">{tr("{0} nie ma jeszcze połączonych korepetytorów w TutorTrack. Lekcje pojawią się tu same, gdy dziecko wpisze kod od korepetytora.", c.name)}</div>;
 
@@ -115,7 +103,7 @@ export function ParentPanel() {
           <div className="bento" style={{ marginTop: 12 }}>
             <div className="card w2"><div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}><h2 style={{ margin: 0 }}>{tr("Najbliższe lekcje")}</h2><span style={{ flex: 1 }} />{up.length > 4 && <button className="btn s" onClick={() => { setLv("up"); go("lek"); }}>{tr("Wszystkie (")}{up.length})</button>}</div>
               {up.length ? up.slice(0, 4).map(lrow) : <p className="hint" style={{ margin: 0 }}>{tr("Brak zaplanowanych lekcji.")}</p>}</div>
-            <div className="card w2"><h2>{tr("Ostatnie notatki i zadania")}</h2>{notes.length ? notes.map((l) => <button type="button" key={l.id} className="srow" onClick={() => lessonModal(l)}><span className="tm">{sdate(l.date)}<small>{l.time}</small></span><span className="sb" /><span className="m"><b>{l.subject || tr("Lekcja")}{l.topic ? " · " + l.topic : ""}</b><span>{l.notes || tr("Zadanie: ") + l.hw}</span></span>{l.hw && (l.hwDone ? <span className="tag gr">{tr("Zrobione")}</span> : <span className="tag am">{tr("Zadanie")}</span>)}</button>) : <p className="hint" style={{ margin: 0 }}>{tr("Tu pojawią się notatki korepetytora po lekcjach.")}</p>}</div>
+            <div className="card w2"><h2>{tr("Ostatnie notatki i zadania")}</h2>{notes.length ? notes.map(lrow) : <p className="hint" style={{ margin: 0 }}>{tr("Tu pojawią się notatki korepetytora po lekcjach.")}</p>}</div>
           </div>
         </>
       </>}
@@ -123,16 +111,12 @@ export function ParentPanel() {
   }
 
   function Lek() {
-    const nowKey = ymd(new Date()) + " " + new Date().toTimeString().slice(0, 5);
-    const list = lv === "up" ? ls.filter((l) => l.status === "planned" && key(l) >= nowKey).sort((a, b) => key(a).localeCompare(key(b)))
-      : ls.filter((l) => !(l.status === "planned" && key(l) >= nowKey)).sort((a, b) => key(b).localeCompare(key(a)));
-    const groups: [string, PLesson[]][] = [];
-    list.forEach((l) => { const k = l.date.slice(0, 7); const g = groups[groups.length - 1]; if (g && g[0] === k) g[1].push(l); else groups.push([k, [l]]); });
-    return <>{switcher}<>{noTutors}
-      <div className="seg stseg" role="group" aria-label={tr("Pokaż lekcje")}>{([["up", tr("Nadchodzące")], ["past", tr("Minione")]] as const).map(([k, t]) => <button key={k} aria-pressed={lv === k} onClick={() => setLv(k)}>{t}</button>)}</div>
-      {groups.length ? groups.map(([k, g]) => { const [y, mo] = k.split("-").map(Number); return <div key={k} style={{ marginTop: 14 }}><div className="pmh"><b>{MLONG[mo - 1].charAt(0).toUpperCase() + MLONG[mo - 1].slice(1)} {y}</b><span>{lekcje(g.length)}</span></div><div className="card" style={{ padding: "4px 14px" }}>{g.map(lrow)}</div></div>; })
-        : <div className="card" style={{ marginTop: 14 }}><Empty icon="cal" title={lv === "up" ? tr("Brak zaplanowanych lekcji") : tr("Brak minionych lekcji")} sub={tr("Lekcje dodaje korepetytor.")} /></div>}
-    </></>;
+    const { up, past, shown, nUnpaid } = useLessonTabs(ls, lv, ord, onlyUnpaid);
+    return <>{switcher}{noTutors}
+      <LessonTabs view={lv} setView={setLv} n={[up.length, past.length, ls.length]} ord={ord} setOrd={setOrd} onlyUnpaid={onlyUnpaid} setOnlyUnpaid={setOnlyUnpaid} nUnpaid={nUnpaid} />
+      {shown.length ? <MonthGroups list={shown} row={(l) => lrow(l as PLesson)} />
+        : <div className="card"><Empty icon="book" title={onlyUnpaid && lv === "all" ? tr("Brak nieopłaconych lekcji") : lv === "up" ? tr("Brak zaplanowanych lekcji") : tr("Brak lekcji")} sub={tr("Lekcje dodaje korepetytor.")} /></div>}
+    </>;
   }
 
   function Pay() {
@@ -169,26 +153,24 @@ export function ParentPanel() {
   }
 
   function Plan() {
-    const td = ymd(new Date());
-    const mon = new Date(); mon.setHours(0, 0, 0, 0); mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7) + wk * 7);
-    const days = [...Array(7)].map((_, i) => { const x = new Date(mon); x.setDate(x.getDate() + i); return ymd(x); });
-    const label = sdate(days[0]) + " – " + sdate(days[6]);
+    const days = weekDays(wk);
+    const n = ls.filter((l) => l.date >= days[0] && l.date <= days[6] && l.status !== "cancelled").length;
     return <>{switcher}{noTutors}
-      <div className="pwk"><div className="mpick" role="group" aria-label={tr("Tydzień")}><button type="button" aria-label={tr("Poprzedni tydzień")} onClick={() => setWk(wk - 1)}>‹</button><span aria-live="polite">{label}</span><button type="button" aria-label={tr("Następny tydzień")} onClick={() => setWk(wk + 1)}>›</button></div>{wk !== 0 && <button className="btn s" onClick={() => setWk(0)}>{tr("Dziś")}</button>}</div>
-      {days.map((dd, i) => {
-        const items = [
+      <WeekBar w={wk} setW={setWk} from={days[0]} to={days[6]} count={n} />
+      <div className="days">{days.map((dd, i) => {
+        type It = { s: string; e: string; l?: PLesson; ev?: Ev; host?: Ev };
+        const items: It[] = [
           ...ls.filter((l) => l.date === dd).map((l) => ({ s: l.time, e: te(l.time, l.min), l })),
           ...c!.events.filter((e) => (e.repeat === "w" ? e.weekday === i : e.date === dd)).map((e) => ({ s: e.start, e: e.end, ev: e })),
-        ].sort((a, b) => a.s.localeCompare(b.s)) as { s: string; e: string; l?: PLesson; ev?: Ev; host?: Ev }[];
+        ].sort((a, b) => a.s.localeCompare(b.s));
         // an activity inside a longer one of the same kind (e.g. a test during school) is shown as part of it
         items.forEach((x) => { if (!x.ev) return; const h = items.find((y) => y !== x && y.ev && y.ev.cat === x.ev!.cat && y.s <= x.s && y.e >= x.e && (y.s < x.s || y.e > x.e || items.indexOf(y) < items.indexOf(x))); if (h) x.host = h.ev; });
-        items.sort((a, b) => { const ka = (a.host ? items.find((y) => y.ev === a.host)!.s : a.s) + (a.host ? "1" : "0") + a.s, kb = (b.host ? items.find((y) => y.ev === b.host)!.s : b.s) + (b.host ? "1" : "0") + b.s; return ka.localeCompare(kb); });
-        return <section key={dd} className={"dgrp pdg" + (dd === td ? " today" : "")} style={{ marginTop: 12 }}><div className={"dgh" + (dd === td ? " td" : "")}><b>{dd === td ? tr("Dziś") : WDL[i]}</b>{dd === td && <i className="tdtag">{tr("dzisiaj")}</i>}<span>{sdate(dd)}</span></div>
-          <div className="card dgl" style={{ padding: "4px 14px" }}>{items.length ? items.map((x, k) => "l" in x && x.l
-            ? <button type="button" key={k} className={"srow" + (x.l.status === "cancelled" ? " cx" : "")} onClick={() => lessonModal(x.l!)}><span className="tm">{x.s}<small>{x.e}</small></span><span className="sb" /><span className="m"><b>{x.l.subject || tr("Lekcja")}{x.l.topic ? " · " + x.l.topic : ""}</b><span>{x.l.tutor}</span></span>{x.l.status === "cancelled" && <span className="tag rd">{tr("Odwołana")}</span>}</button>
-            : <div key={k} className={"srow" + (x.host ? " psubrow" : "")} style={{ cursor: "default" }}><span className="tm">{x.s}<small>{x.e}</small></span><span className="sb o" /><span className="m"><b>{x.ev!.title}</b><span>{x.host ? tr("w trakcie: {0}", x.host.title) : CATS[x.ev!.cat] || tr("Inne")}</span></span></div>)
-            : <p className="hint" style={{ margin: "10px 0" }}>{tr("Brak zajęć.")}</p>}</div></section>;
-      })}
+        const k = (x: It) => (x.host ? items.find((y) => y.ev === x.host)!.s + "1" : x.s + "0") + x.s;
+        items.sort((a, b) => k(a).localeCompare(k(b)));
+        return <DayBlock key={dd} ds={dd} n={items.filter((x) => x.l && x.l.status !== "cancelled").length}>{items.length ? items.map((x, j) => x.l
+          ? <VRow key={j} l={x.l} nd onClick={() => lessonModal(x.l!)} />
+          : <ERow key={j} e={x.ev!} s={x.s} en={x.e} host={x.host?.title} />) : null}</DayBlock>;
+      })}</div>
       <div className="plegend" style={{ marginTop: 12 }}><span><i className="les" />{tr("lekcje od korepetytorów")}</span><span><i className="own" />{tr("własne zajęcia dziecka")}</span></div>
     </>;
   }

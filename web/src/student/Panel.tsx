@@ -1,4 +1,4 @@
-import { ReactNode, useCallback, useEffect, useState } from "react";
+import { Fragment, ReactNode, useCallback, useEffect, useState } from "react";
 import { api } from "../lib/api";
 import { Empty, Ic, Logo } from "../lib/icons";
 import { addDays, lekcje, CancelRequest, copyText, download, fd, fm, printText, shareText, subjColor, fdt, fmtH, MSHORT, pd, pln, te, WDL, WDSHORT, ym, ymd } from "../lib/util";
@@ -9,13 +9,14 @@ import { navigate } from "../lib/router";
 import { ThemePicker } from "../ui/themes";
 import { LangPicker, langName } from "../ui/lang";
 import { tr } from "../lib/i18n";
+import { DayBlock, ERow, LessonTabs, LView, MonthGroups, useLessonTabs, VRow, VSheet } from "../ui/lessons";
 
 type SLesson = { id: string; date: string; time: string; min: number; subject: string; topic: string; status: "planned" | "done" | "cancelled"; notes: string; hw: string; hd: string; amount: number; paid: boolean; cr: CancelRequest | null };
 type Link = { sid: string; tutor: string; studentName: string; subject: string; contact?: { email: string; phone: string }; lessons: SLesson[] };
 type Ev = { id: string; title: string; cat: string; repeat: "w" | "o"; weekday: number; date: string; start: string; end: string; hideParent?: boolean };
 type Parent = { id: string; name: string; email: string };
 type Data = { links: Link[]; events: Ev[]; done: string[]; parentCode: string | null; parents: Parent[] };
-type L = SLesson & { tutor: string; sid: string };
+type L = SLesson & { tutor: string; sid: string; hwDone?: boolean };
 const CATS: Record<string, string> = { school: tr("Szkoła"), tutor: tr("Korepetycje spoza TutorTrack"), extra: tr("Zajęcia dodatkowe"), other: tr("Inne") };
 /** Two time ranges ("HH:MM") overlap. */
 const clash = (aS: string, aE: string, bS: string, bE: string) => aS < bE && bS < aE;
@@ -24,9 +25,11 @@ const RED = { background: "var(--rdl)", borderLeft: "4px solid var(--rd)", paddi
 
 /** tabs shown in the phone's bottom bar; the rest live under "Więcej" */
 const MAIN = ["dash", "plan", "graf", "hw"];
+/** reachable from Lekcje and Settings, not listed in the menus */
+const HIDDEN = ["sum"];
 const TABS: [string, string, string, string][] = [
   ["dash", tr("Pulpit"), "home", tr("Pulpit")], ["plan", tr("Plan§sched"), "cal", tr("Plan§sched")], ["graf", tr("Zajęcia"), "book", tr("Zajęcia")], ["hw", tr("Zadania"), "check", tr("Zadania")],
-  ["sum", tr("Podsumowanie"), "chart", tr("Miesiąc")], ["kor", tr("Korepetytorzy"), "users", tr("Nauczyciele")], ["konto", tr("Ustawienia"), "set", tr("Ustawienia")],
+  ["lek", tr("Lekcje"), "note", tr("Lekcje")], ["sum", tr("Podsumowanie miesiąca"), "chart", tr("Miesiąc")], ["kor", tr("Korepetytorzy"), "users", tr("Nauczyciele")], ["konto", tr("Ustawienia"), "set", tr("Ustawienia")],
 ];
 
 export function StudentPanel() {
@@ -39,6 +42,9 @@ export function StudentPanel() {
   const [sel, setSel] = useState(-1); // selected weekday in the phone view of Plan (-1 = today / Monday)
   const [m, setM] = useState(ym(new Date()));
   const [hf, setHf] = useState<"todo" | "done" | "all">("todo");
+  const [lv, setLv] = useState<LView>("up");
+  const [ord, setOrd] = useState<1 | -1>(-1);
+  const [onlyUnpaid, setOnlyUnpaid] = useState(false);
 
   const load = useCallback(async () => {
     try { setD(await api<Data>("GET", "/api/student/data")); setErr(""); } catch (e) { setErr(errMsg(e)); }
@@ -58,8 +64,8 @@ export function StudentPanel() {
     try { await fn(); await load(); if (ok) ov.toast(ok); return true; } catch (e) { ov.toast(errMsg(e)); return false; }
   };
 
-  const all: L[] = (d?.links || []).flatMap((k) => k.lessons.map((l) => ({ ...l, tutor: k.tutor, sid: k.sid })));
   const done = new Set(d?.done || []);
+  const all: L[] = (d?.links || []).flatMap((k) => k.lessons.map((l) => ({ ...l, tutor: k.tutor, sid: k.sid, hwDone: done.has(l.id) })));
   const nT = all.filter((l) => l.hw && !done.has(l.id)).length;
   const find = (id: string) => all.find((l) => l.id === id);
 
@@ -95,22 +101,21 @@ export function StudentPanel() {
   };
   const lessonModal = (id: string) => {
     const l = find(id); if (!l) return;
-    ov.modal(<><h2>{l.subject || tr("Lekcja")}</h2><p className="hint" style={{ margin: "-6px 0 10px" }}>{l.tutor} · {fd(l.date)}, {l.time}–{te(l.time, l.min)} ({l.min}{" "}{tr("min)")}</p>
-      <div style={{ marginBottom: 12 }}>{tags(l)}</div>{l.topic && <p><b>{tr("Temat:")}</b> {l.topic}</p>}
-      {l.status === "done" && <><h3 style={{ margin: "12px 0 4px", fontSize: 15 }}>{tr("Notatka po lekcji")}</h3><p className="pre" style={{ margin: 0 }}>{l.notes || <span className="hint">{tr("Brak notatki.")}</span>}</p></>}
-      {l.hw && <><h3 style={{ margin: "16px 0 4px", fontSize: 15 }}>{tr("Praca domowa")}</h3><p className="pre" style={{ margin: "0 0 6px" }}>{l.hw}</p>{due(l)}</>}
-      {l.amount > 0 && <p className="hint" style={{ marginTop: 14 }}>{tr("Kwota:")}{" "}{pln(l.amount)}{l.paid ? tr(" · opłacona") : tr(" · nieopłacona")}</p>}
-      {l.cr?.status === "pending" && <div className="nt" style={{ marginTop: 12 }}><b>{l.cr.kind === "move" ? tr("Prośba o przeniesienie na następny tydzień wysłana") : tr("Prośba o odwołanie wysłana")}</b> {fdt(l.cr.at)}{" "}{tr("– czeka na potwierdzenie korepetytora.")}<br />{tr("Przyczyna:")}{" "}{l.cr.reason}</div>}
+    const contact = d?.links.find((k) => k.sid === l.sid)?.contact;
+    ov.modal(<VSheet l={l} title={l.subject || tr("Lekcja")} hwDone={l.hw ? done.has(l.id) : undefined} contact={contact} noCr actions={<>
+      {l.cr?.status === "pending" && <div className="rqbox"><b>{l.cr.kind === "move" ? tr("Prośba o przeniesienie na następny tydzień wysłana") : tr("Prośba o odwołanie wysłana")}</b><span>{fdt(l.cr.at)}{" "}{tr("– czeka na potwierdzenie korepetytora.")}<br />{tr("Przyczyna:")}{" "}{l.cr.reason}</span></div>}
       {l.cr?.status === "rejected" && l.status === "planned" && <div className="lerr" style={{ marginTop: 12 }}><b>{l.cr.kind === "move" ? tr("Korepetytor odrzucił prośbę o przeniesienie.") : tr("Korepetytor odrzucił prośbę o odwołanie.")}</b>{l.cr.note && <><br />{tr("Komentarz:")}{" "}{l.cr.note}</>}<br />{tr("Twoja przyczyna:")}{" "}{l.cr.reason}</div>}
       {l.cr?.status === "accepted" && l.status === "cancelled" && (l.cr.kind === "move"
         ? <div className="lerr" style={{ marginTop: 12 }}><b>{tr("Korepetytor nie mógł przenieść lekcji i ją odwołał.")}</b>{l.cr.note && <><br />{tr("Komentarz:")}{" "}{l.cr.note}</>}<br />{tr("Twoja przyczyna:")}{" "}{l.cr.reason}</div>
         : <p className="hint" style={{ marginTop: 12 }}>{tr("Lekcja odwołana na Twoją prośbę. Przyczyna:")}{" "}{l.cr.reason}{l.cr.note && <><br />{tr("Komentarz korepetytora:")}{" "}{l.cr.note}</>}</p>)}
       {l.cr?.status === "moved" && <div className="nt" style={{ marginTop: 12 }}><b>{tr("Korepetytor przeniósł lekcję na Twoją prośbę")}</b>{l.cr.note ? <>{" "}{tr("– z")}{" "}{fd(l.cr.note)}{" "}{tr("na")}{" "}{fd(l.date)}</> : null}.<br />{tr("Przyczyna:")}{" "}{l.cr.reason}</div>}
-      <div className="mf">
-        {l.status === "planned" && l.cr?.status !== "pending" && <button className="btn d" style={{ marginRight: "auto" }} onClick={() => ov.modal(<CancelRequestForm l={l} onSent={load} />)}>{tr("Odwołaj lub przenieś")}</button>}
-        {l.cr?.status === "pending" && <button className="btn d" style={{ marginRight: "auto" }} onClick={() => { ov.close(); run(() => api("DELETE", `/api/student/lessons/${l.id}/cancel-request`), tr("Prośba o odwołanie wycofana.")); }}>{tr("Wycofaj prośbę")}</button>}
-        <button className="btn" onClick={ov.close}>{tr("Zamknij")}</button>{l.hw && <button className="btn p" onClick={() => toggleHw(l.id, true)}>{done.has(l.id) ? tr("Cofnij: niezrobione") : tr("Oznacz zadanie jako zrobione")}</button>}</div></>);
+      {(l.hw || l.status === "planned") && <div className="acts">
+        {l.hw && <button className="btn p" onClick={() => toggleHw(l.id, true)}>{done.has(l.id) ? tr("Cofnij: niezrobione") : tr("Oznacz zadanie jako zrobione")}</button>}
+        {l.status === "planned" && l.cr?.status !== "pending" && <button className="btn d" onClick={() => ov.modal(<CancelRequestForm l={l} onSent={load} />)}>{tr("Odwołaj lub przenieś")}</button>}
+        {l.cr?.status === "pending" && <button className="btn d" onClick={() => { ov.close(); run(() => api("DELETE", `/api/student/lessons/${l.id}/cancel-request`), tr("Prośba o odwołanie wycofana.")); }}>{tr("Wycofaj prośbę")}</button>}
+      </div>}</>} />);
   };
+
   const evForm = (e?: Ev) => ov.modal(<EvForm e={e} lessons={all} events={d!.events} par={d!.parents.length > 0} onSave={(b) => run(() => (e ? api("PATCH", "/api/student/events/" + e.id, b) : api("POST", "/api/student/events", b)), e ? tr("Zapisano zmiany.") : tr("Dodano zajęcia."))}
     onDel={e ? () => ov.confirm({ title: tr("Usunąć zajęcia?"), text: tr("Zajęcia znikną z Twojej listy zajęć."), ok: tr("Usuń"), danger: true, onOk: () => { run(() => api("DELETE", "/api/student/events/" + e.id), tr("Usunięto zajęcia.")); } }) : undefined} />);
   const out = () => ov.confirm({ title: tr("Wylogować się?"), text: tr("Twoje dane są bezpiecznie zapisane na koncie."), ok: tr("Wyloguj się"), onOk: logout });
@@ -130,9 +135,7 @@ export function StudentPanel() {
     const wdToday = (now.getDay() + 6) % 7;
     const today = [...all.filter((l) => l.date === td).map((l) => ({ s: l.time, e: te(l.time, l.min), l })), ...d!.events.filter((e) => (e.repeat === "w" ? e.weekday === wdToday : e.date === td)).map((e) => ({ s: e.start, e: e.end, ev: e }))].sort((a, b) => a.s.localeCompare(b.s));
     const nextLabel = next ? (next.date === td ? tr("dziś") : next.date === addDays(1) ? tr("jutro") : WDSHORT[pd(next.date).getDay()]) + " " + next.time : "—";
-    const lrow = (l: L, when = false) => <button type="button" key={l.id} className={"srow" + (l.status === "cancelled" ? " cx" : "") + (when && l.date === td ? " tday" : "")} onClick={() => lessonModal(l.id)}>
-      <span className="tm">{when ? <>{l.date === td ? tr("Dziś") : l.date === addDays(1) ? tr("Jutro") : pd(l.date).getDate() + " " + MSHORT[pd(l.date).getMonth()]}<small>{l.time}</small></> : <>{l.time}<small>{te(l.time, l.min)}</small></>}</span><span className="sb" />
-      <span className="m"><b>{l.subject || tr("Lekcja")}</b><span>{l.tutor}{l.topic ? " · " + l.topic : ""}</span></span>{shortTag(l, false)}</button>;
+    const lrow = (l: L, when = false) => <VRow key={l.id} l={l} nd={!when} onClick={() => lessonModal(l.id)} />;
     return <>
       <div className="bar"><div><h2 style={{ fontSize: 22, margin: 0 }}>{tr("Cześć,")}{" "}{(user!.name || "").split(" ")[0]}!</h2><span className="hint">{WDL[wdToday]}, {fd(td).split(", ")[1]}</span></div></div>
       {!d!.links.length && <div className="nt" style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>{tr("Połącz się z korepetytorem, aby widzieć swoje lekcje, notatki i prace domowe.")}{" "}<button className="btn s p" onClick={() => go("kor")}>{tr("Dodaj kod")}</button></div>}
@@ -149,9 +152,9 @@ export function StudentPanel() {
       <div className="bento" style={{ marginTop: 12 }}>
         <div className="card w2"><div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}><h2 style={{ margin: 0 }}>{tr("Do zrobienia")}</h2><span className="sp" style={{ flex: 1 }} />{todo.length > 4 && <button className="btn s" onClick={() => go("hw")}>{tr("Wszystkie (")}{todo.length})</button>}</div>
           {todo.length ? todo.slice(0, 4).map((l) => <div className="srow" key={l.id} style={{ cursor: "default" }}><button className="chkc" aria-label={tr("Oznacz jako zrobione")} onClick={() => toggleHw(l.id)} /><span className="m" onClick={() => lessonModal(l.id)} style={{ cursor: "pointer" }}><b>{l.hw}</b><span>{l.subject || tr("Lekcja")} · {l.tutor}</span></span>{due(l)}</div>) : <p className="hint" style={{ margin: 0 }}>{tr("Wszystkie prace domowe są zrobione.")}</p>}</div>
-        <div className="card w2"><h2>{tr("Dziś")}</h2>{today.length ? today.map((x, k) => "l" in x && x.l ? lrow(x.l) : <button type="button" key={k} className="srow" onClick={() => evForm((x as any).ev)}><span className="tm">{x.s}<small>{x.e}</small></span><span className="sb o" /><span className="m"><b>{(x as any).ev.title}</b><span>{CATS[(x as any).ev.cat] || tr("Inne")}</span></span></button>) : <p className="hint" style={{ margin: 0 }}>{tr("Dziś nie masz zaplanowanych zajęć.")}</p>}</div>
+        <div className="card w2"><h2>{tr("Dziś")}</h2>{today.length ? today.map((x, k) => "l" in x && x.l ? lrow(x.l) : <ERow key={k} e={(x as any).ev} s={x.s} en={x.e} onClick={() => evForm((x as any).ev)} />) : <p className="hint" style={{ margin: 0 }}>{tr("Dziś nie masz zaplanowanych zajęć.")}</p>}</div>
         <div className="card w2"><h2>{tr("Najbliższe lekcje")}</h2>{upcoming.length ? upcoming.slice(0, 5).map((l) => lrow(l, true)) : <p className="hint" style={{ margin: 0 }}>{tr("Brak zaplanowanych lekcji.")}</p>}</div>
-        <div className="card w2"><h2>{tr("Ostatnie notatki")}</h2>{notes.length ? notes.map((l) => <button type="button" key={l.id} className="srow" onClick={() => lessonModal(l.id)}><span className="tm">{pd(l.date).getDate()} {MSHORT[pd(l.date).getMonth()]}<small>{l.time}</small></span><span className="sb" /><span className="m"><b>{l.subject || tr("Lekcja")}{l.topic ? " · " + l.topic : ""}</b><span>{l.notes}</span></span></button>) : <p className="hint" style={{ margin: 0 }}>{tr("Tu pojawią się notatki od korepetytora po lekcjach.")}</p>}</div>
+        <div className="card w2"><h2>{tr("Ostatnie notatki")}</h2>{notes.length ? notes.map((l) => lrow(l, true)) : <p className="hint" style={{ margin: 0 }}>{tr("Tu pojawią się notatki od korepetytora po lekcjach.")}</p>}</div>
       </div>
     </>;
   }
@@ -185,13 +188,12 @@ export function StudentPanel() {
       : <button type="button" key={k} className={"pblk own c-" + x.ev!.cat + (x.bad ? " clash" : "")} onClick={() => evForm(x.ev)}>
           <span className="ptm">{x.s}–{x.e}</span><b>{x.ev!.title}</b>{x.bad && <span className="tag rd">{tr("Nakłada się")}</span>}</button>;
     return <>
-      <div className="wkbar"><button className="btn s" onClick={() => { setWk(wk - 1); setSel(-1); }} aria-label={tr("Poprzedni tydzień")}>‹</button><b>{mon.getDate()} {MSHORT[mon.getMonth()]} – {end.getDate()} {MSHORT[end.getMonth()]}</b><button className="btn s" onClick={() => { setWk(wk + 1); setSel(-1); }} aria-label={tr("Następny tydzień")}>›</button>{wk !== 0 && <button className="btn s" onClick={() => { setWk(0); setSel(-1); }}>{tr("Dziś")}</button>}</div>
+      <div className="wkbar ltw"><button className="btn s" onClick={() => { setWk(wk - 1); setSel(-1); }} aria-label={tr("Poprzedni tydzień")}>‹</button><b>{mon.getDate()} {MSHORT[mon.getMonth()]} – {end.getDate()} {MSHORT[end.getMonth()]}<small>{lekcje(days.reduce((t, x) => t + x.it.filter((y) => y.l && y.l.status !== "cancelled").length, 0))}</small></b><button className="btn s" onClick={() => { setWk(wk + 1); setSel(-1); }} aria-label={tr("Następny tydzień")}>›</button>{wk !== 0 && <button className="btn s" onClick={() => { setWk(0); setSel(-1); }}>{tr("Dziś")}</button>}</div>
       <div className="plegend"><span><i className="les" />{tr("Lekcje od korepetytorów")}</span><span><i className="own" />{tr("Moje zajęcia")}</span></div>
-      {/* phone: day picker + agenda of one day */}
-      <div className="dstrip" role="tablist" aria-label={tr("Dzień tygodnia")}>{days.map((x, i) => <button key={x.ds} role="tab" aria-selected={i === cur} className={(i === cur ? "on" : "") + (x.ds === td ? " td" : "")} onClick={() => setSel(i)}>
-        <small>{WDSHORT[x.day.getDay()].replace(".", "")}</small><b>{x.day.getDate()}</b><span className="dots">{x.it.some((y) => y.l && y.l.status !== "cancelled") && <i className="les" />}{x.it.some((y) => y.ev) && <i className="own" />}</span></button>)}</div>
-      <div className={"dgh pdayh" + (days[cur].ds === td ? " td" : "")} style={{ marginTop: 4 }}><b>{days[cur].ds === td ? tr("Dziś") : WDL[cur]}</b>{days[cur].ds === td && <i className="tdtag">{tr("dzisiaj")}</i>}<span>{days[cur].day.getDate()} {MSHORT[days[cur].day.getMonth()]}</span></div>
-      <div className={"card pday" + (days[cur].ds === td ? " today" : "")}>{days[cur].it.length ? days[cur].it.map(block) : <p className="hint" style={{ margin: 0, textAlign: "center" }}>{tr("Wolny dzień – brak lekcji i zajęć.")}</p>}</div>
+      {/* phone: the whole week as a list of days, like the tutor's lesson list */}
+      <div className="days pwlist">{days.map((x) => <DayBlock key={x.ds} ds={x.ds} n={x.it.filter((y) => y.l && y.l.status !== "cancelled").length}>{x.it.length ? x.it.map((y, k) => y.l
+        ? <VRow key={k} l={y.l} nd clash={!!y.bad} onClick={() => lessonModal(y.l!.id)} />
+        : <Fragment key={k}><ERow e={y.ev!} s={y.s} en={y.e} clash={!!y.bad} onClick={() => evForm(y.ev)} />{(y.subs || []).map((z, n) => <ERow key={n} e={z.ev!} s={z.s} en={z.e} host={y.ev!.title} clash={!!z.bad} onClick={() => evForm(z.ev)} />)}</Fragment>) : null}</DayBlock>)}</div>
       {/* desktop: whole week in columns */}
       <div className="pweek">{days.map((x) => <div key={x.ds} className={"pcol" + (x.ds === td ? " td" : "")}>
         <div className="pch"><small>{WDSHORT[x.day.getDay()]}{x.ds === td && <i className="tdtag" style={{ marginLeft: 6 }}>{tr("dzisiaj")}</i>}</small><b>{x.day.getDate()} {MSHORT[x.day.getMonth()]}</b></div>
@@ -227,6 +229,17 @@ export function StudentPanel() {
             <button className={"chkc" + (dn ? " on" : "")} aria-label={dn ? tr("Oznacz jako niezrobione") : tr("Oznacz jako zrobione")} aria-pressed={dn} onClick={() => toggleHw(l.id)}>{dn && <Ic n="check" s={14} />}</button>
             <span className="m" onClick={() => lessonModal(l.id)} style={{ cursor: "pointer" }}><b style={dn ? { textDecoration: "line-through", color: "var(--mu)" } : undefined}>{l.hw}</b><span>{l.subject || tr("Lekcja")} · {l.tutor}</span></span>{due(l)}</div>; })}</div>}</>;
   }
+  function Lek() {
+    if (!d!.links.length) return <div className="card"><Empty icon="book" title={tr("Brak lekcji")} sub={tr("Dodaj kod od korepetytora, aby zobaczyć swoje lekcje.")} /><div className="acts" style={{ justifyContent: "center" }}><button className="btn p" onClick={() => go("kor")}>{tr("Dodaj kod od korepetytora")}</button></div></div>;
+    const { up, past, shown, nUnpaid } = useLessonTabs(all, lv, ord, onlyUnpaid);
+    return <>
+      <LessonTabs view={lv} setView={setLv} n={[up.length, past.length, all.length]} ord={ord} setOrd={setOrd} onlyUnpaid={onlyUnpaid} setOnlyUnpaid={setOnlyUnpaid} nUnpaid={nUnpaid} />
+      {shown.length ? <MonthGroups list={shown} row={(l) => <VRow key={l.id} l={l} onClick={() => lessonModal(l.id)} />} />
+        : <div className="card"><Empty icon="book" title={onlyUnpaid && lv === "all" ? tr("Brak nieopłaconych lekcji") : lv === "up" ? tr("Brak zaplanowanych lekcji") : tr("Brak lekcji")} sub={tr("Lekcje dodaje korepetytor.")} /></div>}
+      <div className="card sumc" style={{ marginTop: 16 }}><div><h2 style={{ margin: 0 }}>{tr("Podsumowanie miesiąca")}</h2><span className="hint">{tr("Czas nauki, kwoty, notatki i podsumowanie do wysłania.")}</span></div>
+        <div className="acts"><button className="btn p" onClick={() => go("sum")}>{tr("Pokaż podsumowanie")}</button></div></div>
+    </>;
+  }
   function Sum() {
     const L = all.filter((l) => l.date.slice(0, 7) === m), dn = L.filter((l) => l.status === "done"), cn = L.filter((l) => l.status === "cancelled"), pl = L.filter((l) => l.status === "planned");
     const min = dn.reduce((t, l) => t + l.min, 0), bil = L.filter((l) => l.status === "done" || (l.status === "cancelled" && l.amount > 0)), tot = bil.reduce((t, l) => t + l.amount, 0), paid = bil.reduce((t, l) => t + (l.paid ? l.amount : 0), 0), hw = L.filter((l) => l.hw);
@@ -234,7 +247,7 @@ export function StudentPanel() {
     const e = Object.entries(bs).sort((a, b) => b[1] - a[1]), mx = e.length ? e[0][1] : 1;
     const shiftM = (k: number) => { const [y, mo] = m.split("-").map(Number); setM(ym(new Date(y, mo - 1 + k, 1))); };
     const mt = fm(m);
-    const head = <div className="bar"><div className="mpick" role="group" aria-label={tr("Miesiąc")}><button type="button" aria-label={tr("Poprzedni miesiąc")} onClick={() => shiftM(-1)}>‹</button><span aria-live="polite">{mt.charAt(0).toUpperCase() + mt.slice(1)}</span><button type="button" aria-label={tr("Następny miesiąc")} onClick={() => shiftM(1)}>›</button></div></div>;
+    const head = <><button className="sback" onClick={() => go("lek")}><Ic n="chevl" s={16} />{tr("Lekcje")}</button><div className="bar"><div className="mpick" role="group" aria-label={tr("Miesiąc")}><button type="button" aria-label={tr("Poprzedni miesiąc")} onClick={() => shiftM(-1)}>‹</button><span aria-live="polite">{mt.charAt(0).toUpperCase() + mt.slice(1)}</span><button type="button" aria-label={tr("Następny miesiąc")} onClick={() => shiftM(1)}>›</button></div></div></>;
     const summary = (tutor: string) => {
       const ls = L.filter((l) => l.tutor === tutor && (l.status === "done" || l.status === "cancelled")).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
       const T = [tr("Podsumowanie lekcji – ") + fm(m), tr("Korepetytor: ") + tutor, tr("Uczeń: ") + user!.name, ""];
@@ -255,7 +268,7 @@ export function StudentPanel() {
       <div className="grid g4 st2"><div className="card stat"><div className="l">{tr("Lekcje")}</div><div className="v">{dn.length}</div></div><div className="card stat"><div className="l">{tr("Czas nauki")}</div><div className="v">{fmtH(min)}</div></div><div className="card stat"><div className="l">{tr("Odwołane")}</div><div className="v am">{cn.length}</div></div><div className="card stat"><div className="l">{tr("Zadania")}</div><div className="v">{hw.filter((l) => done.has(l.id)).length} / {hw.length}</div></div></div>
       {tot > 0 && <div className="grid g4 bst" style={{ gridTemplateColumns: "repeat(3,1fr)", marginTop: 16 }}><div className="card stat"><div className="l">{tr("Kwota")}</div><div className="v">{pln(tot).replace(",00", "")}</div></div><div className="card stat"><div className="l">{tr("Opłacone")}</div><div className="v gr">{pln(paid).replace(",00", "")}</div></div><div className="card stat"><div className="l">{tr("Do zapłaty")}</div><div className="v am">{pln(tot - paid).replace(",00", "")}</div></div></div>}
       <div className="card" style={{ marginTop: 16 }}><h2>{tr("Czas nauki według przedmiotu")}</h2>{e.length ? e.map((x) => <div className="bl" key={x[0]}><span>{x[0]}</span><b>{fmtH(x[1])}</b><div className="bb"><i style={{ width: Math.round(x[1] / mx * 100) + "%" }} /></div></div>) : <p className="hint">{tr("Brak danych w wybranym okresie.")}</p>}</div>
-      <div className="card" style={{ marginTop: 16 }}><h2>{tr("Lekcje i notatki")}</h2>{[...dn, ...cn].sort(byDate).map((l) => <button type="button" className={"srow" + (l.status === "cancelled" ? " cx" : "")} key={l.id} onClick={() => lessonModal(l.id)}><span className="tm">{pd(l.date).getDate()} {MSHORT[pd(l.date).getMonth()]}<small>{l.time}</small></span><span className="sb" /><span className="m"><b>{l.subject || tr("Lekcja")}{l.topic ? " · " + l.topic : ""}</b><span>{l.notes || l.tutor}</span></span>{shortTag(l, false)}</button>)}</div>
+      <div className="card" style={{ marginTop: 16 }}><h2>{tr("Lekcje i notatki")}</h2>{[...dn, ...cn].sort(byDate).map((l) => <VRow key={l.id} l={l} onClick={() => lessonModal(l.id)} />)}</div>
       {tutors.length > 0 && <div className="card sumc" style={{ marginTop: 16 }}><div><h2 style={{ margin: 0 }}>{tr("Podsumowanie przeprowadzonych lekcji")}</h2><span className="hint">{tr("Lista lekcji z tematami i kwotami – do skopiowania lub wysłania.")}</span></div>
         <div className="acts">{tutors.map((t) => <button key={t} className="btn p" onClick={() => summary(t)}>{tutors.length > 1 ? tr("Od: ") + t : tr("Pokaż podsumowanie")}</button>)}</div></div>}
     </>;
@@ -269,7 +282,7 @@ export function StudentPanel() {
     <div className="app">
       <aside className="side" aria-label={tr("Menu ucznia")}>
         <div className="logo"><i><Logo /></i>{tr("TutorTrack")}</div>
-        <div>{TABS.map((x) => <button key={x[0]} className={"nav" + (tab === x[0] ? " on" : "")} aria-current={tab === x[0] ? "page" : undefined} onClick={() => go(x[0])}><Ic n={x[2]} />{x[1]}{x[0] === "hw" && nT > 0 && <span className="tag am" style={{ marginLeft: "auto" }}>{nT}</span>}</button>)}
+        <div>{TABS.filter((x) => !HIDDEN.includes(x[0])).map((x) => <button key={x[0]} className={"nav" + (tab === x[0] ? " on" : "")} aria-current={tab === x[0] ? "page" : undefined} onClick={() => go(x[0])}><Ic n={x[2]} />{x[1]}{x[0] === "hw" && nT > 0 && <span className="tag am" style={{ marginLeft: "auto" }}>{nT}</span>}</button>)}
           {user!.isAdmin && <button className="nav" onClick={() => navigate("/admin")}><Ic n="alert" />{tr("Panel administratora")}</button>}
           <button className="nav" onClick={out}><Ic n="out" />{tr("Wyloguj się")}</button></div>
       </aside>
@@ -279,12 +292,12 @@ export function StudentPanel() {
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}><span className="hint" id="usr">{user!.name}</span>{action}</div>
         </header>
         {err && <p className="banner">{err} <button className="lk" onClick={load}>{tr("Spróbuj ponownie")}</button></p>}
-        <main className="content">{!d ? <p className="hint">{tr("Ładowanie…")}</p> : tab === "dash" ? Dash() : tab === "plan" ? Plan() : tab === "graf" ? Graf() : tab === "hw" ? Hw() : tab === "sum" ? Sum() : tab === "kor" ? <KorTab d={d} load={load} run={run} /> : <KontoTab out={out} d={d} load={load} go={go} />}</main>
+        <main className="content">{!d ? <p className="hint">{tr("Ładowanie…")}</p> : tab === "dash" ? Dash() : tab === "plan" ? Plan() : tab === "graf" ? Graf() : tab === "hw" ? Hw() : tab === "sum" ? Sum() : tab === "lek" ? Lek() : tab === "kor" ? <KorTab d={d} load={load} run={run} /> : <KontoTab out={out} d={d} load={load} go={go} />}</main>
       </div>
     </div>
     <nav className="tabs fit" aria-label={tr("Menu")}>{TABS.filter((x) => MAIN.includes(x[0])).map((x) => <button key={x[0]} className={tab === x[0] ? "on" : ""} aria-current={tab === x[0] ? "page" : undefined} onClick={() => go(x[0])}><Ic n={x[2]} s={22} />{x[3]}{x[0] === "hw" && nT > 0 && <i className="tbadge">{nT}</i>}</button>)}
       <button className={MAIN.includes(tab) ? "" : "on"} aria-haspopup="dialog" onClick={() => ov.modal(<><h2>{tr("Więcej")}</h2><div className="more-list">
-        {TABS.filter((x) => !MAIN.includes(x[0])).map((x) => <button key={x[0]} onClick={() => { ov.close(); go(x[0]); }}><Ic n={x[2]} />{x[1]}</button>)}
+        {TABS.filter((x) => !MAIN.includes(x[0]) && !HIDDEN.includes(x[0])).map((x) => <button key={x[0]} onClick={() => { ov.close(); go(x[0]); }}><Ic n={x[2]} />{x[1]}</button>)}
         <button onClick={() => { ov.close(); out(); }}><Ic n="out" />{tr("Wyloguj się")}</button></div>
         <div className="mf"><button className="btn" onClick={ov.close}>{tr("Zamknij")}</button></div></>)}><Ic n="menu" s={22} />{tr("Więcej")}</button></nav>
   </>;
