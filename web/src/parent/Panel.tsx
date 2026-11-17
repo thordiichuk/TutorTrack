@@ -155,7 +155,7 @@ export function ParentPanel() {
           return <div className="card" style={{ marginTop: 16 }} key={t.sid}>
             <div className="ptut"><div><h2 style={{ margin: 0 }}>{t.tutor}</h2><span className="hint">{lekcje(TL.length)}{" · "}{tr("razem")}{" "}{pln(tt).replace(",00", "")}</span></div>{tt - tp > 0 ? <b className="am">{pln(tt - tp).replace(",00", "")}</b> : <span className="tag gr">{tr("rozliczone")}</span>}</div>
             {TL.map(lrow)}
-            <div className="acts" style={{ marginTop: 10 }}><button className="btn" onClick={() => summary(t)}>{tr("Podsumowanie do wysłania")}</button></div></div>; })}
+            <div className="acts" style={{ marginTop: 10 }}><button className="btn" onClick={() => summary(t)}>{tr("Podsumowanie")}</button></div></div>; })}
       <p className="hint" style={{ marginTop: 12 }}>{tr("Status płatności zaznacza korepetytor. Płatności odbywają się bezpośrednio między Tobą a korepetytorem.")}</p>
     </></>;
   }
