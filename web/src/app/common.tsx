@@ -52,7 +52,7 @@ export function LessonTags({ l, lessons, nd }: { l: Lesson; lessons: Lesson[]; n
 }
 
 /** The single most important status of a lesson, shown under the amount. */
-function lessonChip(l: Lesson, ov: boolean): [string, string] | null {
+export function lessonChip(l: Lesson, ov: boolean): [string, string] | null {
   if (l.cr?.status === "pending") return [l.cr.kind === "move" ? tr("prośba o przeniesienie") : tr("prośba o odwołanie"), "am"];
   if (ov) return [tr("nakłada się"), "rd"];
   if (l.status === "cancelled") return [l.fee > 0 ? (l.paid ? tr("opłata · opłacona") : tr("opłata za odwołanie")) : tr("odwołana"), l.fee > 0 && !l.paid ? "am" : ""];

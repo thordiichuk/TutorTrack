@@ -5,11 +5,11 @@ import { navigate } from "../lib/router";
 import {
   amt, billable, cq, download, fd, fm, FREE, gStr, Lesson, MSHORT, pad, pd, pln, PRO_PLN, sortL, subjList, sumAmt, te, toG, ym, ymd, pwOk, copyText, subjRates,
   lekcje, addDays, WDL, subjColor, WDSHORT, MGEN,
-  bySurname,
+  bySurname, overlap,
 } from "../lib/util";
 import { useAuth, useTutor } from "../state";
 import { errMsg, Field, useOverlay } from "../ui/overlay";
-import { LessonItem, useData, useUi, useUpsell } from "./common";
+import { LessonItem, LessonSheetLazy, lessonChip, useData, useUi, useUpsell } from "./common";
 import { ThemePicker } from "../ui/themes";
 import { LangPicker, langName } from "../ui/lang";
 import { CancelRequestActions, LessonForm, LessonSheet, ShareModal, StudentDetail, StudentForm, SummaryModal, summaryText } from "./Forms";
@@ -198,6 +198,35 @@ function TodayJump({ day, has }: { day: string; has: boolean }) {
   return <button className="tjump" onClick={go} aria-label={tr("Przejdź do dzisiaj")}><span aria-hidden="true">{dir === "up" ? "↑" : "↓"}</span>{tr("Dziś")}</button>;
 }
 
+/** The tutor's week like the student's Plan: on phones a strip of days and one day's blocks, on computers seven columns. */
+function TutorWeek({ days, list }: { days: string[]; list: Lesson[] }) {
+  const { lessons, stu } = useData();
+  const { modal } = useOverlay();
+  const td = ymd(new Date());
+  const [sel, setSel] = useState(-1);
+  useEffect(() => { setSel(-1); }, [days[0]]);
+  const D = days.map((ds) => ({ ds, day: pd(ds), ls: list.filter((l) => l.date === ds).sort((a, b) => a.time.localeCompare(b.time)) }));
+  const ti = D.findIndex((x) => x.ds === td), cur = sel >= 0 ? sel : ti >= 0 ? ti : 0;
+  const block = (l: Lesson) => {
+    const s = stu(l.sid), sub = l.subject || (s ? subjList(s)[0] : "");
+    const ov = l.status !== "cancelled" && overlap(lessons, l.date, l.time, l.min, l.id).length > 0, chip = lessonChip(l, ov);
+    const money = l.status === "cancelled" ? (l.fee > 0 ? pln(l.fee) : "") : pln(l.amount);
+    return <button type="button" key={l.id} className={"pblk les brow" + (ov ? " clash" : "") + (l.status === "cancelled" ? " cx" : "")} style={{ ["--sc" as any]: subjColor(sub) }} onClick={() => modal(<LessonSheetLazy id={l.id} />)}>
+      <span className="ptm">{l.time}–{te(l.time, l.min)}</span>
+      <span className="brw"><b>{s ? s.name : "?"}{l.seriesId && <i className="sico2" title={tr("Lekcja z serii")}>↻</i>}</b>{money && <i>{money.replace(",00", "")}</i>}</span>
+      <span className="brw"><span className="ps">{[sub, l.topic].filter(Boolean).join(" · ")}</span>{chip && <span className={"lchip " + chip[1]}>{chip[0]}</span>}</span></button>;
+  };
+  return <div className="tweek">
+    <div className="dstrip" role="tablist" aria-label={tr("Dzień tygodnia")}>{D.map((x, i) => <button key={x.ds} role="tab" aria-selected={i === cur} className={(i === cur ? "on" : "") + (x.ds === td ? " td" : "")} onClick={() => setSel(i)}>
+      <small>{WDSHORT[x.day.getDay()].replace(".", "")}</small><b>{x.day.getDate()}</b><span className="dots">{x.ls.filter((l) => l.status !== "cancelled").slice(0, 3).map((l) => <i key={l.id} className="les" />)}</span></button>)}</div>
+    <div className={"dgh pdayh" + (D[cur].ds === td ? " td" : "")} style={{ marginTop: 4 }}><b>{dayTitle(D[cur].ds)}</b>{D[cur].ds === td && <i className="tdtag">{tr("dzisiaj")}</i>}<span>{D[cur].day.getDate()} {MLONG_G[D[cur].day.getMonth()]}{D[cur].ls.length ? " · " + lekcje(D[cur].ls.length) : ""}</span></div>
+    <div className={"card pday" + (D[cur].ds === td ? " today" : "")}>{D[cur].ls.length ? D[cur].ls.map(block) : <p className="hint" style={{ margin: 0, textAlign: "center" }}>{tr("Dzień wolny – brak lekcji.")}</p>}</div>
+    <div className="pweek">{D.map((x) => <div key={x.ds} className={"pcol" + (x.ds === td ? " td" : "")}>
+      <div className="pch"><small>{WDSHORT[x.day.getDay()]}{x.ds === td && <i className="tdtag" style={{ marginLeft: 6 }}>{tr("dzisiaj")}</i>}</small><b>{x.day.getDate()} {MSHORT[x.day.getMonth()]}</b></div>
+      {x.ls.length ? x.ls.map(block) : <span className="pfree">{tr("wolne")}</span>}</div>)}</div>
+  </div>;
+}
+
 function LessonsList() {
   const { user } = useAuth();
   const { students, lessons, stu } = useData();
@@ -248,10 +277,7 @@ function LessonsList() {
         <button className="btn s" aria-label={tr("Następny tydzień")} onClick={() => setF({ w: (f.w || 0) + 1 })}>›</button>
         {(f.w || 0) !== 0 && <button className="btn s" onClick={() => setF({ w: 0 })}>{tr("Dziś")}</button>}
       </div>
-      <div className="days">{days.map((d) => { const ls = weekList.filter((l) => l.date === d).sort((a, b) => a.time.localeCompare(b.time)); const x = pd(d);
-        return <section className={"dgrp" + (d === td ? " today" : "")} key={d} data-day={d}>
-          <div className={"dgh" + (d === td ? " td" : "")}><b>{dayTitle(d)}</b>{d === td && <i className="tdtag">{tr("dzisiaj")}</i>}<span>{x.getDate()} {MLONG_G[x.getMonth()]}{ls.length ? " · " + lekcje(ls.length) : ""}</span></div>
-          <div className="dgl">{ls.length ? ls.map((l) => <LessonItem key={l.id} l={l} nd />) : <div className="dfreerow">{tr("Dzień wolny – brak lekcji.")}</div>}</div></section>; })}</div>
+      <TutorWeek days={days} list={weekList} />
     </>}
   </>;
 }
