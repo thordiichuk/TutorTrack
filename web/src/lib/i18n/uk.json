@@ -1296,5 +1296,9 @@
 "Od najstarszych": "Спочатку старі",
 "Tylko nieopłacone": "Лише неоплачені",
 "Brak nieopłaconych lekcji": "Немає неоплачених уроків",
-"Wszystkie lekcje w tym widoku są rozliczone.": "Усі уроки в цьому поданні оплачено."
+"Wszystkie lekcje w tym widoku są rozliczone.": "Усі уроки в цьому поданні оплачено.",
+"Potwierdzić wszystkie lekcje?": "Підтвердити всі уроки?",
+"{0} zostanie oznaczonych jako przeprowadzone i trafi do rozliczeń. Notatki możesz dodać później w każdej lekcji.": "{0} буде позначено як проведені й додано до розрахунків. Нотатки можна додати пізніше в кожному уроці.",
+"Potwierdź wszystkie": "Підтвердити всі",
+"Potwierdzono: {0}.": "Підтверджено: {0}."
 }

@@ -1271,5 +1271,9 @@
 "Od najstarszych": "Oldest first",
 "Tylko nieopłacone": "Unpaid only",
 "Brak nieopłaconych lekcji": "No unpaid lessons",
-"Wszystkie lekcje w tym widoku są rozliczone.": "All lessons in this view are settled."
+"Wszystkie lekcje w tym widoku są rozliczone.": "All lessons in this view are settled.",
+"Potwierdzić wszystkie lekcje?": "Confirm all lessons?",
+"{0} zostanie oznaczonych jako przeprowadzone i trafi do rozliczeń. Notatki możesz dodać później w każdej lekcji.": "{0} will be marked as done and added to billing. You can add notes to each lesson later.",
+"Potwierdź wszystkie": "Confirm all",
+"Potwierdzono: {0}.": "Confirmed: {0}."
 }
