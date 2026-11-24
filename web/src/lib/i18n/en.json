@@ -1275,5 +1275,16 @@
 "Potwierdzić wszystkie lekcje?": "Confirm all lessons?",
 "{0} zostanie oznaczonych jako przeprowadzone i trafi do rozliczeń. Notatki możesz dodać później w każdej lekcji.": "{0} will be marked as done and added to billing. You can add notes to each lesson later.",
 "Potwierdź wszystkie": "Confirm all",
-"Potwierdzono: {0}.": "Confirmed: {0}."
+"Potwierdzono: {0}.": "Confirmed: {0}.",
+"Brak internetu – dane z {0}. Zmiany zapiszesz po połączeniu.": "No internet – data from {0}. You can save changes once you're back online.",
+"Dostępna nowa wersja aplikacji.": "A new version of the app is available.",
+"Ikona na ekranie, pełny ekran i szybszy start. Bez sklepu z aplikacjami.": "An icon on your screen, full screen and a faster start. No app store needed.",
+"Na iPhonie i iPadzie aplikację dodasz z Safari:": "On iPhone and iPad, add the app from Safari:",
+"Stuknij przycisk Udostępnij": "Tap the Share button",
+"Stuknij „Dodaj”. Ikona TutorTrack pojawi się na ekranie telefonu.": "Tap “Add”. The TutorTrack icon will appear on your home screen.",
+"Wybierz „Do ekranu początkowego”.": "Choose “Add to Home Screen”.",
+"Zainstaluj": "Install",
+"Zainstaluj TutorTrack na telefonie": "Install TutorTrack on your phone",
+"Zainstaluj aplikację": "Install the app",
+"na dole ekranu.": "at the bottom of the screen."
 }

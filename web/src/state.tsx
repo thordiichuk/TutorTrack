@@ -1,3 +1,4 @@
+import { clearSavedData } from "./lib/pwa";
 import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from "react";
 import { api, ApiError, demoUser, isDemo, startDemo, stopDemo } from "./lib/api";
 import { navigate } from "./lib/router";
@@ -25,6 +26,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     api<{ user: User | null }>("GET", "/api/auth/me").then((r) => setUser(r.user)).catch(() => setUser(null)).finally(() => setLoading(false));
   }, []);
 
+  // the saved offline copy belongs to one account – drop it when nobody is logged in
+  useEffect(() => { if (!loading && !user) clearSavedData(); }, [user, loading]);
   const logout = useCallback(async () => {
     if (isDemo()) { stopDemo(); setDemo(false); setUser(null); }
     else { await api("POST", "/api/auth/logout").catch(() => {}); setUser(null); }

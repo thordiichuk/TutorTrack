@@ -10,6 +10,7 @@ import { ThemePicker } from "../ui/themes";
 import { LangPicker, langName } from "../ui/lang";
 import { tr } from "../lib/i18n";
 import { CRow, VSheet, WeekPlan } from "../ui/lessons";
+import { InstallBanner, useCanOfferInstall, useInstall } from "../ui/pwa";
 
 type PLesson = { id: string; sid: string; tutor: string; date: string; time: string; min: number; subject: string; topic: string; status: "planned" | "done" | "cancelled"; notes: string; hw: string; hd: string; hwDone: boolean; amount: number; paid: boolean };
 type Tutor = { sid: string; tutor: string; subject: string; contact: { email: string; phone: string } };
@@ -91,6 +92,7 @@ export function ParentPanel() {
     const doneM = mo.filter((l) => l.status === "done");
     const notes = ls.filter((l) => l.status === "done" && (l.notes || l.hw)).sort((a, b) => key(b).localeCompare(key(a))).slice(0, 4);
     return <>
+      <InstallBanner />
       <div className="bar"><div><h2 style={{ fontSize: 22, margin: 0 }}>{tr("Cześć,")}{" "}{first(user!.name)}!</h2><span className="hint">{WDL[(now.getDay() + 6) % 7]}, {fd(td).split(", ")[1]}</span></div></div>
       {!kids.length ? <AddCode onDone={load} /> : <>
         {switcher}
@@ -206,6 +208,7 @@ function KontoTab({ d, load, out }: { d: Data; load: () => Promise<void>; out: (
   };
   if (sec && SEC[sec]) return <div className="ssec">
     <button className="sback" onClick={() => { setSec(""); window.scrollTo(0, 0); }}><Ic n="chevl" s={16} />{tr("Ustawienia")}</button>{SEC[sec]}</div>;
+  const canInst = useCanOfferInstall(), install = useInstall();
   const I = (k: string, t: string, ic: string, v?: string, fn?: () => void) => <button key={k} className="sitem" onClick={fn || (() => { setSec(k); window.scrollTo(0, 0); })}><span className="sic"><Ic n={ic} s={16} /></span><b>{t}</b>{v != null && <span className="sv">{v}</span>}<Ic n="chev" s={16} /></button>;
   const thName: Record<string, string> = { light: tr("Jasny"), auto: tr("Systemowy"), dark: tr("Ciemny"), graphite: tr("Grafit"), blue: tr("Ocean"), green: tr("Mięta"), pink: tr("Róż"), orange: tr("Zachód słońca"), purple: tr("Lawenda") };
   return <div className="slist">
@@ -213,7 +216,7 @@ function KontoTab({ d, load, out }: { d: Data; load: () => Promise<void>; out: (
     <div className="sgt">{tr("Konto")}</div>
     <div className="sgrp">{I("dzieci", tr("Dzieci i kody"), "users", String(d.children.length))}{I("haslo", tr("Hasło i bezpieczeństwo"), "lock")}</div>
     <div className="sgt">{tr("Aplikacja")}</div>
-    <div className="sgrp">{I("wyglad", tr("Wygląd"), "palette", thName[user!.settings.theme || "light"] || tr("Jasny"))}{I("jezyk", tr("Język"), "globe", langName())}</div>
+    <div className="sgrp">{I("wyglad", tr("Wygląd"), "palette", thName[user!.settings.theme || "light"] || tr("Jasny"))}{I("jezyk", tr("Język"), "globe", langName())}{canInst && <button key="inst" className="sitem" onClick={install}><span className="sic"><Ic n="download" s={16} /></span><b>{tr("Zainstaluj aplikację")}</b><Ic n="chev" s={16} /></button>}</div>
     {user!.isAdmin && <div className="sgrp" style={{ marginTop: 16 }}>{I("adm", tr("Panel administratora"), "alert", undefined, () => navigate("/admin"))}</div>}
     <button className="slogout" onClick={out}><Ic n="out" s={18} />{tr("Wyloguj się")}</button>
   </div>;

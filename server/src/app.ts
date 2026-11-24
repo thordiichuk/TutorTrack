@@ -904,6 +904,8 @@ export async function buildApp(opts: { logger?: boolean; authRateLimit?: number 
       wildcard: true,
       setHeaders: (res, path) => {
         if (path.includes("/assets/")) (res as any).setHeader?.("Cache-Control", "public, max-age=31536000, immutable") ?? (res as any).header?.("Cache-Control", "public, max-age=31536000, immutable");
+        // the service worker and the manifest must always be checked for a new version
+        else if (/(sw\.js|manifest\.webmanifest)$/.test(path)) (res as any).setHeader?.("Cache-Control", "no-cache");
       },
     });
     app.setNotFoundHandler((req, reply) => {

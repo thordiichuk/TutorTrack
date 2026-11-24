@@ -561,3 +561,13 @@ body.stu .pgrp{border:2px dashed var(--bdh);border-radius:16px;padding:0 8px 8px
 .srow.crow .sb{background:var(--sc)}.srow.crow:hover{background:color-mix(in srgb,var(--sc) 22%,var(--card))}
 .srow.crow.tday{box-shadow:inset 0 0 0 2px var(--ac)}.srow.crow.tday .tm{color:var(--ac)}
 .blist .srow.crow{margin:0}
+/* installable app: offline / update bar, install banner */
+.pwabar{position:fixed;left:12px;right:12px;margin:0 auto;width:fit-content;bottom:calc(16px + env(safe-area-inset-bottom));z-index:60;display:flex;align-items:center;gap:10px;max-width:560px;background:var(--tx);color:var(--card);border-radius:14px;padding:10px 10px 10px 16px;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.pwabar.off{background:#7a4a00;color:#fff;padding-right:16px}
+@media(max-width:860px){.pwabar{bottom:calc(78px + env(safe-area-inset-bottom))}}
+.instb{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:12px 12px 12px 14px;margin:0 0 12px}
+.instb>div{flex:1;min-width:0}.instb b{display:block;font-size:14px}.instb span{font-size:13px;color:var(--mu)}
+.instic{width:36px;height:36px;border-radius:10px;background:var(--acl);color:var(--ac);display:grid;place-items:center;flex:none}
+.mx2{border:0;background:transparent;color:var(--mu);width:32px;height:32px;border-radius:8px;cursor:pointer;flex:none}.mx2:hover{background:var(--hov)}
+.iosteps{padding-left:20px;line-height:1.7}.ioshare{display:inline-block;border:1px solid var(--bd);border-radius:6px;padding:0 6px;font-size:13px}
+@media(max-width:480px){.instb{flex-wrap:wrap}.instb>div{flex:1 1 calc(100% - 90px)}}

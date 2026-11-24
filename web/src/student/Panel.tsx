@@ -10,6 +10,7 @@ import { ThemePicker } from "../ui/themes";
 import { LangPicker, langName } from "../ui/lang";
 import { tr } from "../lib/i18n";
 import { BEv, CRow, LessonTabs, LView, MonthGroups, useLessonTabs, VSheet, WeekPlan } from "../ui/lessons";
+import { InstallBanner, useCanOfferInstall, useInstall } from "../ui/pwa";
 
 type SLesson = { id: string; date: string; time: string; min: number; subject: string; topic: string; status: "planned" | "done" | "cancelled"; notes: string; hw: string; hd: string; amount: number; paid: boolean; cr: CancelRequest | null };
 type Link = { sid: string; tutor: string; studentName: string; subject: string; contact?: { email: string; phone: string }; lessons: SLesson[] };
@@ -137,6 +138,7 @@ export function StudentPanel() {
     const nextLabel = next ? (next.date === td ? tr("dziś") : next.date === addDays(1) ? tr("jutro") : WDSHORT[pd(next.date).getDay()]) + " " + next.time : "—";
     const lrow = (l: L, when = false) => <CRow key={l.id} l={l} nd={!when} onClick={() => lessonModal(l.id)} />;
     return <>
+      <InstallBanner />
       <div className="bar"><div><h2 style={{ fontSize: 22, margin: 0 }}>{tr("Cześć,")}{" "}{(user!.name || "").split(" ")[0]}!</h2><span className="hint">{WDL[wdToday]}, {fd(td).split(", ")[1]}</span></div></div>
       {!d!.links.length && <div className="nt" style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>{tr("Połącz się z korepetytorem, aby widzieć swoje lekcje, notatki i prace domowe.")}{" "}<button className="btn s p" onClick={() => go("kor")}>{tr("Dodaj kod")}</button></div>}
       {pending > 0 && <div className="nt">{tr("Prośby czekające na decyzję korepetytora:")}{" "}<b>{pending}</b>.</div>}
@@ -350,6 +352,7 @@ function KontoTab({ out, d, load, go }: { out: () => void; d: Data; load: () => 
   };
   if (sec && SEC[sec]) return <div className="ssec">
     <button className="sback" onClick={() => { setSec(""); window.scrollTo(0, 0); }}><Ic n="chevl" s={16} />{tr("Ustawienia")}</button>{SEC[sec]}</div>;
+  const canInst = useCanOfferInstall(), install = useInstall();
   const I = (k: string, t: string, ic: string, v?: string, fn?: () => void) => <button key={k} className="sitem" onClick={fn || (() => { setSec(k); window.scrollTo(0, 0); })}><span className="sic"><Ic n={ic} s={16} /></span><b>{t}</b>{v != null && <span className="sv">{v}</span>}<Ic n="chev" s={16} /></button>;
   const thName: Record<string, string> = { light: tr("Jasny"), auto: tr("Systemowy"), dark: tr("Ciemny"), graphite: tr("Grafit"), blue: tr("Ocean"), green: tr("Mięta"), pink: tr("Róż"), orange: tr("Zachód słońca"), purple: tr("Lawenda") };
   return <div className="slist">
@@ -359,7 +362,7 @@ function KontoTab({ out, d, load, go }: { out: () => void; d: Data; load: () => 
     <div className="sgt">{tr("Nauka")}</div>
     <div className="sgrp">{I("sum", tr("Podsumowanie miesiąca"), "chart", undefined, () => go("sum"))}{I("kopia", tr("Kopia zajęć"), "download", d.events.length ? String(d.events.length) + tr(" zajęć") : undefined)}</div>
     <div className="sgt">{tr("Aplikacja")}</div>
-    <div className="sgrp">{I("wyglad", tr("Wygląd"), "palette", thName[user!.settings.theme || "light"] || tr("Jasny"))}{I("jezyk", tr("Język"), "globe", langName())}</div>
+    <div className="sgrp">{I("wyglad", tr("Wygląd"), "palette", thName[user!.settings.theme || "light"] || tr("Jasny"))}{I("jezyk", tr("Język"), "globe", langName())}{canInst && <button key="inst" className="sitem" onClick={install}><span className="sic"><Ic n="download" s={16} /></span><b>{tr("Zainstaluj aplikację")}</b><Ic n="chev" s={16} /></button>}</div>
     {user!.isAdmin && <div className="sgrp" style={{ marginTop: 16 }}>{I("adm", tr("Panel administratora"), "alert", undefined, () => navigate("/admin"))}</div>}
     <button className="slogout" onClick={out}><Ic n="out" s={18} />{tr("Wyloguj się")}</button>
   </div>;

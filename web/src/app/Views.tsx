@@ -14,6 +14,7 @@ import { ThemePicker } from "../ui/themes";
 import { LangPicker, langName } from "../ui/lang";
 import { CancelRequestActions, LessonForm, LessonSheet, ShareModal, StudentDetail, StudentForm, SummaryModal, summaryText } from "./Forms";
 import { tr } from "../lib/i18n";
+import { InstallBanner, useCanOfferInstall, useInstall } from "../ui/pwa";
 
 /* ---------- small pieces ---------- */
 /** Month switcher: ‹ Listopad 2026 › – always in Polish, independent of the browser language. */
@@ -83,6 +84,7 @@ export function Dashboard() {
   const mName = fm(m).split(" ")[0];
   return <>
     <SetupBar />
+    <InstallBanner />
     <div className="bento kb">
       {nx ? <button type="button" className="khero w2" onClick={() => modal(<LessonSheet id={nx.id} />)}>
           <span className="hl"><span>{tr("Następna lekcja ·")}{" "}{inLabel(nx)}</span><span>{nx.subject || subjList(stu(nx.sid) || { subject: "" })[0] || ""}</span></span>
@@ -567,6 +569,7 @@ export function Settings({ group = "" }: { group?: string }) {
           <div style={{ marginTop: 12 }}><button className="btn d" onClick={() => confirm({ title: tr("Opróżnić kosz?"), text: tr("Wszystkie elementy zostaną trwale usunięte."), ok: tr("Opróżnij"), danger: true, onOk: () => { run(() => api("DELETE", "/api/trash"), tr("Kosz opróżniony.")); } })}>{tr("Opróżnij kosz")}</button></div></>
           : <p className="hint">{tr("Kosz jest pusty.")}</p>}</>}</div>;
 
+  const canInst = useCanOfferInstall(), install = useInstall();
   const I = (k: string, t: string, ic: string, v?: ReactNode) => <button key={k} className="sitem" onClick={() => { setSec(k); window.scrollTo(0, 0); }}><span className="sic"><Ic n={ic} s={16} /></span><b>{t}</b>{v != null && <span className="sv">{v}</span>}<Ic n="chev" s={16} /></button>;
   const SEC: Record<string, [string, ReactNode]> = {
     profil: [tr("Profil"), PROFIL],
@@ -592,7 +595,7 @@ export function Settings({ group = "" }: { group?: string }) {
     <div className="sgt">{tr("Praca")}</div>
     <div className="sgrp">{I("domyslne", tr("Domyślne wartości lekcji"), "clock", (c.dur || 60) + tr(" min · ") + (c.time || "16:00"))}{I("szablony", tr("Szablony notatek"), "note", pr ? String(4 + (c.tpl || []).length) : tr("Pro"))}{I("cel", tr("Cel miesięczny"), "target", pr ? (c.goal ? pln(c.goal).replace(",00", "") : tr("wyłączony")) : tr("Pro"))}</div>
     <div className="sgt">{tr("Aplikacja")}</div>
-    <div className="sgrp">{I("wyglad", tr("Wygląd"), "palette", thName[th] || tr("Jasny"))}{I("jezyk", tr("Język"), "globe", langName())}{I("dane", tr("Kopia danych"), "download")}{I("kosz", tr("Kosz"), "trash", pr ? (data!.trash.length ? String(data!.trash.length) : tr("pusty")) : tr("Pro"))}</div>
+    <div className="sgrp">{I("wyglad", tr("Wygląd"), "palette", thName[th] || tr("Jasny"))}{I("jezyk", tr("Język"), "globe", langName())}{canInst && <button key="inst" className="sitem" onClick={install}><span className="sic"><Ic n="download" s={16} /></span><b>{tr("Zainstaluj aplikację")}</b><Ic n="chev" s={16} /></button>}{I("dane", tr("Kopia danych"), "download")}{I("kosz", tr("Kosz"), "trash", pr ? (data!.trash.length ? String(data!.trash.length) : tr("pusty")) : tr("Pro"))}</div>
     {user!.isAdmin && !demo && <div className="sgrp" style={{ marginTop: 16 }}><button className="sitem" onClick={() => navigate("/admin")}><span className="sic"><Ic n="alert" s={16} /></span><b>{tr("Panel administratora")}</b><Ic n="chev" s={16} /></button></div>}
     <button className="slogout" onClick={() => confirm({ title: demo ? tr("Wyjść z trybu demo?") : tr("Wylogować się?"), text: demo ? tr("Dane przykładowe nie są zapisywane.") : tr("Twoje dane są bezpiecznie zapisane na koncie."), ok: demo ? tr("Wyjdź") : tr("Wyloguj się"), onOk: logout })}><Ic n="out" s={18} />{demo ? tr("Wyjdź z dema") : tr("Wyloguj się")}</button>
   </div>;

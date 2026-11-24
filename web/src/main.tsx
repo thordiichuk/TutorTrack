@@ -20,6 +20,9 @@ import "@fontsource/nunito/latin-ext-800.css";
 import "@fontsource/nunito/latin-900.css";
 import "@fontsource/nunito/latin-ext-900.css";
 import "./styles.css";
+import { registerPwa } from "./lib/pwa";
+
+registerPwa();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

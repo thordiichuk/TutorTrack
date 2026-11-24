@@ -8,6 +8,7 @@ import { StudentPanel } from "./student/Panel";
 import { ParentPanel } from "./parent/Panel";
 import { AdminPanel } from "./admin/AdminPanel";
 import { ModalHost } from "./ui/overlay";
+import { PwaBars } from "./ui/pwa";
 import { useApplyTheme } from "./ui/themes";
 import { LANG, setLang, tr } from "./lib/i18n";
 
@@ -26,7 +27,7 @@ function Redirect({ to }: { to: string }) {
 
 export function App() {
   const { path } = useLocation();
-  return <>{<Routes path={path} />}{!path.startsWith("/aplikacja") && <ModalHost />}</>;
+  return <>{<Routes path={path} />}{!path.startsWith("/aplikacja") && <ModalHost />}<PwaBars /></>;
 }
 
 function Routes({ path }: { path: string }) {
@@ -69,6 +70,7 @@ function Routes({ path }: { path: string }) {
     if (user.role !== "parent") return <Redirect to={home(user.role)} />;
     return <ParentPanel />;
   }
+  if (path === "/start") return <Redirect to={user && !demo ? home(user.role) : "/"} />;
   switch (path) {
     case "/uczen": return <StudentHome />;
     case "/rejestracja": return <Register role="tutor" />;

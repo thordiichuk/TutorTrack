@@ -1300,5 +1300,16 @@
 "Potwierdzić wszystkie lekcje?": "Підтвердити всі уроки?",
 "{0} zostanie oznaczonych jako przeprowadzone i trafi do rozliczeń. Notatki możesz dodać później w każdej lekcji.": "{0} буде позначено як проведені й додано до розрахунків. Нотатки можна додати пізніше в кожному уроці.",
 "Potwierdź wszystkie": "Підтвердити всі",
-"Potwierdzono: {0}.": "Підтверджено: {0}."
+"Potwierdzono: {0}.": "Підтверджено: {0}.",
+"Brak internetu – dane z {0}. Zmiany zapiszesz po połączeniu.": "Немає інтернету – дані з {0}. Зміни збережеш після підключення.",
+"Dostępna nowa wersja aplikacji.": "Доступна нова версія застосунку.",
+"Ikona na ekranie, pełny ekran i szybszy start. Bez sklepu z aplikacjami.": "Іконка на екрані, повний екран і швидший запуск. Без магазину застосунків.",
+"Na iPhonie i iPadzie aplikację dodasz z Safari:": "На iPhone та iPad застосунок додаси з Safari:",
+"Stuknij przycisk Udostępnij": "Натисни кнопку «Поділитися»",
+"Stuknij „Dodaj”. Ikona TutorTrack pojawi się na ekranie telefonu.": "Натисни «Додати». Іконка TutorTrack з'явиться на екрані телефона.",
+"Wybierz „Do ekranu początkowego”.": "Вибери «На початковий екран».",
+"Zainstaluj": "Встановити",
+"Zainstaluj TutorTrack na telefonie": "Встанови TutorTrack на телефон",
+"Zainstaluj aplikację": "Встановити застосунок",
+"na dole ekranu.": "внизу екрана."
 }

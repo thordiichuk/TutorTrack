@@ -1,3 +1,4 @@
+import { markOffline, markOnline } from "./pwa";
 import { addDays, calc, FREE, Lesson, Student, TutorData, User } from "./util";
 
 export class ApiError extends Error {
@@ -22,6 +23,8 @@ export async function api<T = any>(method: string, path: string, body?: unknown)
   } catch {
     throw new ApiError(0, "Brak połączenia z serwerem. Sprawdź internet i spróbuj ponownie.");
   }
+  const saved = res.headers.get("x-tt-offline");
+  if (saved) markOffline(Number(saved) || Date.now()); else markOnline();
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new ApiError(res.status, data.error || "Wystąpił błąd. Spróbuj ponownie.");
   return data as T;
