@@ -140,7 +140,7 @@ export function Students() {
       <select aria-label={tr("Status ucznia")} value={ui.sf} onChange={(e) => setUi((u) => ({ ...u, sf: e.target.value as any }))}><option value="active">{tr("Aktywni")}</option><option value="arch">{tr("Zarchiwizowani")}</option><option value="all">{tr("Wszyscy")}</option></select>
       <select aria-label={tr("Sortowanie uczniów")} value={ui.so} onChange={(e) => setUi((u) => ({ ...u, so: e.target.value as any }))}><option value="az">{tr("Imię A–Z")}</option><option value="za">{tr("Imię Z–A")}</option><option value="ln">{tr("Nazwisko A–Z")}</option><option value="new">{tr("Kolejność dodania")}</option></select></div>
     {subjects.length > 0 && <div className="chips" role="group" aria-label={tr("Filtr po przedmiotach")} style={{ marginBottom: 12 }}>
-      <button className={"chip" + (!subj ? " on" : "")} aria-pressed={!subj} onClick={() => setUi((u) => ({ ...u, subj: "" }))}>{tr("Wszyscy ·")}{" "}{list.length}</button>
+      <button className={"chip" + (!subj ? " on" : "")} aria-pressed={!subj} onClick={() => setUi((u) => ({ ...u, subj: "" }))}>{subj ? tr("Wszyscy") : <>{tr("Wszyscy ·")}{" "}{list.length}</>}</button>
       {subjects.map((x) => <button key={x} className={"chip" + (subj === x ? " on" : "")} aria-pressed={subj === x} onClick={() => setUi((u) => ({ ...u, subj: x }))}>{x}</button>)}</div>}
     {!list.length ? <div className="card"><Empty icon="users" title={tr("Brak uczniów")} sub={tr("Zmień filtry lub dodaj pierwszego ucznia.")} /></div> : <>
       <div className="slhd"><span>{({ az: tr("Imię A–Z"), za: tr("Imię Z–A"), ln: tr("Nazwisko A–Z"), new: tr("Kolejność dodania") } as Record<string, string>)[ui.so]}</span><span>{tr("Do zapłaty")}</span></div>

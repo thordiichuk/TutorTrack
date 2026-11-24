@@ -204,3 +204,18 @@ export function WeekPlan({ lessons, events, wk, setWk, onLesson, onEvent, ownLab
       {x.it.length ? x.it.map(block) : <span className="pfree">{tr("wolne")}</span>}</div>)}</div>
   </>;
 }
+
+/**
+ * Lesson row in the parent's layout (date and time on the left, a bar, subject · topic, tutor · duration)
+ * tinted with the subject colour like the student's plan blocks.
+ */
+export function CRow({ l, nd, onClick }: { l: VLesson; nd?: boolean; onClick: () => void }) {
+  const d = pd(l.date), today = l.date === ymd(new Date());
+  const sub = l.status === "done" ? l.notes || tr("bez notatki") : l.status === "cancelled" ? tr("Odwołana") : l.min + " " + tr("min");
+  const bill = l.status === "done" || (l.status === "cancelled" && l.amount > 0);
+  return <button type="button" className={"srow crow" + (l.status === "cancelled" ? " cx" : "") + (!nd && today ? " tday" : "")} style={{ ["--sc" as any]: l.status === "cancelled" ? "var(--mu)" : subjColor(l.subject) }} onClick={onClick}>
+    <span className="tm">{nd ? <>{l.time}<small>{te(l.time, l.min)}</small></> : <>{today ? tr("Dziś") : d.getDate() + " " + MSHORT[d.getMonth()]}<small>{l.time}</small></>}</span><span className="sb" />
+    <span className="m"><b>{l.subject || tr("Lekcja")}{l.topic ? " · " + l.topic : ""}</b><span>{l.tutor} · {sub}</span></span>
+    {l.hw && !l.hwDone && l.status === "done" ? <span className="tag am">{tr("Zadanie")}</span> : bill ? l.paid ? <span className="tag gr">{tr("Opłacona")}</span> : <span className="tag am">{pln(l.amount).replace(",00", "")}</span> : null}
+  </button>;
+}

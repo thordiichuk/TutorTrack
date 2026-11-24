@@ -9,7 +9,7 @@ import { navigate } from "../lib/router";
 import { ThemePicker } from "../ui/themes";
 import { LangPicker, langName } from "../ui/lang";
 import { tr } from "../lib/i18n";
-import { VSheet, WeekPlan } from "../ui/lessons";
+import { CRow, VSheet, WeekPlan } from "../ui/lessons";
 
 type PLesson = { id: string; sid: string; tutor: string; date: string; time: string; min: number; subject: string; topic: string; status: "planned" | "done" | "cancelled"; notes: string; hw: string; hd: string; hwDone: boolean; amount: number; paid: boolean };
 type Tutor = { sid: string; tutor: string; subject: string; contact: { email: string; phone: string } };
@@ -122,7 +122,7 @@ export function ParentPanel() {
     list.forEach((l) => { const k = l.date.slice(0, 7); const g = groups[groups.length - 1]; if (g && g[0] === k) g[1].push(l); else groups.push([k, [l]]); });
     return <>{switcher}<>{noTutors}
       <div className="seg stseg" role="group" aria-label={tr("Pokaż lekcje")}>{([["up", tr("Nadchodzące")], ["past", tr("Minione")]] as const).map(([k, t]) => <button key={k} aria-pressed={lv === k} onClick={() => setLv(k)}>{t}</button>)}</div>
-      {groups.length ? groups.map(([k, g]) => { const [y, mo] = k.split("-").map(Number); return <div key={k} style={{ marginTop: 14 }}><div className="pmh"><b>{MLONG[mo - 1].charAt(0).toUpperCase() + MLONG[mo - 1].slice(1)} {y}</b><span>{lekcje(g.length)}</span></div><div className="card" style={{ padding: "4px 14px" }}>{g.map(lrow)}</div></div>; })
+      {groups.length ? groups.map(([k, g]) => { const [y, mo] = k.split("-").map(Number); return <div key={k} style={{ marginTop: 14 }}><div className="pmh"><b>{MLONG[mo - 1].charAt(0).toUpperCase() + MLONG[mo - 1].slice(1)} {y}</b><span>{lekcje(g.length)}</span></div><div className="blist">{g.map((l) => <CRow key={l.id} l={l} onClick={() => lessonModal(l)} />)}</div></div>; })
         : <div className="card" style={{ marginTop: 14 }}><Empty icon="cal" title={lv === "up" ? tr("Brak zaplanowanych lekcji") : tr("Brak minionych lekcji")} sub={tr("Lekcje dodaje korepetytor.")} /></div>}
     </></>;
   }

@@ -9,7 +9,7 @@ import { navigate } from "../lib/router";
 import { ThemePicker } from "../ui/themes";
 import { LangPicker, langName } from "../ui/lang";
 import { tr } from "../lib/i18n";
-import { BEv, BRow, LessonTabs, LView, MonthGroups, useLessonTabs, VSheet, WeekPlan } from "../ui/lessons";
+import { BEv, CRow, LessonTabs, LView, MonthGroups, useLessonTabs, VSheet, WeekPlan } from "../ui/lessons";
 
 type SLesson = { id: string; date: string; time: string; min: number; subject: string; topic: string; status: "planned" | "done" | "cancelled"; notes: string; hw: string; hd: string; amount: number; paid: boolean; cr: CancelRequest | null };
 type Link = { sid: string; tutor: string; studentName: string; subject: string; contact?: { email: string; phone: string }; lessons: SLesson[] };
@@ -26,7 +26,7 @@ const RED = { background: "var(--rdl)", borderLeft: "4px solid var(--rd)", paddi
 /** tabs shown in the phone's bottom bar; the rest live under "Więcej" */
 const MAIN = ["dash", "plan", "graf", "hw"];
 /** reachable from Lekcje and Settings, not listed in the menus */
-const HIDDEN = ["sum"];
+const HIDDEN = ["sum", "kor"];
 const TABS: [string, string, string, string][] = [
   ["dash", tr("Pulpit"), "home", tr("Pulpit")], ["plan", tr("Plan§sched"), "cal", tr("Plan§sched")], ["graf", tr("Zajęcia"), "book", tr("Zajęcia")], ["hw", tr("Zadania"), "check", tr("Zadania")],
   ["lek", tr("Lekcje"), "note", tr("Lekcje")], ["sum", tr("Podsumowanie miesiąca"), "chart", tr("Miesiąc")], ["kor", tr("Korepetytorzy"), "users", tr("Nauczyciele")], ["konto", tr("Ustawienia"), "set", tr("Ustawienia")],
@@ -135,7 +135,7 @@ export function StudentPanel() {
     const wdToday = (now.getDay() + 6) % 7;
     const today = [...all.filter((l) => l.date === td).map((l) => ({ s: l.time, e: te(l.time, l.min), l })), ...d!.events.filter((e) => (e.repeat === "w" ? e.weekday === wdToday : e.date === td)).map((e) => ({ s: e.start, e: e.end, ev: e }))].sort((a, b) => a.s.localeCompare(b.s));
     const nextLabel = next ? (next.date === td ? tr("dziś") : next.date === addDays(1) ? tr("jutro") : WDSHORT[pd(next.date).getDay()]) + " " + next.time : "—";
-    const lrow = (l: L, when = false) => <BRow key={l.id} l={l} date={when} onClick={() => lessonModal(l.id)} />;
+    const lrow = (l: L, when = false) => <CRow key={l.id} l={l} nd={!when} onClick={() => lessonModal(l.id)} />;
     return <>
       <div className="bar"><div><h2 style={{ fontSize: 22, margin: 0 }}>{tr("Cześć,")}{" "}{(user!.name || "").split(" ")[0]}!</h2><span className="hint">{WDL[wdToday]}, {fd(td).split(", ")[1]}</span></div></div>
       {!d!.links.length && <div className="nt" style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>{tr("Połącz się z korepetytorem, aby widzieć swoje lekcje, notatki i prace domowe.")}{" "}<button className="btn s p" onClick={() => go("kor")}>{tr("Dodaj kod")}</button></div>}
@@ -154,7 +154,6 @@ export function StudentPanel() {
           {todo.length ? todo.slice(0, 4).map((l) => <div className="srow" key={l.id} style={{ cursor: "default" }}><button className="chkc" aria-label={tr("Oznacz jako zrobione")} onClick={() => toggleHw(l.id)} /><span className="m" onClick={() => lessonModal(l.id)} style={{ cursor: "pointer" }}><b>{l.hw}</b><span>{l.subject || tr("Lekcja")} · {l.tutor}</span></span>{due(l)}</div>) : <p className="hint" style={{ margin: 0 }}>{tr("Wszystkie prace domowe są zrobione.")}</p>}</div>
         <div className="card w2"><h2>{tr("Dziś")}</h2>{today.length ? <div className="blist">{today.map((x, k) => "l" in x && x.l ? lrow(x.l) : <BEv key={k} e={(x as any).ev} s={x.s} en={x.e} onClick={() => evForm((x as any).ev)} />)}</div> : <p className="hint" style={{ margin: 0 }}>{tr("Dziś nie masz zaplanowanych zajęć.")}</p>}</div>
         <div className="card w2"><h2>{tr("Najbliższe lekcje")}</h2>{upcoming.length ? <div className="blist">{upcoming.slice(0, 5).map((l) => lrow(l, true))}</div> : <p className="hint" style={{ margin: 0 }}>{tr("Brak zaplanowanych lekcji.")}</p>}</div>
-        <div className="card w2"><h2>{tr("Ostatnie notatki")}</h2>{notes.length ? <div className="blist">{notes.map((l) => lrow(l, true))}</div> : <p className="hint" style={{ margin: 0 }}>{tr("Tu pojawią się notatki od korepetytora po lekcjach.")}</p>}</div>
       </div>
     </>;
   }
@@ -190,14 +189,16 @@ export function StudentPanel() {
       {!X.length ? <div className="card"><Empty icon="check" title={hf === "todo" ? tr("Nic do zrobienia") : tr("Brak zadań")} sub={hf === "todo" ? tr("Wszystkie prace domowe są zrobione albo korepetytor nie przesłał jeszcze zadań.") : tr("Tu pojawią się prace domowe od korepetytorów.")} /></div>
         : <div className="card">{X.map((l) => { const dn = done.has(l.id); return <div className="srow" key={l.id} style={{ cursor: "default" }}>
             <button className={"chkc" + (dn ? " on" : "")} aria-label={dn ? tr("Oznacz jako niezrobione") : tr("Oznacz jako zrobione")} aria-pressed={dn} onClick={() => toggleHw(l.id)}>{dn && <Ic n="check" s={14} />}</button>
-            <span className="m" onClick={() => lessonModal(l.id)} style={{ cursor: "pointer" }}><b style={dn ? { textDecoration: "line-through", color: "var(--mu)" } : undefined}>{l.hw}</b><span>{l.subject || tr("Lekcja")} · {l.tutor}</span></span>{due(l)}</div>; })}</div>}</>;
+            <span className="m" onClick={() => lessonModal(l.id)} style={{ cursor: "pointer" }}><b style={dn ? { textDecoration: "line-through", color: "var(--mu)" } : undefined}>{l.hw}</b><span>{l.subject || tr("Lekcja")} · {l.tutor}</span></span>{due(l)}</div>; })}</div>}      {(() => { const notes = all.filter((l) => l.status === "done" && l.notes).sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time)).slice(0, 5);
+        return <div className="card" style={{ marginTop: 16 }}><h2>{tr("Ostatnie notatki")}</h2>{notes.length ? <div className="blist">{notes.map((l) => <CRow key={l.id} l={l} onClick={() => lessonModal(l.id)} />)}</div> : <p className="hint" style={{ margin: 0 }}>{tr("Tu pojawią się notatki od korepetytora po lekcjach.")}</p>}</div>; })()}
+    </>;
   }
   function Lek() {
     if (!d!.links.length) return <div className="card"><Empty icon="book" title={tr("Brak lekcji")} sub={tr("Dodaj kod od korepetytora, aby zobaczyć swoje lekcje.")} /><div className="acts" style={{ justifyContent: "center" }}><button className="btn p" onClick={() => go("kor")}>{tr("Dodaj kod od korepetytora")}</button></div></div>;
     const { up, past, shown, nUnpaid } = useLessonTabs(all, lv, ord, onlyUnpaid);
     return <>
       <LessonTabs view={lv} setView={setLv} n={[up.length, past.length, all.length]} ord={ord} setOrd={setOrd} onlyUnpaid={onlyUnpaid} setOnlyUnpaid={setOnlyUnpaid} nUnpaid={nUnpaid} />
-      {shown.length ? <MonthGroups blocks list={shown} row={(l) => <BRow key={l.id} l={l} date onClick={() => lessonModal(l.id)} />} />
+      {shown.length ? <MonthGroups blocks list={shown} row={(l) => <CRow key={l.id} l={l} onClick={() => lessonModal(l.id)} />} />
         : <div className="card"><Empty icon="book" title={onlyUnpaid && lv === "all" ? tr("Brak nieopłaconych lekcji") : lv === "up" ? tr("Brak zaplanowanych lekcji") : tr("Brak lekcji")} sub={tr("Lekcje dodaje korepetytor.")} /></div>}
       <div className="card sumc" style={{ marginTop: 16 }}><div><h2 style={{ margin: 0 }}>{tr("Podsumowanie miesiąca")}</h2><span className="hint">{tr("Czas nauki, kwoty, notatki i podsumowanie do wysłania.")}</span></div>
         <div className="acts"><button className="btn p" onClick={() => go("sum")}>{tr("Pokaż podsumowanie")}</button></div></div>
@@ -231,7 +232,7 @@ export function StudentPanel() {
       <div className="grid g4 st2"><div className="card stat"><div className="l">{tr("Lekcje")}</div><div className="v">{dn.length}</div></div><div className="card stat"><div className="l">{tr("Czas nauki")}</div><div className="v">{fmtH(min)}</div></div><div className="card stat"><div className="l">{tr("Odwołane")}</div><div className="v am">{cn.length}</div></div><div className="card stat"><div className="l">{tr("Zadania")}</div><div className="v">{hw.filter((l) => done.has(l.id)).length} / {hw.length}</div></div></div>
       {tot > 0 && <div className="grid g4 bst" style={{ gridTemplateColumns: "repeat(3,1fr)", marginTop: 16 }}><div className="card stat"><div className="l">{tr("Kwota")}</div><div className="v">{pln(tot).replace(",00", "")}</div></div><div className="card stat"><div className="l">{tr("Opłacone")}</div><div className="v gr">{pln(paid).replace(",00", "")}</div></div><div className="card stat"><div className="l">{tr("Do zapłaty")}</div><div className="v am">{pln(tot - paid).replace(",00", "")}</div></div></div>}
       <div className="card" style={{ marginTop: 16 }}><h2>{tr("Czas nauki według przedmiotu")}</h2>{e.length ? e.map((x) => <div className="bl" key={x[0]}><span>{x[0]}</span><b>{fmtH(x[1])}</b><div className="bb"><i style={{ width: Math.round(x[1] / mx * 100) + "%" }} /></div></div>) : <p className="hint">{tr("Brak danych w wybranym okresie.")}</p>}</div>
-      <div className="card" style={{ marginTop: 16 }}><h2>{tr("Lekcje i notatki")}</h2><div className="blist">{[...dn, ...cn].sort(byDate).map((l) => <BRow key={l.id} l={l} date onClick={() => lessonModal(l.id)} />)}</div></div>
+      <div className="card" style={{ marginTop: 16 }}><h2>{tr("Lekcje i notatki")}</h2><div className="blist">{[...dn, ...cn].sort(byDate).map((l) => <CRow key={l.id} l={l} onClick={() => lessonModal(l.id)} />)}</div></div>
       {tutors.length > 0 && <div className="card sumc" style={{ marginTop: 16 }}><div><h2 style={{ margin: 0 }}>{tr("Podsumowanie przeprowadzonych lekcji")}</h2><span className="hint">{tr("Lista lekcji z tematami i kwotami – do skopiowania lub wysłania.")}</span></div>
         <div className="acts">{tutors.map((t) => <button key={t} className="btn p" onClick={() => summary(t)}>{tutors.length > 1 ? tr("Od: ") + t : tr("Pokaż podsumowanie")}</button>)}</div></div>}
     </>;
@@ -255,7 +256,7 @@ export function StudentPanel() {
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}><span className="hint" id="usr">{user!.name}</span>{action}</div>
         </header>
         {err && <p className="banner">{err} <button className="lk" onClick={load}>{tr("Spróbuj ponownie")}</button></p>}
-        <main className="content">{!d ? <p className="hint">{tr("Ładowanie…")}</p> : tab === "dash" ? Dash() : tab === "plan" ? Plan() : tab === "graf" ? Graf() : tab === "hw" ? Hw() : tab === "sum" ? Sum() : tab === "lek" ? Lek() : tab === "kor" ? <KorTab d={d} load={load} run={run} /> : <KontoTab out={out} d={d} load={load} go={go} />}</main>
+        <main className="content">{!d ? <p className="hint">{tr("Ładowanie…")}</p> : tab === "dash" ? Dash() : tab === "plan" ? Plan() : tab === "graf" ? Graf() : tab === "hw" ? Hw() : tab === "sum" ? Sum() : tab === "lek" ? Lek() : tab === "kor" ? <><button className="sback" onClick={() => go("konto")}><Ic n="chevl" s={16} />{tr("Ustawienia")}</button><KorTab d={d} load={load} run={run} /></> : <KontoTab out={out} d={d} load={load} go={go} />}</main>
       </div>
     </div>
     <nav className="tabs fit" aria-label={tr("Menu")}>{TABS.filter((x) => MAIN.includes(x[0])).map((x) => <button key={x[0]} className={tab === x[0] ? "on" : ""} aria-current={tab === x[0] ? "page" : undefined} onClick={() => go(x[0])}><Ic n={x[2]} s={22} />{x[3]}{x[0] === "hw" && nT > 0 && <i className="tbadge">{nT}</i>}</button>)}
@@ -354,7 +355,7 @@ function KontoTab({ out, d, load, go }: { out: () => void; d: Data; load: () => 
   return <div className="slist">
     <div className="sgrp"><button className="sitem sme" onClick={() => setSec("profil")}><span className="sav">{(user!.name || "?").charAt(0).toUpperCase()}</span><b>{user!.name}<small>{tr("Panel ucznia ·")}{" "}{user!.email}</small></b><Ic n="chev" s={16} /></button></div>
     <div className="sgt">{tr("Konto")}</div>
-    <div className="sgrp">{I("rodzic", tr("Dostęp dla rodzica"), "users", d.parents.length ? String(d.parents.length) : d.parentCode ? tr("włączony") : tr("wyłączony"))}{I("haslo", tr("Hasło i bezpieczeństwo"), "lock")}</div>
+    <div className="sgrp">{I("kor", tr("Korepetytorzy"), "users", String(d.links.length), () => go("kor"))}{I("rodzic", tr("Dostęp dla rodzica"), "users", d.parents.length ? String(d.parents.length) : d.parentCode ? tr("włączony") : tr("wyłączony"))}{I("haslo", tr("Hasło i bezpieczeństwo"), "lock")}</div>
     <div className="sgt">{tr("Nauka")}</div>
     <div className="sgrp">{I("sum", tr("Podsumowanie miesiąca"), "chart", undefined, () => go("sum"))}{I("kopia", tr("Kopia zajęć"), "download", d.events.length ? String(d.events.length) + tr(" zajęć") : undefined)}</div>
     <div className="sgt">{tr("Aplikacja")}</div>
