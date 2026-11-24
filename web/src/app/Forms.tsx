@@ -11,6 +11,7 @@ import { Empty, Ic } from "../lib/icons";
 import { laterInSeries, newRep, Rep, RepeatBox, repDates, ScopeAsk, SeriesList } from "./series";
 import { LessonItem, LessonTags, registerLessonUi, useData, useUi, useUpsell } from "./common";
 import { tr } from "../lib/i18n";
+import { AddLink, MatList, pickFile, uploadFile } from "../ui/materials";
 
 const APP_URL = typeof location !== "undefined" ? location.origin : "";
 
@@ -342,7 +343,31 @@ export function StudentDetail({ id, noHistory }: { id: string; noHistory?: boole
     <div className="sdacts"><button className="btn" onClick={() => modal(<StudentForm s={s} />)}>{tr("Edytuj")}</button><button className="btn" onClick={() => modal(<ShareModal id={id} />, true)}>{s.inviteCode ? tr("Kod ucznia") : tr("Udostępnij uczniowi")}</button><span style={{ flex: 1 }} /><button className="btn p" onClick={() => modal(<LessonForm pre={id} />)}>{tr("Dodaj lekcję")}</button></div>
     <div className="grid g2" style={{ marginBottom: 12 }}><div className="card stat"><div className="l">{tr("Przeprowadzone lekcje")}</div><div className="v">{dn.length}</div></div><div className="card stat"><div className="l">{tr("Do zapłaty")}</div><div className="v am">{pln(sumAmt(ls.filter(billable), (l) => !l.paid))}</div></div></div>
     <SeriesList sid={id} />
+    <div className="card" style={{ marginTop: 12 }}><h2 style={{ marginBottom: 4 }}>{tr("Materiały ucznia")}</h2><p className="hint" style={{ margin: "0 0 6px" }}>{tr("Materiały niezwiązane z jedną lekcją, np. arkusze, słowniczek, karta wzorów. Uczeń i rodzic widzą je w swoim panelu.")}</p>
+      <Materials sid={id} lessonId="" back={() => modal(<StudentDetail id={id} noHistory={noHistory} />, true)} /></div>
   </>;
+}
+
+/* ---------- lesson materials (links for all, files in Pro) ---------- */
+function Materials({ sid, lessonId, seriesId, back }: { sid: string; lessonId: string; seriesId?: string | null; back: () => void }) {
+  const { materials = [] } = useData();
+  const { run } = useTutor();
+  const { modal, toast } = useOverlay();
+  const { user } = useAuth();
+  const { proUp } = useUpsell();
+  const items = materials.filter((m) => (lessonId ? m.lessonId === lessonId : m.sid === sid && !m.lessonId));
+  const addFile = async () => {
+    if (isDemo()) { toast(tr("W trybie demo nie można dodawać plików.")); return; }
+    if (user?.plan !== "pro") { proUp(tr("Pliki w materiałach")); return; }
+    const f = await pickFile(); if (!f) return;
+    run(() => uploadFile(`/api/materials/file?sid=${sid}${lessonId ? "&lessonId=" + lessonId : ""}`, f), tr("Dodano plik."));
+  };
+  return <div className={lessonId ? "kvb" : ""}>
+    {lessonId && <span>{tr("Materiały")}</span>}
+    <MatList items={items} canDelete={() => true} onDelete={(m) => { run(() => api("DELETE", "/api/materials/" + m.id), tr("Usunięto.")); }} empty={lessonId ? tr("Brak materiałów. Dodaj link (np. do OneDrive) albo plik.") : tr("Brak materiałów.")} />
+    <div className="matacts"><button className="btn s" onClick={() => modal(<AddLink series={!!seriesId} back={back} onSave={(b) => run(() => api("POST", "/api/materials/link", { sid, lessonId, ...b }), tr("Dodano link."))} />)}>{tr("+ Link")}</button>
+      <button className="btn s" onClick={addFile}>{tr("+ Plik")}{user?.plan !== "pro" && <> <span className="tag ac">{tr("Pro")}</span></>}</button></div>
+  </div>;
 }
 
 /* ---------- share with student (invite code) ---------- */
@@ -410,7 +435,7 @@ export { errMsg };
 /* ---------- lesson window: details + every action in one place ---------- */
 export function LessonSheet({ id }: { id: string }) {
   const { lessons, stu } = useData();
-  const { close } = useOverlay();
+  const { close, modal } = useOverlay();
   const l = lessons.find((x) => x.id === id);
   if (!l) return <><h2>{tr("Lekcja")}</h2><p className="hint">{tr("Ta lekcja została usunięta.")}</p><div className="mf"><button className="btn" onClick={close}>{tr("Zamknij")}</button></div></>;
   const s = stu(l.sid), sub = l.subject || (s ? subjList(s)[0] : "");
@@ -427,6 +452,7 @@ export function LessonSheet({ id }: { id: string }) {
     {l.cr?.status === "pending" && <div className="rqbox"><b>{l.cr.kind === "move" ? tr("Prośba o przeniesienie na następny tydzień") : tr("Prośba o odwołanie")}</b><span>{tr("Przyczyna: „")}{l.cr.reason}”</span></div>}
     {l.cr?.status === "accepted" && l.status === "cancelled" && <p className="hint">{l.cr.kind === "move" ? tr("Uczeń prosił o przeniesienie – lekcja odwołana") : tr("Odwołana na prośbę ucznia")}: {l.cr.reason}{l.cr.note ? <><br />{tr("Twój komentarz:")}{" "}{l.cr.note}</> : null}</p>}
     {l.cr?.status === "moved" && <p className="hint">{tr("Przeniesiona na prośbę ucznia")}{l.cr.note ? tr(" z ") + fd(l.cr.note) : ""}{tr(". Przyczyna:")}{" "}{l.cr.reason}</p>}
+    <Materials sid={l.sid} lessonId={l.id} seriesId={l.seriesId} back={() => modal(<LessonSheet id={l.id} />)} />
     <LessonActions l={l} />
   </div>;
 }

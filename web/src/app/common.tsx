@@ -64,7 +64,8 @@ export function lessonChip(l: Lesson, ov: boolean): [string, string] | null {
 
 /** Compact, tappable lesson row. Tapping opens the lesson window with all actions. */
 export function LessonItem({ l, nd, quick = true, noName }: { l: Lesson; nd?: boolean; quick?: boolean; noName?: boolean }) {
-  const { lessons, stu } = useData();
+  const { lessons, stu, materials = [] } = useData();
+  const nMat = materials.filter((m) => m.lessonId === l.id).length;
   const { modal, current } = useOverlay();
   const [ui, setUi] = useUi();
   const s = stu(l.sid);
@@ -88,7 +89,7 @@ export function LessonItem({ l, nd, quick = true, noName }: { l: Lesson; nd?: bo
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(e); } }}>
       <span className="lbar" style={{ background: l.status === "cancelled" ? "var(--bd)" : subjColor(sub) }} />
       <span className="ltm">{nd ? <>{l.time}<small>{te(l.time, l.min)}</small></> : <>{d.getDate()} {MSHORT[d.getMonth()]}<small>{l.time}</small></>}</span>
-      <span className="lwho"><b>{noName ? sub || tr("Lekcja") : s ? s.name : "?"}{l.seriesId && <i className="sico2" title={tr("Lekcja z serii")}>↻</i>}</b><span>{(noName ? [l.topic || (l.status === "cancelled" ? "" : tr("bez tematu"))] : [sub, l.topic || (l.status === "cancelled" ? "" : tr("bez tematu"))]).filter(Boolean).join(" · ")}{l.cr?.status === "pending" ? " · „" + l.cr.reason + "”" : ""}</span></span>
+      <span className="lwho"><b>{noName ? sub || tr("Lekcja") : s ? s.name : "?"}{l.seriesId && <i className="sico2" title={tr("Lekcja z serii")}>↻</i>}{nMat > 0 && <i className="clip" title={tr("Materiały")}>📎{nMat}</i>}</b><span>{(noName ? [l.topic || (l.status === "cancelled" ? "" : tr("bez tematu"))] : [sub, l.topic || (l.status === "cancelled" ? "" : tr("bez tematu"))]).filter(Boolean).join(" · ")}{l.cr?.status === "pending" ? " · „" + l.cr.reason + "”" : ""}</span></span>
       <span className="lrt"><b>{money.replace(",00", "")}</b>{chip && <span className={"lchip " + chip[1]}>{chip[0]}</span>}</span>
       {quick && <QuickDone l={l} />}
     </div>

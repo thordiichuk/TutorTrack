@@ -10,15 +10,17 @@ import { ThemePicker } from "../ui/themes";
 import { LangPicker, langName } from "../ui/lang";
 import { tr } from "../lib/i18n";
 import { CRow, VSheet, WeekPlan } from "../ui/lessons";
+import { MaterialsPage, MatList } from "../ui/materials";
+import type { Material } from "../lib/util";
 import { InstallBanner, useCanOfferInstall, useInstall } from "../ui/pwa";
 
 type PLesson = { id: string; sid: string; tutor: string; date: string; time: string; min: number; subject: string; topic: string; status: "planned" | "done" | "cancelled"; notes: string; hw: string; hd: string; hwDone: boolean; amount: number; paid: boolean };
 type Tutor = { sid: string; tutor: string; subject: string; contact: { email: string; phone: string } };
 type Ev = { id: string; title: string; cat: string; repeat: "w" | "o"; weekday: number; date: string; start: string; end: string };
-type Child = { cid: string; name: string; tutors: Tutor[]; lessons: PLesson[]; events: Ev[] };
+type Child = { cid: string; name: string; tutors: Tutor[]; lessons: PLesson[]; events: Ev[]; materials?: Material[] };
 type Data = { children: Child[] };
 
-const TABS: [string, string, string][] = [["dash", tr("Pulpit"), "home"], ["plan", tr("Plan§sched"), "cal"], ["lek", tr("Lekcje"), "book"], ["pay", tr("Płatności"), "wallet"], ["konto", tr("Ustawienia"), "set"]];
+const TABS: [string, string, string][] = [["dash", tr("Pulpit"), "home"], ["plan", tr("Plan§sched"), "cal"], ["lek", tr("Lekcje"), "book"], ["pay", tr("Płatności"), "wallet"], ["mat", tr("Materiały"), "note"], ["konto", tr("Ustawienia"), "set"]];
 const CATS: Record<string, string> = { school: tr("Szkoła"), tutor: tr("Korepetycje spoza TutorTrack"), extra: tr("Zajęcia dodatkowe"), other: tr("Inne") };
 const key = (l: PLesson) => l.date + " " + l.time;
 const sdate = (d: string) => pd(d).getDate() + " " + MSHORT[pd(d).getMonth()];
@@ -72,7 +74,8 @@ export function ParentPanel() {
   const contact = (sid: string) => c?.tutors.find((t) => t.sid === sid)?.contact;
   const first = (n: string) => (n || "").split(" ")[0];
 
-  const lessonModal = (l: PLesson) => ov.modal(<VSheet l={l} title={l.subject || tr("Lekcja")} hwDone={l.hw ? l.hwDone : undefined} contact={contact(l.sid)} />);
+  const lessonModal = (l: PLesson) => { const mats = (c?.materials || []).filter((m) => m.lessonId === l.id);
+    ov.modal(<VSheet l={l} title={l.subject || tr("Lekcja")} hwDone={l.hw ? l.hwDone : undefined} contact={contact(l.sid)} mats={mats.length > 0 && <div className="kvb"><span>{tr("Materiały")}</span><MatList items={mats} /></div>} />); };
   const multi = (c?.tutors.length || 0) > 1;
   const TD = ymd(new Date());
   const lrow = (l: PLesson) => <button type="button" key={l.id} className={"srow" + (l.status === "cancelled" ? " cx" : "") + (l.date === TD ? " tday" : "")} onClick={() => lessonModal(l)}>
@@ -123,6 +126,7 @@ export function ParentPanel() {
     const groups: [string, PLesson[]][] = [];
     list.forEach((l) => { const k = l.date.slice(0, 7); const g = groups[groups.length - 1]; if (g && g[0] === k) g[1].push(l); else groups.push([k, [l]]); });
     return <>{switcher}<>{noTutors}
+      <button className="matlink" onClick={() => go("mat")}><span aria-hidden="true">📎</span><b>{tr("Materiały")}</b><span>{(c?.materials || []).length || tr("brak")}</span><Ic n="chev" s={16} /></button>
       <div className="seg stseg" role="group" aria-label={tr("Pokaż lekcje")}>{([["up", tr("Nadchodzące")], ["past", tr("Minione")]] as const).map(([k, t]) => <button key={k} aria-pressed={lv === k} onClick={() => setLv(k)}>{t}</button>)}</div>
       {groups.length ? groups.map(([k, g]) => { const [y, mo] = k.split("-").map(Number); return <div key={k} style={{ marginTop: 14 }}><div className="pmh"><b>{MLONG[mo - 1].charAt(0).toUpperCase() + MLONG[mo - 1].slice(1)} {y}</b><span>{lekcje(g.length)}</span></div><div className="blist">{g.map((l) => <CRow key={l.id} l={l} onClick={() => lessonModal(l)} />)}</div></div>; })
         : <div className="card" style={{ marginTop: 14 }}><Empty icon="cal" title={lv === "up" ? tr("Brak zaplanowanych lekcji") : tr("Brak minionych lekcji")} sub={tr("Lekcje dodaje korepetytor.")} /></div>}
@@ -170,7 +174,7 @@ export function ParentPanel() {
     <div className="app">
       <aside className="side" aria-label={tr("Menu rodzica")}>
         <div className="logo"><i><Logo /></i>{tr("TutorTrack")}</div>
-        <div>{TABS.map((x) => <button key={x[0]} className={"nav" + (tab === x[0] ? " on" : "")} aria-current={tab === x[0] ? "page" : undefined} onClick={() => go(x[0])}><Ic n={x[2]} />{x[1]}</button>)}
+        <div>{TABS.filter((x) => x[0] !== "mat").map((x) => <button key={x[0]} className={"nav" + (tab === x[0] ? " on" : "")} aria-current={tab === x[0] ? "page" : undefined} onClick={() => go(x[0])}><Ic n={x[2]} />{x[1]}</button>)}
           {user!.isAdmin && <button className="nav" onClick={() => navigate("/admin")}><Ic n="alert" />{tr("Panel administratora")}</button>}
           <button className="nav" onClick={out}><Ic n="out" />{tr("Wyloguj się")}</button></div>
       </aside>
@@ -180,10 +184,10 @@ export function ParentPanel() {
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}><span className="hint" id="usr">{user!.name}</span></div>
         </header>
         {err && <p className="banner">{err} <button className="lk" onClick={load}>{tr("Spróbuj ponownie")}</button></p>}
-        <main className="content">{!d ? <p className="hint">{tr("Ładowanie…")}</p> : tab === "konto" ? <KontoTab d={d} load={load} out={out} /> : !kids.length && tab !== "dash" ? <AddCode onDone={load} /> : tab === "dash" ? Dash() : tab === "plan" ? Plan() : tab === "lek" ? Lek() : Pay()}</main>
+        <main className="content">{!d ? <p className="hint">{tr("Ładowanie…")}</p> : tab === "konto" ? <KontoTab d={d} load={load} out={out} /> : !kids.length && tab !== "dash" ? <AddCode onDone={load} /> : tab === "dash" ? Dash() : tab === "plan" ? Plan() : tab === "lek" ? Lek() : tab === "mat" ? <>{switcher}<MaterialsPage items={c?.materials || []} lessons={ls} tutorOf={(sid) => { const t = c?.tutors.find((x) => x.sid === sid); return t && { tutor: t.tutor, subject: t.subject }; }} onBack={() => go("lek")} /></> : Pay()}</main>
       </div>
     </div>
-    <nav className="tabs fit" aria-label={tr("Menu")}>{TABS.map((x) => <button key={x[0]} className={tab === x[0] ? "on" : ""} aria-current={tab === x[0] ? "page" : undefined} onClick={() => go(x[0])}><Ic n={x[2]} s={22} />{x[1]}</button>)}</nav>
+    <nav className="tabs fit" aria-label={tr("Menu")}>{TABS.filter((x) => x[0] !== "mat").map((x) => <button key={x[0]} className={tab === x[0] ? "on" : ""} aria-current={tab === x[0] ? "page" : undefined} onClick={() => go(x[0])}><Ic n={x[2]} s={22} />{x[1]}</button>)}</nav>
   </>;
 }
 

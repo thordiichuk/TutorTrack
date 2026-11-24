@@ -185,3 +185,50 @@ test("parent access: code from the child, all tutors, hidden events, max two par
   await call("DELETE", "/api/student/parent-code", undefined, kid);
   assert.equal((await call("GET", "/api/parent/data", undefined, p1)).body.children.length, 0);
 });
+
+async function upload(url: string, buf: Buffer, cookie: string) {
+  const r = await app.inject({ method: "POST", url, payload: buf, headers: { cookie, "content-type": "application/octet-stream" } });
+  return { status: r.statusCode, body: r.json() };
+}
+test("materials: links for all, files in Pro, access for student and parent only", async () => {
+  const t = await register("tutor"), other = await register("tutor");
+  const sid = (await call("POST", "/api/students", { name: "Ola", subject: "Matematyka", rate: 10000 }, t)).body.student.id;
+  const lid = (await call("POST", "/api/lessons", { sid, date: "2026-10-02", time: "16:00", min: 60, status: "done", amount: 10000, hw: "zad 1" }, t)).body.lesson.id;
+  // links work on Free; only http(s)
+  assert.equal((await call("POST", "/api/materials/link", { sid, lessonId: lid, url: "javascript:alert(1)" }, t)).status, 400);
+  const link = await call("POST", "/api/materials/link", { sid, lessonId: lid, name: "Karta", url: "https://1drv.ms/b/abc" }, t);
+  assert.equal(link.status, 200); assert.equal(link.body.materials.length, 1);
+  // files need Pro
+  const pdf = Buffer.concat([Buffer.from("%PDF-1.4\n"), Buffer.alloc(100)]);
+  assert.equal((await upload(`/api/materials/file?sid=${sid}&lessonId=${lid}&name=karta.pdf`, pdf, t)).status, 402);
+  await call("POST", "/api/me/plan", { plan: "pro" }, t);
+  assert.equal((await upload(`/api/materials/file?sid=${sid}&name=wirus.exe`, pdf, t)).status, 400);
+  assert.equal((await upload(`/api/materials/file?sid=${sid}&name=fake.pdf`, Buffer.from("not a pdf"), t)).status, 400);
+  assert.equal((await upload(`/api/materials/file?sid=${sid}&name=duzy.pdf`, Buffer.concat([pdf, Buffer.alloc(5 * 1024 * 1024)]), t)).status, 413);
+  const f = await upload(`/api/materials/file?sid=${sid}&lessonId=${lid}&name=karta.pdf`, pdf, t);
+  assert.equal(f.status, 200, JSON.stringify(f.body));
+  const fid = f.body.material.id;
+  // another tutor can't add to or read this student's materials
+  assert.equal((await call("POST", "/api/materials/link", { sid, url: "https://x.pl" }, other)).status, 404);
+  assert.equal((await app.inject({ method: "GET", url: `/api/materials/${fid}/file`, headers: { cookie: other } })).statusCode, 404);
+  const own = await app.inject({ method: "GET", url: `/api/materials/${fid}/file`, headers: { cookie: t } });
+  assert.equal(own.statusCode, 200); assert.equal(own.headers["content-type"], "application/pdf");
+  // linked student sees and downloads, adds a solution, may delete only own solution
+  const code = (await call("POST", `/api/students/${sid}/invite`, undefined, t)).body.student.inviteCode;
+  const kid = await register("student", { code });
+  const sd = (await call("GET", "/api/student/data", undefined, kid)).body;
+  assert.equal(sd.materials.length, 2);
+  assert.equal((await app.inject({ method: "GET", url: `/api/materials/${fid}/file`, headers: { cookie: kid } })).statusCode, 200);
+  const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(50)]);
+  const sol = await upload(`/api/student/solutions?lessonId=${lid}&name=rozwiazanie.png`, png, kid);
+  assert.equal(sol.status, 200, JSON.stringify(sol.body)); assert.equal(sol.body.material.byStudent, true);
+  assert.equal((await call("DELETE", `/api/materials/${fid}`, undefined, kid)).status, 404);
+  // parent (through the child's code) can read but not delete
+  const pcode = (await call("POST", "/api/student/parent-code", undefined, kid)).body.parentCode;
+  const par = (await call("POST", "/api/auth/register", { role: "parent", name: "P", email: `pm${uniq}@x.pl`, password: "haslo123", code: pcode })).cookie!;
+  assert.equal((await call("GET", "/api/parent/data", undefined, par)).body.children[0].materials.length, 3);
+  assert.equal((await app.inject({ method: "GET", url: `/api/materials/${fid}/file`, headers: { cookie: par } })).statusCode, 200);
+  assert.equal((await call("DELETE", `/api/materials/${sol.body.material.id}`, undefined, par)).status, 404);
+  assert.equal((await call("DELETE", `/api/materials/${sol.body.material.id}`, undefined, kid)).status, 200);
+  assert.equal((await call("GET", "/api/tutor/data", undefined, t)).body.materials.length, 2);
+});

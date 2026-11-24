@@ -163,6 +163,49 @@ async function ownLesson(tutorId: string, id: string, db = pool as any) {
   return r || fail(404, "Nie znaleziono lekcji.");
 }
 
+/* ---------- lesson materials ---------- */
+const FILE_MAX = 5 * 1024 * 1024, QUOTA = 25 * 1024 * 1024;
+const MIME: Record<string, string> = {
+  pdf: "application/pdf", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", heic: "image/heic", txt: "text/plain",
+  doc: "application/msword", docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ppt: "application/vnd.ms-powerpoint", pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  xls: "application/vnd.ms-excel", xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  odt: "application/vnd.oasis.opendocument.text", ods: "application/vnd.oasis.opendocument.spreadsheet",
+};
+/** Shown in the browser; everything else is always downloaded. */
+const INLINE = new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]);
+const MAT_COLS = "m.id, m.student_id, m.lesson_id, m.kind, m.by_student, m.name, m.url, m.mime, m.size, m.created_at";
+const mapMaterial = (r: any) => ({ id: r.id, sid: r.student_id, lessonId: r.lesson_id || null, kind: r.kind, byStudent: r.by_student, name: r.name, url: r.url, mime: r.mime, size: r.size, createdAt: new Date(r.created_at).getTime() });
+/** The file's extension decides the type; the first bytes must match for PDFs and images. */
+function fileType(name: string, buf: Buffer) {
+  const ext = (name.split(".").pop() || "").toLowerCase(), mime = MIME[ext];
+  if (!mime) fail(400, "Ten typ pliku nie jest obsługiwany. Dozwolone: PDF, zdjęcia (JPG, PNG, WEBP, HEIC), Word, Excel, PowerPoint, TXT.");
+  const head = buf.subarray(0, 12).toString("latin1");
+  const ok = mime === "application/pdf" ? head.startsWith("%PDF") : mime === "image/png" ? head.startsWith("\x89PNG") : mime === "image/jpeg" ? buf[0] === 0xff && buf[1] === 0xd8
+    : mime === "image/webp" ? head.startsWith("RIFF") && head.slice(8, 12) === "WEBP" : true;
+  if (!ok) fail(400, "Zawartość pliku nie zgadza się z jego rozszerzeniem.");
+  return mime;
+}
+async function storeFile(tutorId: string, studentId: string, lessonId: string | null, byStudent: boolean, name: string, body: unknown) {
+  const buf = Buffer.isBuffer(body) ? body : Buffer.alloc(0);
+  if (!buf.length) fail(400, "Plik jest pusty.");
+  if (buf.length > FILE_MAX) fail(413, "Plik jest za duży – maksymalnie 5 MB. Większe pliki dodaj jako link do OneDrive lub Google Drive.");
+  const mime = fileType(name, buf);
+  const used = (await q("SELECT COALESCE(sum(size),0)::bigint AS n FROM materials WHERE tutor_id=$1", [tutorId]))[0].n;
+  if (Number(used) + buf.length > QUOTA) fail(413, "Brak miejsca na pliki (limit 25 MB na korepetytora). Usuń stare pliki albo dodaj materiał jako link do OneDrive lub Google Drive.");
+  const r = (await q(`INSERT INTO materials(tutor_id,student_id,lesson_id,kind,by_student,name,mime,size,data) VALUES ($1,$2,$3,'file',$4,$5,$6,$7,$8) RETURNING ${MAT_COLS.replace(/m\./g, "")}`,
+    [tutorId, studentId, lessonId, byStudent, name.slice(0, 200), mime, buf.length, buf]))[0];
+  return mapMaterial(r);
+}
+/** Who may open a material: its tutor, the linked student, or a parent of that student. */
+async function canSeeMaterial(u: User, studentId: string, tutorId: string) {
+  if (u.role === "tutor") return u.id === tutorId;
+  const s = (await q("SELECT linked_user_id FROM students WHERE id=$1 AND deleted_at IS NULL", [studentId]))[0];
+  if (!s?.linked_user_id) return false;
+  if (u.role === "student") return s.linked_user_id === u.id;
+  return (await q("SELECT 1 FROM child_parents WHERE child_id=$1 AND parent_id=$2", [s.linked_user_id, u.id])).length > 0;
+}
+
 async function tutorData(u: User) {
   await q("DELETE FROM students WHERE tutor_id=$1 AND deleted_at < now() - interval '30 days'", [u.id]);
   await q("DELETE FROM lessons WHERE tutor_id=$1 AND deleted_at < now() - interval '30 days'", [u.id]);
@@ -175,7 +218,8 @@ async function tutorData(u: User) {
     ...tl.map((r: any) => ({ kind: "lesson", id: r.id, name: r.name, date: r.date, time: r.time, deletedAt: new Date(r.deleted_at).getTime() })),
   ].sort((a, b) => b.deletedAt - a.deletedAt);
   const series = await q("SELECT id, student_id, freq FROM lesson_series WHERE tutor_id=$1", [u.id]);
-  return { students: students.map(mapStudent), lessons: lessons.map(mapLesson), trash, series: series.map((r: any) => ({ id: r.id, sid: r.student_id, freq: r.freq })) };
+  const mats = await q(`SELECT ${MAT_COLS} FROM materials m WHERE m.tutor_id=$1 ORDER BY m.created_at`, [u.id]);
+  return { students: students.map(mapStudent), lessons: lessons.map(mapLesson), trash, series: series.map((r: any) => ({ id: r.id, sid: r.student_id, freq: r.freq })), materials: mats.map(mapMaterial) };
 }
 
 /** Connect a parent account with a child's student account through the child's parent code (max. 2 parents per child). */
@@ -608,6 +652,7 @@ export async function buildApp(opts: { logger?: boolean; authRateLimit?: number 
     const links = ids.length ? await q(`SELECT s.id, s.subject, s.linked_user_id, t.name AS tutor_name, t.brand AS tutor_brand, t.email AS tutor_email, t.settings AS tutor_settings
       FROM students s JOIN users t ON t.id=s.tutor_id WHERE s.linked_user_id = ANY($1::uuid[]) AND s.deleted_at IS NULL AND t.blocked_at IS NULL ORDER BY s.created_at`, [ids]) : [];
     const sids = links.map((s: any) => s.id);
+    const mats = sids.length ? await q(`SELECT ${MAT_COLS} FROM materials m WHERE m.student_id = ANY($1::uuid[]) ORDER BY m.created_at`, [sids]) : [];
     const ls = sids.length ? await q("SELECT * FROM lessons WHERE student_id = ANY($1::uuid[]) AND deleted_at IS NULL ORDER BY date, time", [sids]) : [];
     const ev = ids.length ? await q("SELECT * FROM student_events WHERE user_id = ANY($1::uuid[]) AND NOT hide_parent ORDER BY created_at", [ids]) : [];
     const done = ids.length ? await q("SELECT user_id, lesson_id FROM homework_done WHERE user_id = ANY($1::uuid[])", [ids]) : [];
@@ -630,6 +675,7 @@ export async function buildApp(opts: { logger?: boolean; authRateLimit?: number 
             };
           }),
           events: ev.filter((e: any) => e.user_id === k.id).map(mapEvent),
+          materials: mats.filter((m: any) => ks.some((x: any) => x.id === m.student_id)).map(mapMaterial),
         };
       }),
     };
@@ -675,6 +721,68 @@ export async function buildApp(opts: { logger?: boolean; authRateLimit?: number 
     return parentInfo(u.id);
   });
 
+  /* ----- lesson materials ----- */
+  app.addContentTypeParser("application/octet-stream", { parseAs: "buffer", bodyLimit: FILE_MAX + 1024 }, (_req, body, done) => done(null, body));
+  const matTarget = async (u: User, sid: string, lessonId: string) => {
+    const s = await ownStudent(u.id, sid);
+    if (lessonId) { const l = await ownLesson(u.id, lessonId); if (l.student_id !== s.id) fail(400, "Ta lekcja należy do innego ucznia."); return { s, l }; }
+    return { s, l: null as any };
+  };
+  app.post("/api/materials/link", async (req) => {
+    const u = await need(req, "tutor");
+    const b = parse(z.object({ sid: z.string(), lessonId: z.string().default(""), name: str(200).default(""), url: z.string().trim().max(2000).regex(/^https?:\/\/\S+$/i, "Podaj adres zaczynający się od http:// lub https://."), series: z.boolean().default(false) }), req.body);
+    const { s, l } = await matTarget(u, b.sid, b.lessonId);
+    const name = b.name.trim() || b.url.replace(/^https?:\/\//i, "").slice(0, 80);
+    const ids: (string | null)[] = [l ? l.id : null];
+    if (l && b.series && l.series_id) {
+      const more = await q("SELECT id FROM lessons WHERE series_id=$1 AND tutor_id=$2 AND id<>$3 AND date >= $4 AND deleted_at IS NULL", [l.series_id, u.id, l.id, l.date]);
+      ids.push(...more.map((r: any) => r.id));
+    }
+    const out = [];
+    for (const lid of ids) out.push(mapMaterial((await q(`INSERT INTO materials(tutor_id,student_id,lesson_id,kind,name,url) VALUES ($1,$2,$3,'link',$4,$5) RETURNING ${MAT_COLS.replace(/m\./g, "")}`, [u.id, s.id, lid, name, b.url]))[0]));
+    return { materials: out };
+  });
+  app.post("/api/materials/file", async (req) => {
+    const u = await need(req, "tutor");
+    if (u.plan !== "pro") fail(402, "Dodawanie plików jest dostępne w planie Pro. Linki możesz dodawać w planie Free.");
+    const b = parse(z.object({ sid: z.string(), lessonId: z.string().default(""), name: z.string().trim().min(1).max(200) }), req.query);
+    const { s, l } = await matTarget(u, b.sid, b.lessonId);
+    return { material: await storeFile(u.id, s.id, l ? l.id : null, false, b.name, req.body) };
+  });
+  app.get("/api/materials/:id/file", async (req, reply) => {
+    const u = await need(req);
+    const id = (req.params as any).id;
+    if (!UUID.test(id)) fail(404, "Nie znaleziono pliku.");
+    const m = (await q("SELECT * FROM materials WHERE id=$1 AND kind='file'", [id]))[0];
+    if (!m || !(await canSeeMaterial(u, m.student_id, m.tutor_id))) fail(404, "Nie znaleziono pliku.");
+    const fn = encodeURIComponent(m.name);
+    reply.header("Content-Type", m.mime).header("Cache-Control", "private, no-store").header("X-Content-Type-Options", "nosniff")
+      .header("Content-Disposition", (INLINE.has(m.mime) ? "inline" : "attachment") + `; filename*=UTF-8''${fn}`)
+      .header("Content-Security-Policy", "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; sandbox");
+    return reply.send(m.data);
+  });
+  app.delete("/api/materials/:id", async (req) => {
+    const u = await need(req);
+    const id = (req.params as any).id;
+    if (!UUID.test(id)) fail(404, "Nie znaleziono materiału.");
+    const m = (await q("SELECT m.id, m.tutor_id, m.by_student, s.linked_user_id FROM materials m JOIN students s ON s.id=m.student_id WHERE m.id=$1", [id]))[0];
+    const mine = m && (u.role === "tutor" ? m.tutor_id === u.id : u.role === "student" && m.by_student && m.linked_user_id === u.id);
+    if (!mine) fail(404, "Nie znaleziono materiału.");
+    await q("DELETE FROM materials WHERE id=$1", [id]);
+    return { ok: true };
+  });
+  /* the student adds a solution (photo or file) to a lesson's homework */
+  app.post("/api/student/solutions", async (req) => {
+    const u = await need(req, "student");
+    const b = parse(z.object({ lessonId: z.string(), name: z.string().trim().min(1).max(200) }), req.query);
+    if (!UUID.test(b.lessonId)) fail(404, "Nie znaleziono lekcji.");
+    const l = (await q(`SELECT l.id, l.student_id, l.tutor_id, t.plan FROM lessons l JOIN students s ON s.id=l.student_id JOIN users t ON t.id=l.tutor_id
+      WHERE l.id=$1 AND s.linked_user_id=$2 AND l.deleted_at IS NULL AND s.deleted_at IS NULL`, [b.lessonId, u.id]))[0];
+    if (!l) fail(404, "Nie znaleziono lekcji.");
+    if (l.plan !== "pro") fail(402, "Twój korepetytor nie ma planu Pro, dlatego nie można dodawać plików. Wyślij rozwiązanie inną drogą.");
+    return { material: await storeFile(l.tutor_id, l.student_id, l.id, true, b.name, req.body) };
+  });
+
   /* ----- student ----- */
   app.get("/api/student/data", async (req) => {
     const u = await need(req, "student");
@@ -699,6 +807,7 @@ export async function buildApp(opts: { logger?: boolean; authRateLimit?: number 
       })),
       events: ev.map(mapEvent),
       done: done.map((d: any) => d.lesson_id),
+      materials: links.length ? (await q(`SELECT ${MAT_COLS} FROM materials m WHERE m.student_id = ANY($1::uuid[]) ORDER BY m.created_at`, [links.map((s: any) => s.id)])).map(mapMaterial) : [],
       ...(await parentInfo(u.id)),
     };
   });

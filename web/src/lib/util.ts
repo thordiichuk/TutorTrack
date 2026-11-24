@@ -25,7 +25,8 @@ export type Lesson = {
 export type CancelRequest = { status: "pending" | "accepted" | "rejected" | "moved"; kind?: "cancel" | "move"; reason: string; note: string; at: number };
 export type TrashItem = { kind: "student" | "lesson"; id: string; name: string; lessons?: number; date?: string; time?: string; deletedAt: number };
 export type Series = { id: string; sid: string; freq: number };
-export type TutorData = { students: Student[]; lessons: Lesson[]; trash: TrashItem[]; series?: Series[] };
+export type Material = { id: string; sid: string; lessonId: string | null; kind: "link" | "file"; byStudent: boolean; name: string; url: string; mime: string; size: number; createdAt: number };
+export type TutorData = { students: Student[]; lessons: Lesson[]; trash: TrashItem[]; series?: Series[]; materials?: Material[] };
 
 export const FREE = 3;
 export const PRO_PLN = 1900;

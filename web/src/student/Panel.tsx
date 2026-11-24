@@ -1,7 +1,7 @@
 import { Fragment, ReactNode, useCallback, useEffect, useState } from "react";
 import { api } from "../lib/api";
 import { Empty, Ic, Logo } from "../lib/icons";
-import { addDays, lekcje, CancelRequest, copyText, download, fd, fm, printText, shareText, subjColor, fdt, fmtH, MSHORT, pd, pln, te, WDL, WDSHORT, ym, ymd } from "../lib/util";
+import { Material, addDays, lekcje, CancelRequest, copyText, download, fd, fm, printText, shareText, subjColor, fdt, fmtH, MSHORT, pd, pln, te, WDL, WDSHORT, ym, ymd } from "../lib/util";
 import { useAuth } from "../state";
 import { errMsg, Field, useOverlay } from "../ui/overlay";
 import { ChangePassword, DeleteAccount } from "../app/Views";
@@ -9,6 +9,7 @@ import { navigate } from "../lib/router";
 import { ThemePicker } from "../ui/themes";
 import { LangPicker, langName } from "../ui/lang";
 import { tr } from "../lib/i18n";
+import { MaterialsPage, MatList, pickFile, uploadFile } from "../ui/materials";
 import { BEv, CRow, LessonTabs, LView, MonthGroups, useLessonTabs, VSheet, WeekPlan } from "../ui/lessons";
 import { InstallBanner, useCanOfferInstall, useInstall } from "../ui/pwa";
 
@@ -16,7 +17,7 @@ type SLesson = { id: string; date: string; time: string; min: number; subject: s
 type Link = { sid: string; tutor: string; studentName: string; subject: string; contact?: { email: string; phone: string }; lessons: SLesson[] };
 type Ev = { id: string; title: string; cat: string; repeat: "w" | "o"; weekday: number; date: string; start: string; end: string; hideParent?: boolean };
 type Parent = { id: string; name: string; email: string };
-type Data = { links: Link[]; events: Ev[]; done: string[]; parentCode: string | null; parents: Parent[] };
+type Data = { links: Link[]; events: Ev[]; done: string[]; parentCode: string | null; parents: Parent[]; materials: Material[] };
 type L = SLesson & { tutor: string; sid: string; hwDone?: boolean };
 const CATS: Record<string, string> = { school: tr("Szkoła"), tutor: tr("Korepetycje spoza TutorTrack"), extra: tr("Zajęcia dodatkowe"), other: tr("Inne") };
 /** Two time ranges ("HH:MM") overlap. */
@@ -27,10 +28,10 @@ const RED = { background: "var(--rdl)", borderLeft: "4px solid var(--rd)", paddi
 /** tabs shown in the phone's bottom bar; the rest live under "Więcej" */
 const MAIN = ["dash", "plan", "graf", "hw"];
 /** reachable from Lekcje and Settings, not listed in the menus */
-const HIDDEN = ["sum", "kor"];
+const HIDDEN = ["sum", "kor", "mat"];
 const TABS: [string, string, string, string][] = [
   ["dash", tr("Pulpit"), "home", tr("Pulpit")], ["plan", tr("Plan§sched"), "cal", tr("Plan§sched")], ["graf", tr("Zajęcia"), "book", tr("Zajęcia")], ["hw", tr("Zadania"), "check", tr("Zadania")],
-  ["lek", tr("Lekcje"), "note", tr("Lekcje")], ["sum", tr("Podsumowanie miesiąca"), "chart", tr("Miesiąc")], ["kor", tr("Korepetytorzy"), "users", tr("Nauczyciele")], ["konto", tr("Ustawienia"), "set", tr("Ustawienia")],
+  ["lek", tr("Lekcje"), "note", tr("Lekcje")], ["mat", tr("Materiały"), "note", tr("Materiały")], ["sum", tr("Podsumowanie miesiąca"), "chart", tr("Miesiąc")], ["kor", tr("Korepetytorzy"), "users", tr("Nauczyciele")], ["konto", tr("Ustawienia"), "set", tr("Ustawienia")],
 ];
 
 export function StudentPanel() {
@@ -103,7 +104,13 @@ export function StudentPanel() {
   const lessonModal = (id: string) => {
     const l = find(id); if (!l) return;
     const contact = d?.links.find((k) => k.sid === l.sid)?.contact;
-    ov.modal(<VSheet l={l} title={l.subject || tr("Lekcja")} hwDone={l.hw ? done.has(l.id) : undefined} contact={contact} noCr actions={<>
+    const mats = (d?.materials || []).filter((m) => m.lessonId === l.id);
+    const addSol = async () => { const f = await pickFile(".jpg,.jpeg,.png,.webp,.heic,.pdf,.doc,.docx,.txt"); if (!f) return;
+      ov.close(); run(() => uploadFile("/api/student/solutions?lessonId=" + l.id, f), tr("Rozwiązanie dodane – korepetytor je zobaczy.")); };
+    ov.modal(<VSheet l={l} title={l.subject || tr("Lekcja")} hwDone={l.hw ? done.has(l.id) : undefined} contact={contact} noCr
+      mats={(mats.length > 0 || l.hw) && <div className="kvb"><span>{tr("Materiały")}</span><MatList items={mats} canDelete={(m) => m.byStudent} onDelete={(m) => { ov.close(); run(() => api("DELETE", "/api/materials/" + m.id), tr("Usunięto.")); }} empty={tr("Brak materiałów.")} />
+        {l.hw && <div className="matacts"><button className="btn s" onClick={addSol}>{tr("📷 Dodaj rozwiązanie")}</button></div>}</div>}
+      actions={<>
       {l.cr?.status === "pending" && <div className="rqbox"><b>{l.cr.kind === "move" ? tr("Prośba o przeniesienie na następny tydzień wysłana") : tr("Prośba o odwołanie wysłana")}</b><span>{fdt(l.cr.at)}{" "}{tr("– czeka na potwierdzenie korepetytora.")}<br />{tr("Przyczyna:")}{" "}{l.cr.reason}</span></div>}
       {l.cr?.status === "rejected" && l.status === "planned" && <div className="lerr" style={{ marginTop: 12 }}><b>{l.cr.kind === "move" ? tr("Korepetytor odrzucił prośbę o przeniesienie.") : tr("Korepetytor odrzucił prośbę o odwołanie.")}</b>{l.cr.note && <><br />{tr("Komentarz:")}{" "}{l.cr.note}</>}<br />{tr("Twoja przyczyna:")}{" "}{l.cr.reason}</div>}
       {l.cr?.status === "accepted" && l.status === "cancelled" && (l.cr.kind === "move"
@@ -198,7 +205,9 @@ export function StudentPanel() {
   function Lek() {
     if (!d!.links.length) return <div className="card"><Empty icon="book" title={tr("Brak lekcji")} sub={tr("Dodaj kod od korepetytora, aby zobaczyć swoje lekcje.")} /><div className="acts" style={{ justifyContent: "center" }}><button className="btn p" onClick={() => go("kor")}>{tr("Dodaj kod od korepetytora")}</button></div></div>;
     const { up, past, shown, nUnpaid } = useLessonTabs(all, lv, ord, onlyUnpaid);
+    const nMat = (d!.materials || []).length;
     return <>
+      <button className="matlink" onClick={() => go("mat")}><span aria-hidden="true">📎</span><b>{tr("Materiały")}</b><span>{nMat ? nMat : tr("brak")}</span><Ic n="chev" s={16} /></button>
       <LessonTabs view={lv} setView={setLv} n={[up.length, past.length, all.length]} ord={ord} setOrd={setOrd} onlyUnpaid={onlyUnpaid} setOnlyUnpaid={setOnlyUnpaid} nUnpaid={nUnpaid} />
       {shown.length ? <MonthGroups blocks list={shown} row={(l) => <CRow key={l.id} l={l} onClick={() => lessonModal(l.id)} />} />
         : <div className="card"><Empty icon="book" title={onlyUnpaid && lv === "all" ? tr("Brak nieopłaconych lekcji") : lv === "up" ? tr("Brak zaplanowanych lekcji") : tr("Brak lekcji")} sub={tr("Lekcje dodaje korepetytor.")} /></div>}
@@ -258,7 +267,7 @@ export function StudentPanel() {
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}><span className="hint" id="usr">{user!.name}</span>{action}</div>
         </header>
         {err && <p className="banner">{err} <button className="lk" onClick={load}>{tr("Spróbuj ponownie")}</button></p>}
-        <main className="content">{!d ? <p className="hint">{tr("Ładowanie…")}</p> : tab === "dash" ? Dash() : tab === "plan" ? Plan() : tab === "graf" ? Graf() : tab === "hw" ? Hw() : tab === "sum" ? Sum() : tab === "lek" ? Lek() : tab === "kor" ? <><button className="sback" onClick={() => go("konto")}><Ic n="chevl" s={16} />{tr("Ustawienia")}</button><KorTab d={d} load={load} run={run} /></> : <KontoTab out={out} d={d} load={load} go={go} />}</main>
+        <main className="content">{!d ? <p className="hint">{tr("Ładowanie…")}</p> : tab === "dash" ? Dash() : tab === "plan" ? Plan() : tab === "graf" ? Graf() : tab === "hw" ? Hw() : tab === "sum" ? Sum() : tab === "lek" ? Lek() : tab === "mat" ? <MaterialsPage items={d.materials || []} lessons={all} tutorOf={(sid) => { const k = d.links.find((x) => x.sid === sid); return k && { tutor: k.tutor, subject: k.subject }; }} onBack={() => go("lek")} canDelete={(m) => m.byStudent} onDelete={(m) => { run(() => api("DELETE", "/api/materials/" + m.id), tr("Usunięto.")); }} /> : tab === "kor" ? <><button className="sback" onClick={() => go("konto")}><Ic n="chevl" s={16} />{tr("Ustawienia")}</button><KorTab d={d} load={load} run={run} /></> : <KontoTab out={out} d={d} load={load} go={go} />}</main>
       </div>
     </div>
     <nav className="tabs fit" aria-label={tr("Menu")}>{TABS.filter((x) => MAIN.includes(x[0])).map((x) => <button key={x[0]} className={tab === x[0] ? "on" : ""} aria-current={tab === x[0] ? "page" : undefined} onClick={() => go(x[0])}><Ic n={x[2]} s={22} />{x[3]}{x[0] === "hw" && nT > 0 && <i className="tbadge">{nT}</i>}</button>)}

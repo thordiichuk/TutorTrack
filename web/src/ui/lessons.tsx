@@ -117,7 +117,7 @@ export function LessonTabs({ view, setView, n, ord, setOrd, onlyUnpaid, setOnlyU
 }
 
 /** Lesson window – the same sheet as the tutor's, with role-specific buttons below. */
-export function VSheet({ l, title, contact, hwDone, actions, noCr }: { l: VLesson; title: string; contact?: { email: string; phone: string }; hwDone?: boolean; actions?: ReactNode; noCr?: boolean }) {
+export function VSheet({ l, title, contact, hwDone, actions, noCr, mats }: { l: VLesson; title: string; contact?: { email: string; phone: string }; hwDone?: boolean; actions?: ReactNode; noCr?: boolean; mats?: ReactNode }) {
   const st = l.status === "done" ? tr("przeprowadzona") : l.status === "cancelled" ? tr("odwołana") : tr("zaplanowana");
   const pay = l.status === "cancelled" ? (l.amount > 0 ? pln(l.amount) + tr(" (opłata) · ") + (l.paid ? tr("opłacona") : tr("nieopłacona")) : tr("bez opłaty"))
     : pln(l.amount) + (l.status === "planned" && !l.paid ? "" : " · " + (l.paid ? tr("opłacona") : tr("nieopłacona")));
@@ -130,6 +130,7 @@ export function VSheet({ l, title, contact, hwDone, actions, noCr }: { l: VLesso
     {l.status === "done" && <div className="kvb"><span>{tr("Po zajęciach")}</span><p className="pre">{l.notes || <span className="hint">{tr("Brak notatki.")}</span>}</p></div>}
     {l.hw && <div className="kvb"><span>{tr("Praca domowa")}{l.hd ? tr(" · termin ") + fd(l.hd) : ""}</span><p className="pre">{l.hw}</p>
       {hwDone !== undefined && <span className={"lchip " + (hwDone ? "gr" : "am")} style={{ display: "inline-block", marginTop: 6 }}>{hwDone ? tr("Zadanie zrobione") : tr("Zadanie niezrobione")}</span>}</div>}
+    {mats}
     {!noCr && l.cr?.status === "pending" && <div className="rqbox"><b>{l.cr.kind === "move" ? tr("Prośba o przeniesienie na następny tydzień") : tr("Prośba o odwołanie")}</b><span>{tr("Przyczyna: „")}{l.cr.reason}”</span></div>}
     {!noCr && l.cr?.status === "rejected" && l.status === "planned" && <p className="hint">{tr("Korepetytor odrzucił prośbę.")}{l.cr.note ? " " + l.cr.note : ""}</p>}
     {!noCr && l.cr?.status === "accepted" && l.status === "cancelled" && l.cr.note && <p className="hint">{tr("Komentarz korepetytora:")}{" "}{l.cr.note}</p>}

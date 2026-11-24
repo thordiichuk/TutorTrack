@@ -571,3 +571,12 @@ body.stu .pgrp{border:2px dashed var(--bdh);border-radius:16px;padding:0 8px 8px
 .mx2{border:0;background:transparent;color:var(--mu);width:32px;height:32px;border-radius:8px;cursor:pointer;flex:none}.mx2:hover{background:var(--hov)}
 .iosteps{padding-left:20px;line-height:1.7}.ioshare{display:inline-block;border:1px solid var(--bd);border-radius:6px;padding:0 6px;font-size:13px}
 @media(max-width:480px){.instb{flex-wrap:wrap}.instb>div{flex:1 1 calc(100% - 90px)}}
+/* lesson materials */
+.mats{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.mat{display:flex;align-items:center;gap:6px;background:var(--bg);border-radius:12px}
+.matb{flex:1;min-width:0;display:flex;align-items:center;gap:10px;border:0;background:transparent;padding:9px 10px;font:inherit;color:inherit;text-align:left;cursor:pointer;border-radius:12px}.matb:hover{background:var(--hov)}
+.matic{font-size:18px;width:26px;text-align:center;flex:none}
+.matb .m{min-width:0}.matb .m b{display:block;font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.matb .m span{display:block;font-size:12px;color:var(--mu)}
+.matacts{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.clip{font-style:normal;font-size:12px;font-weight:600;color:var(--mu);margin-left:6px;white-space:nowrap}
+.matlink{display:flex;align-items:center;gap:10px;width:100%;margin:0 0 12px;padding:12px 14px;background:var(--card);border:1px solid var(--bd);border-radius:14px;font:inherit;color:inherit;cursor:pointer;text-align:left}.matlink b{flex:1}.matlink>span:not([aria-hidden]){color:var(--mu);font-size:13px}.matlink:hover{border-color:var(--ac)}

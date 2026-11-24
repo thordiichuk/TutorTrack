@@ -202,7 +202,7 @@ function TodayJump({ day, has }: { day: string; has: boolean }) {
 
 /** The tutor's week like the student's Plan: on phones a strip of days and one day's blocks, on computers seven columns. */
 function TutorWeek({ days, list }: { days: string[]; list: Lesson[] }) {
-  const { lessons, stu } = useData();
+  const { lessons, stu, materials = [] } = useData();
   const { modal } = useOverlay();
   const td = ymd(new Date());
   const [sel, setSel] = useState(-1);
@@ -215,7 +215,7 @@ function TutorWeek({ days, list }: { days: string[]; list: Lesson[] }) {
     const money = l.status === "cancelled" ? (l.fee > 0 ? pln(l.fee) : "") : pln(l.amount);
     return <button type="button" key={l.id} className={"pblk les brow" + (ov ? " clash" : "") + (l.status === "cancelled" ? " cx" : "")} style={{ ["--sc" as any]: subjColor(sub) }} onClick={() => modal(<LessonSheetLazy id={l.id} />)}>
       <span className="ptm">{l.time}–{te(l.time, l.min)}</span>
-      <span className="brw"><b>{s ? s.name : "?"}{l.seriesId && <i className="sico2" title={tr("Lekcja z serii")}>↻</i>}</b>{money && <i>{money.replace(",00", "")}</i>}</span>
+      <span className="brw"><b>{s ? s.name : "?"}{l.seriesId && <i className="sico2" title={tr("Lekcja z serii")}>↻</i>}{materials.some((m) => m.lessonId === l.id) && <i className="clip" title={tr("Materiały")}>📎{materials.filter((m) => m.lessonId === l.id).length}</i>}</b>{money && <i>{money.replace(",00", "")}</i>}</span>
       <span className="brw"><span className="ps">{[sub, l.topic].filter(Boolean).join(" · ")}</span>{chip && <span className={"lchip " + chip[1]}>{chip[0]}</span>}</span></button>;
   };
   return <div className="tweek">
