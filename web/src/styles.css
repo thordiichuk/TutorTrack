@@ -582,3 +582,8 @@ body.stu .pgrp{border:2px dashed var(--bdh);border-radius:16px;padding:0 8px 8px
 .matlink{display:flex;align-items:center;gap:10px;width:100%;margin:0 0 12px;padding:12px 14px;background:var(--card);border:1px solid var(--bd);border-radius:14px;font:inherit;color:inherit;cursor:pointer;text-align:left}.matlink b{flex:1}.matlink>span:not([aria-hidden]){color:var(--mu);font-size:13px}.matlink:hover{border-color:var(--ac)}
 .hwres{margin-top:8px;padding:10px 12px;border-radius:12px;background:var(--grl)}.hwres.fix{background:var(--rdl)}.hwres b{display:block;font-size:14px}.hwres span{display:block;font-size:13px;color:var(--tx);margin-top:2px}
 .hwtabs{margin-bottom:12px;flex-wrap:wrap;overflow:visible}
+/* big "Prace domowe" button in the tutor's lessons */
+.hwbig{display:flex;align-items:center;gap:12px;width:100%;margin:10px 0 12px;padding:14px 16px;border-radius:16px;border:2px solid var(--ac);background:var(--acl);color:var(--tx);font:inherit;text-align:left;cursor:pointer}
+.hwbig:hover{filter:brightness(.98)}.hwbig.on{background:var(--ac);color:#fff}.hwbig.on small{color:rgba(255,255,255,.85)}
+.hwbi{font-size:24px;line-height:1}.hwbt{flex:1;min-width:0}.hwbt b{display:block;font-size:16px;font-weight:700}.hwbt small{display:block;font-size:13px;color:var(--mu)}
+.hwbn{font-style:normal;font-weight:800;font-size:14px;min-width:26px;height:26px;border-radius:13px;background:var(--am);color:#fff;display:grid;place-items:center;padding:0 7px}

@@ -286,9 +286,10 @@ function LessonsList() {
     <div className="lbar2">
       <div className="chips" role="group" aria-label={tr("Pokaż lekcje")}>
         <button className={"chip" + (mode === "week" ? " on" : "")} aria-pressed={mode === "week"} onClick={() => setF({ m: "week" })}>{tr("Tydzień")}</button>
-        <button className={"chip" + (mode === "pay" ? " on" : "")} aria-pressed={mode === "pay"} onClick={() => setF({ m: "pay" })}>{tr("Do opłacenia") + (nPay ? " · " + nPay : "")}</button>
-        <button className={"chip" + (mode === "hw" ? " on" : "")} aria-pressed={mode === "hw"} onClick={() => setF({ m: "hw" })}>{tr("Prace domowe") + (nCheck ? " · " + nCheck : "")}</button></div>
+        <button className={"chip" + (mode === "pay" ? " on" : "")} aria-pressed={mode === "pay"} onClick={() => setF({ m: "pay" })}>{tr("Do opłacenia") + (nPay ? " · " + nPay : "")}</button></div>
     </div>
+    <button className={"hwbig" + (mode === "hw" ? " on" : "") + (nCheck ? " has" : "")} aria-pressed={mode === "hw"} onClick={() => setF({ m: mode === "hw" ? "week" : "hw" })}>
+        <span className="hwbi" aria-hidden="true">📝</span><span className="hwbt"><b>{tr("Prace domowe")}</b><small>{nCheck ? tr("Do sprawdzenia: {0}", nCheck) : tr("Zadane, zrobione, do sprawdzenia")}</small></span>{nCheck > 0 && <i className="hwbn">{nCheck}</i>}<Ic n={mode === "hw" ? "x" : "chev"} s={18} /></button>
     <div className="lbar3">
       <label className="stpick"><Ic n="users" s={16} /><select aria-label={tr("Uczeń")} value={f.st} onChange={(e) => setF({ st: e.target.value, sv: "up" })}><option value="">{tr("Wszyscy uczniowie")}</option>{[...students].sort(bySurname).map((s) => <option key={s.id} value={s.id}>{s.name}{s.active ? "" : tr(" (zarchiwizowany)")}</option>)}</select></label>
       <button className={"btn s" + (nf - (f.st ? 1 : 0) ? " p" : "")} aria-expanded={open} onClick={() => setOpen(!open)}>{tr("Filtry")}{nf - (f.st ? 1 : 0) ? ` · ${nf - (f.st ? 1 : 0)}` : ""}</button>
