@@ -51,6 +51,7 @@ const lessonIn = z.object({
   notes: str(4000).default(""),
   hw: str(2000).default(""),
   hd: z.union([z.string().regex(DATE), z.literal("")]).default(""),
+  hwSubmit: z.boolean().default(false),
   status: z.enum(["planned", "done", "cancelled"]),
   paid: z.boolean().default(false),
   amount: money,
@@ -59,7 +60,7 @@ const lessonIn = z.object({
 const lessonPatch = z.object({
   subject: str(120), date: z.string().regex(DATE), time: z.string().regex(TIME), min: z.number().int().min(1).max(1440),
   topic: str(300), prep: str(4000), notes: str(4000), hw: str(2000), hd: z.union([z.string().regex(DATE), z.literal("")]),
-  status: z.enum(["planned", "done", "cancelled"]), paid: z.boolean(), amount: money, fee: money, sid: z.string().regex(UUID),
+  status: z.enum(["planned", "done", "cancelled"]), paid: z.boolean(), amount: money, fee: money, sid: z.string().regex(UUID), hwSubmit: z.boolean(),
 }).partial();
 const settingsIn = z.object({
   theme: z.enum(["light", "auto", "dark", "graphite", "blue", "green", "pink", "orange", "purple"]),
@@ -112,6 +113,8 @@ const mapLesson = (r: any) => ({
   id: r.id, sid: r.student_id, subject: r.subject, date: r.date, time: r.time, min: r.min, topic: r.topic, prep: r.prep,
   notes: r.notes, hw: r.hw, hd: r.hw_due || "", status: r.status, paid: r.paid, amount: r.amount, fee: r.fee,
   cr: mapCr(r), seriesId: r.series_id || null,
+  hwSubmit: !!r.hw_submit, hwCheck: r.hw_check || "", hwNote: r.hw_note || "", hwCheckedAt: r.hw_checked_at ? new Date(r.hw_checked_at).getTime() : null,
+  ...(r.hw_done_st !== undefined ? { hwDone: !!r.hw_done_st, solutionAt: r.sol_at ? new Date(r.sol_at).getTime() : null } : {}),
 });
 const mapEvent = (r: any) => ({ id: r.id, title: r.title, cat: r.cat, repeat: r.repeat, weekday: r.weekday, date: r.date || "", start: r.start_time, end: r.end_time, hideParent: !!r.hide_parent });
 
@@ -210,7 +213,10 @@ async function tutorData(u: User) {
   await q("DELETE FROM students WHERE tutor_id=$1 AND deleted_at < now() - interval '30 days'", [u.id]);
   await q("DELETE FROM lessons WHERE tutor_id=$1 AND deleted_at < now() - interval '30 days'", [u.id]);
   const students = await q("SELECT s.*, (SELECT count(*)::int FROM child_parents p WHERE s.linked_user_id IS NOT NULL AND p.child_id=s.linked_user_id) AS parents FROM students s WHERE s.tutor_id=$1 AND s.deleted_at IS NULL ORDER BY s.created_at", [u.id]);
-  const lessons = await q("SELECT l.* FROM lessons l JOIN students s ON s.id=l.student_id WHERE l.tutor_id=$1 AND l.deleted_at IS NULL AND s.deleted_at IS NULL ORDER BY l.date, l.time", [u.id]);
+  const lessons = await q(`SELECT l.*,
+      EXISTS (SELECT 1 FROM homework_done h WHERE h.lesson_id=l.id AND h.user_id=s.linked_user_id) AS hw_done_st,
+      (SELECT max(m.created_at) FROM materials m WHERE m.lesson_id=l.id AND m.by_student) AS sol_at
+    FROM lessons l JOIN students s ON s.id=l.student_id WHERE l.tutor_id=$1 AND l.deleted_at IS NULL AND s.deleted_at IS NULL ORDER BY l.date, l.time`, [u.id]);
   const ts = await q("SELECT s.id, s.name, s.deleted_at, (SELECT count(*)::int FROM lessons l WHERE l.student_id=s.id AND l.deleted_at IS NULL) AS n FROM students s WHERE s.tutor_id=$1 AND s.deleted_at IS NOT NULL", [u.id]);
   const tl = await q("SELECT l.id, l.date, l.time, l.deleted_at, s.name FROM lessons l JOIN students s ON s.id=l.student_id WHERE l.tutor_id=$1 AND l.deleted_at IS NOT NULL AND s.deleted_at IS NULL", [u.id]);
   const trash = [
@@ -452,9 +458,9 @@ export async function buildApp(opts: { logger?: boolean; authRateLimit?: number 
     if (b.date > todayPL() && b.status === "done") fail(400, "Przeprowadzona lekcja nie może mieć przyszłej daty.");
     if (b.date > todayPL() && b.status === "cancelled") fail(400, "Nie można dodać odwołanej lekcji z przyszłą datą – dodaj ją jako zaplanowaną i odwołaj później.");
     await ownStudent(u.id, b.sid);
-    const r = (await q(`INSERT INTO lessons(tutor_id,student_id,subject,date,time,min,topic,prep,notes,hw,hw_due,status,paid,amount,fee)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING *`,
-      [u.id, b.sid, b.subject, b.date, b.time, b.min, b.topic, b.prep, b.notes, b.hw, b.hd || null, b.status, b.paid, b.amount, b.fee]))[0];
+    const r = (await q(`INSERT INTO lessons(tutor_id,student_id,subject,date,time,min,topic,prep,notes,hw,hw_due,status,paid,amount,fee,hw_submit)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
+      [u.id, b.sid, b.subject, b.date, b.time, b.min, b.topic, b.prep, b.notes, b.hw, b.hd || null, b.status, b.paid, b.amount, b.fee, b.hwSubmit]))[0];
     return { lesson: mapLesson(r) };
   });
 
@@ -463,12 +469,25 @@ export async function buildApp(opts: { logger?: boolean; authRateLimit?: number 
     if (b.sid && b.sid !== l.student_id) await ownStudent(u.id, b.sid, db);
     const m = { ...mapLesson(l), ...b };
     if (m.status === "done" && m.date > todayPL() && (l.status !== "done" || b.date)) fail(400, "Przeprowadzona lekcja nie może mieć przyszłej daty.");
-    const r = (await q(`UPDATE lessons SET student_id=$2,subject=$3,date=$4,time=$5,min=$6,topic=$7,prep=$8,notes=$9,hw=$10,hw_due=$11,status=$12,paid=$13,amount=$14,fee=$15,
+    const r = (await q(`UPDATE lessons SET student_id=$2,subject=$3,date=$4,time=$5,min=$6,topic=$7,prep=$8,notes=$9,hw=$10,hw_due=$11,status=$12,paid=$13,amount=$14,fee=$15,hw_submit=$16,
         cr_status = CASE WHEN cr_status = 'pending' AND $12 = 'cancelled' THEN 'accepted' WHEN cr_status = 'pending' AND $12 = 'done' THEN 'rejected' ELSE cr_status END
       WHERE id=$1 RETURNING *`,
-      [id, m.sid, m.subject, m.date, m.time, m.min, m.topic, m.prep, m.notes, m.hw, m.hd || null, m.status, m.paid, m.amount, m.fee], db))[0];
+      [id, m.sid, m.subject, m.date, m.time, m.min, m.topic, m.prep, m.notes, m.hw, m.hd || null, m.status, m.paid, m.amount, m.fee, !!m.hwSubmit], db))[0];
     return mapLesson(r);
   }
+
+  /* homework: the tutor marks it as checked (ok) or to be fixed, with a comment */
+  app.post("/api/lessons/:id/homework-check", async (req) => {
+    const u = await need(req, "tutor");
+    const l = await ownLesson(u.id, (req.params as any).id);
+    const b = parse(z.object({ result: z.enum(["ok", "fix", ""]), note: str(1000).default(""), hd: z.union([z.string().regex(DATE), z.literal("")]).default("") }), req.body);
+    if (!l.hw) fail(400, "Ta lekcja nie ma pracy domowej.");
+    const r = (await q(`UPDATE lessons SET hw_check=$2, hw_note=$3, hw_checked_at=CASE WHEN $2='' THEN NULL ELSE now() END, hw_due=CASE WHEN $2='fix' AND $4<>'' THEN $4::date ELSE hw_due END WHERE id=$1 RETURNING *`,
+      [l.id, b.result, b.result ? b.note : "", b.hd]))[0];
+    // "to fix": the homework goes back to the student's to-do list
+    if (b.result === "fix") await q("DELETE FROM homework_done WHERE lesson_id=$1", [l.id]);
+    return { lesson: mapLesson(r) };
+  });
 
   /* student cancellation requests – tutor side */
   async function pendingRequest(u: User, id: string) {
@@ -670,7 +689,7 @@ export async function buildApp(opts: { logger?: boolean; authRateLimit?: number 
             const s = ks.find((x: any) => x.id === l.student_id);
             return {
               id: l.id, sid: s.id, tutor: s.tutor_brand || s.tutor_name, date: l.date, time: l.time, min: l.min, subject: l.subject || s.subject.split(",")[0].trim(), topic: l.topic, status: l.status,
-              notes: l.status === "done" ? l.notes : "", hw: l.status === "done" ? l.hw : "", hd: l.status === "done" ? l.hw_due || "" : "", hwDone: dn.has(l.id),
+              notes: l.status === "done" ? l.notes : "", hw: l.status === "done" ? l.hw : "", hd: l.status === "done" ? l.hw_due || "" : "", hwDone: dn.has(l.id), hwSubmit: !!l.hw_submit, hwCheck: l.hw_check || "", hwNote: l.hw_note || "",
               amount: l.status === "cancelled" ? l.fee : l.amount, paid: l.paid,
             };
           }),
@@ -801,7 +820,7 @@ export async function buildApp(opts: { logger?: boolean; authRateLimit?: number 
         },
         lessons: ls.filter((l: any) => l.student_id === s.id).map((l: any) => ({
           id: l.id, date: l.date, time: l.time, min: l.min, subject: l.subject || s.subject.split(",")[0].trim(), topic: l.topic, status: l.status,
-          notes: l.status === "done" ? l.notes : "", hw: l.status === "done" ? l.hw : "", hd: l.status === "done" ? l.hw_due || "" : "",
+          notes: l.status === "done" ? l.notes : "", hw: l.status === "done" ? l.hw : "", hd: l.status === "done" ? l.hw_due || "" : "", hwSubmit: !!l.hw_submit, hwCheck: l.hw_check || "", hwNote: l.hw_note || "",
           amount: l.status === "cancelled" ? l.fee : l.amount, paid: l.paid, cr: mapCr(l),
         })),
       })),

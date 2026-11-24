@@ -21,7 +21,7 @@ export type Lesson = {
   cr?: CancelRequest | null;
   /** Recurring lessons: lessons created together share a series. */
   seriesId?: string | null;
-};
+  hwSubmit?: boolean; hwCheck?: "" | "ok" | "fix"; hwNote?: string; hwCheckedAt?: number | null; hwDone?: boolean; solutionAt?: number | null };
 export type CancelRequest = { status: "pending" | "accepted" | "rejected" | "moved"; kind?: "cancel" | "move"; reason: string; note: string; at: number };
 export type TrashItem = { kind: "student" | "lesson"; id: string; name: string; lessons?: number; date?: string; time?: string; deletedAt: number };
 export type Series = { id: string; sid: string; freq: number };

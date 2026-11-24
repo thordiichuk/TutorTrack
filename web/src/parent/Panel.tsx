@@ -14,7 +14,7 @@ import { MaterialsPage, MatList } from "../ui/materials";
 import type { Material } from "../lib/util";
 import { InstallBanner, useCanOfferInstall, useInstall } from "../ui/pwa";
 
-type PLesson = { id: string; sid: string; tutor: string; date: string; time: string; min: number; subject: string; topic: string; status: "planned" | "done" | "cancelled"; notes: string; hw: string; hd: string; hwDone: boolean; amount: number; paid: boolean };
+type PLesson = { hwSubmit?: boolean; hwCheck?: string; hwNote?: string; id: string; sid: string; tutor: string; date: string; time: string; min: number; subject: string; topic: string; status: "planned" | "done" | "cancelled"; notes: string; hw: string; hd: string; hwDone: boolean; amount: number; paid: boolean };
 type Tutor = { sid: string; tutor: string; subject: string; contact: { email: string; phone: string } };
 type Ev = { id: string; title: string; cat: string; repeat: "w" | "o"; weekday: number; date: string; start: string; end: string };
 type Child = { cid: string; name: string; tutors: Tutor[]; lessons: PLesson[]; events: Ev[]; materials?: Material[] };

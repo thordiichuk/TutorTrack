@@ -9,10 +9,10 @@ import {
 } from "../lib/util";
 import { useAuth, useTutor } from "../state";
 import { errMsg, Field, useOverlay } from "../ui/overlay";
-import { LessonItem, LessonSheetLazy, lessonChip, useData, useUi, useUpsell } from "./common";
+import { HW_LABEL, HwState, hwStatus, LessonItem, LessonSheetLazy, lessonChip, useData, useUi, useUpsell } from "./common";
 import { ThemePicker } from "../ui/themes";
 import { LangPicker, langName } from "../ui/lang";
-import { CancelRequestActions, LessonForm, LessonSheet, ShareModal, StudentDetail, StudentForm, SummaryModal, summaryText } from "./Forms";
+import { CancelRequestActions, HwCheck, LessonForm, LessonSheet, ShareModal, StudentDetail, StudentForm, SummaryModal, summaryText } from "./Forms";
 import { tr } from "../lib/i18n";
 import { InstallBanner, useCanOfferInstall, useInstall } from "../ui/pwa";
 
@@ -104,6 +104,10 @@ export function Dashboard() {
       <div className="tile kg"><div className="l">{tr("Lekcje w mies.")}</div><div className="v">{done.filter((l) => l.status === "done").length}</div></div>
     </div>
     {goal > 0 && <div className="card" style={{ marginTop: 12 }}><div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}><b>{tr("Cel miesięczny")}</b><span>{pln(tot)}{" "}{tr("z")}{" "}{pln(goal)} ({Math.round(tot / goal * 100)}%)</span></div><div className="pbar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pc} aria-label={tr("Postęp celu miesięcznego")} style={{ margin: "8px 0 0" }}><i style={{ width: pc + "%" }} /></div></div>}
+    {(() => { const ch = sortL(lessons.filter((l) => hwStatus(l) === "check"), -1); if (!ch.length) return null;
+      return <div className="card dcard" style={{ marginTop: 12 }}><div className="dch"><h2 style={{ margin: 0 }}>{tr("Do sprawdzenia (")}{ch.length})</h2><button className="lk" onClick={() => { setUi((u) => ({ ...u, lf: { ...u.lf, m: "hw" } })); navigate("/aplikacja/lessons"); }}>{tr("Wszystkie")}</button></div>
+        <p className="hint" style={{ margin: "0 0 4px" }}>{tr("Uczniowie przesłali rozwiązania prac domowych.")}</p>
+        {ch.slice(0, 3).map((l) => { const s = stu(l.sid); return <div role="button" tabIndex={0} key={l.id} className="lrow2" onClick={() => modal(<HwCheck id={l.id} />)}><span className="lbar" style={{ background: "var(--am)" }} /><span className="lwho"><b>{s ? s.name : "?"}</b><span>{l.hw}</span></span><span className="lrt"><span className="lchip am">{tr("do sprawdzenia")}</span></span></div>; })}</div>; })()}
     {late.length > 0 && <div className="card dcard" style={{ marginTop: 12 }}><div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 12 }}><h2 style={{ margin: 0, flex: 1 }}>{tr("Do potwierdzenia (")}{late.length})</h2>
       <button className="btn s p" onClick={() => confirm({ title: tr("Potwierdzić wszystkie lekcje?"), text: tr("{0} zostanie oznaczonych jako przeprowadzone i trafi do rozliczeń. Notatki możesz dodać później w każdej lekcji.", lekcje(late.length)), ok: tr("Potwierdź wszystkie"),
         onOk: () => { run(async () => { for (const l of late) await api("PATCH", "/api/lessons/" + l.id, { status: "done" }); }, tr("Potwierdzono: {0}.", lekcje(late.length))); } })}>{tr("Potwierdź wszystkie")}</button></div><p className="hint" style={{ margin: "-6px 0 4px" }}>{tr("Te lekcje miały już się odbyć – oznacz je jako przeprowadzone.")}</p>{(allLate ? late : late.slice(-3)).map((l) => <LessonItem key={l.id} l={l} />)}
@@ -229,6 +233,29 @@ function TutorWeek({ days, list }: { days: string[]; list: Lesson[] }) {
   </div>;
 }
 
+/** Homework of all lessons: to check / assigned / done / late / checked. */
+function HomeworkList({ list }: { list: Lesson[] }) {
+  const { stu, materials = [] } = useData();
+  const { modal } = useOverlay();
+  const T: HwState[] = ["check", "todo", "done", "late", "ok"];
+  const n = (t: HwState) => list.filter((l) => hwStatus(l) === t).length;
+  const [tab, setTab] = useState<HwState>(() => (n("check") ? "check" : "todo"));
+  const L = sortL(list.filter((l) => hwStatus(l) === tab), tab === "ok" ? -1 : 1);
+  const lab = HW_LABEL();
+  const names: Record<HwState, string> = { check: tr("Do sprawdzenia"), todo: tr("Zadane"), done: tr("Zrobione"), late: tr("Po terminie"), ok: tr("Sprawdzone") };
+  return <>
+    <div className="chips hwtabs">{T.map((t) => <button key={t} className={"chip" + (tab === t ? " on" : "")} aria-pressed={tab === t} onClick={() => setTab(t)}>{names[t]} · {n(t)}</button>)}</div>
+    {!L.length ? <div className="card"><Empty icon="check" title={tab === "check" ? tr("Nic do sprawdzenia") : tr("Brak prac w tej grupie")} sub={tab === "check" ? tr("Tu pojawią się rozwiązania przesłane przez uczniów.") : tr("Pracę domową zadajesz przy lekcji przeprowadzonej.")} /></div>
+      : <div className="card" style={{ padding: "4px 18px" }}>{L.map((l) => { const s = stu(l.sid), sols = materials.filter((m) => m.lessonId === l.id && m.byStudent).length, x = pd(l.hd || l.date);
+        return <div role="button" tabIndex={0} key={l.id} className="lrow2" onClick={() => modal(<HwCheck id={l.id} />)} onKeyDown={(e) => { if (e.key === "Enter") modal(<HwCheck id={l.id} />); }}>
+          <span className="lbar" style={{ background: subjColor(l.subject || (s ? subjList(s)[0] : "")) }} />
+          <span className="ltm">{x.getDate()} {MSHORT[x.getMonth()]}<small>{l.hd ? tr("termin") : tr("lekcja")}</small></span>
+          <span className="lwho"><b>{s ? s.name : "?"}{sols > 0 && <i className="clip">📎{sols}</i>}</b><span>{l.hw}</span></span>
+          <span className="lrt"><span className={"lchip " + lab[hwStatus(l)!][1]}>{l.hwCheck === "fix" && tab !== "ok" && tab !== "check" ? tr("do poprawy ✋") : lab[hwStatus(l)!][0]}</span>{!l.hwSubmit && <small className="hint" style={{ fontSize: 11 }}>{tr("na lekcji")}</small>}</span>
+        </div>; })}</div>}
+  </>;
+}
+
 function LessonsList() {
   const { user } = useAuth();
   const { students, lessons, stu } = useData();
@@ -242,7 +269,8 @@ function LessonsList() {
   const nf = [f.st, f.sb, f.q].filter(Boolean).length;
   const unpaid = (l: Lesson) => billable(l) && !l.paid;
   const nPay = lessons.filter(unpaid).length;
-  const mode = f.m === "pay" ? "pay" : "week";
+  const mode = f.m === "pay" ? "pay" : f.m === "hw" ? "hw" : "week";
+  const nCheck = lessons.filter((l) => hwStatus(l) === "check").length;
   const match = (l: Lesson) => (!f.st || l.sid === f.st) && (!f.sb || subOf(l) === f.sb) && (!f.q || (l.topic + " " + l.notes).toLowerCase().includes(f.q.toLowerCase()));
   // the shown week (Monday or Sunday first, as in the settings)
   const sunFirst = user?.settings.wk === "sun";
@@ -258,7 +286,8 @@ function LessonsList() {
     <div className="lbar2">
       <div className="chips" role="group" aria-label={tr("Pokaż lekcje")}>
         <button className={"chip" + (mode === "week" ? " on" : "")} aria-pressed={mode === "week"} onClick={() => setF({ m: "week" })}>{tr("Tydzień")}</button>
-        <button className={"chip" + (mode === "pay" ? " on" : "")} aria-pressed={mode === "pay"} onClick={() => setF({ m: "pay" })}>{tr("Do opłacenia") + (nPay ? " · " + nPay : "")}</button></div>
+        <button className={"chip" + (mode === "pay" ? " on" : "")} aria-pressed={mode === "pay"} onClick={() => setF({ m: "pay" })}>{tr("Do opłacenia") + (nPay ? " · " + nPay : "")}</button>
+        <button className={"chip" + (mode === "hw" ? " on" : "")} aria-pressed={mode === "hw"} onClick={() => setF({ m: "hw" })}>{tr("Prace domowe") + (nCheck ? " · " + nCheck : "")}</button></div>
     </div>
     <div className="lbar3">
       <label className="stpick"><Ic n="users" s={16} /><select aria-label={tr("Uczeń")} value={f.st} onChange={(e) => setF({ st: e.target.value, sv: "up" })}><option value="">{tr("Wszyscy uczniowie")}</option>{[...students].sort(bySurname).map((s) => <option key={s.id} value={s.id}>{s.name}{s.active ? "" : tr(" (zarchiwizowany)")}</option>)}</select></label>
@@ -272,7 +301,7 @@ function LessonsList() {
     {f.st && !searching && mode === "week" ? <StudentLessons sid={f.st} list={lessons.filter(match)} view={f.sv || "up"} setView={(v) => setF({ sv: v })} clear={() => setF({ st: "" })} /> : searching ? <>
       <p className="hint" style={{ margin: "0 2px 10px" }}>{tr("Wyniki wyszukiwania we wszystkich tygodniach: {0}", found.length)}</p>
       {found.length ? <DayGroups list={found} dir={-1} jump={false} /> : <div className="card"><Empty icon="book" title={tr("Brak lekcji")} sub={tr("Żadna lekcja nie pasuje do filtrów.")} /></div>}
-    </> : mode === "pay" ? (pay.length ? <DayGroups list={pay} dir={-1} jump={false} /> : <div className="card"><Empty icon="wallet" title={tr("Wszystko opłacone")} sub={tr("Nie ma lekcji czekających na płatność.")} /></div>) : <>
+    </> : mode === "hw" ? <HomeworkList list={lessons.filter((l) => match(l) && hwStatus(l))} /> : mode === "pay" ? (pay.length ? <DayGroups list={pay} dir={-1} jump={false} /> : <div className="card"><Empty icon="wallet" title={tr("Wszystko opłacone")} sub={tr("Nie ma lekcji czekających na płatność.")} /></div>) : <>
       <div className="wkbar ltw">
         <button className="btn s" aria-label={tr("Poprzedni tydzień")} onClick={() => setF({ w: (f.w || 0) - 1 })}>‹</button>
         <b>{fm2(days[0])} – {fm2(end)}{pd(end).getFullYear() !== new Date().getFullYear() ? " " + pd(end).getFullYear() : ""}<small>{lekcje(weekList.filter((l) => l.status !== "cancelled").length)}</small></b>

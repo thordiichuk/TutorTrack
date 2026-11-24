@@ -13,7 +13,7 @@ import { MaterialsPage, MatList, pickFile, uploadFile } from "../ui/materials";
 import { BEv, CRow, LessonTabs, LView, MonthGroups, useLessonTabs, VSheet, WeekPlan } from "../ui/lessons";
 import { InstallBanner, useCanOfferInstall, useInstall } from "../ui/pwa";
 
-type SLesson = { id: string; date: string; time: string; min: number; subject: string; topic: string; status: "planned" | "done" | "cancelled"; notes: string; hw: string; hd: string; amount: number; paid: boolean; cr: CancelRequest | null };
+type SLesson = { hwSubmit?: boolean; hwCheck?: "" | "ok" | "fix"; hwNote?: string; id: string; date: string; time: string; min: number; subject: string; topic: string; status: "planned" | "done" | "cancelled"; notes: string; hw: string; hd: string; amount: number; paid: boolean; cr: CancelRequest | null };
 type Link = { sid: string; tutor: string; studentName: string; subject: string; contact?: { email: string; phone: string }; lessons: SLesson[] };
 type Ev = { id: string; title: string; cat: string; repeat: "w" | "o"; weekday: number; date: string; start: string; end: string; hideParent?: boolean };
 type Parent = { id: string; name: string; email: string };
@@ -108,8 +108,8 @@ export function StudentPanel() {
     const addSol = async () => { const f = await pickFile(".jpg,.jpeg,.png,.webp,.heic,.pdf,.doc,.docx,.txt"); if (!f) return;
       ov.close(); run(() => uploadFile("/api/student/solutions?lessonId=" + l.id, f), tr("Rozwiązanie dodane – korepetytor je zobaczy.")); };
     ov.modal(<VSheet l={l} title={l.subject || tr("Lekcja")} hwDone={l.hw ? done.has(l.id) : undefined} contact={contact} noCr
-      mats={(mats.length > 0 || l.hw) && <div className="kvb"><span>{tr("Materiały")}</span><MatList items={mats} canDelete={(m) => m.byStudent} onDelete={(m) => { ov.close(); run(() => api("DELETE", "/api/materials/" + m.id), tr("Usunięto.")); }} empty={tr("Brak materiałów.")} />
-        {l.hw && <div className="matacts"><button className="btn s" onClick={addSol}>{tr("📷 Dodaj rozwiązanie")}</button></div>}</div>}
+      mats={(mats.length > 0 || (l.hw && l.hwSubmit)) && <div className="kvb"><span>{tr("Materiały")}</span><MatList items={mats} canDelete={(m) => m.byStudent} onDelete={(m) => { ov.close(); run(() => api("DELETE", "/api/materials/" + m.id), tr("Usunięto.")); }} empty={tr("Brak materiałów.")} />
+        {l.hw && l.hwSubmit && <div className="matacts"><button className="btn s" onClick={addSol}>{tr("📷 Prześlij rozwiązanie")}</button></div>}</div>}
       actions={<>
       {l.cr?.status === "pending" && <div className="rqbox"><b>{l.cr.kind === "move" ? tr("Prośba o przeniesienie na następny tydzień wysłana") : tr("Prośba o odwołanie wysłana")}</b><span>{fdt(l.cr.at)}{" "}{tr("– czeka na potwierdzenie korepetytora.")}<br />{tr("Przyczyna:")}{" "}{l.cr.reason}</span></div>}
       {l.cr?.status === "rejected" && l.status === "planned" && <div className="lerr" style={{ marginTop: 12 }}><b>{l.cr.kind === "move" ? tr("Korepetytor odrzucił prośbę o przeniesienie.") : tr("Korepetytor odrzucił prośbę o odwołanie.")}</b>{l.cr.note && <><br />{tr("Komentarz:")}{" "}{l.cr.note}</>}<br />{tr("Twoja przyczyna:")}{" "}{l.cr.reason}</div>}
@@ -198,7 +198,7 @@ export function StudentPanel() {
       {!X.length ? <div className="card"><Empty icon="check" title={hf === "todo" ? tr("Nic do zrobienia") : tr("Brak zadań")} sub={hf === "todo" ? tr("Wszystkie prace domowe są zrobione albo korepetytor nie przesłał jeszcze zadań.") : tr("Tu pojawią się prace domowe od korepetytorów.")} /></div>
         : <div className="card">{X.map((l) => { const dn = done.has(l.id); return <div className="srow" key={l.id} style={{ cursor: "default" }}>
             <button className={"chkc" + (dn ? " on" : "")} aria-label={dn ? tr("Oznacz jako niezrobione") : tr("Oznacz jako zrobione")} aria-pressed={dn} onClick={() => toggleHw(l.id)}>{dn && <Ic n="check" s={14} />}</button>
-            <span className="m" onClick={() => lessonModal(l.id)} style={{ cursor: "pointer" }}><b style={dn ? { textDecoration: "line-through", color: "var(--mu)" } : undefined}>{l.hw}</b><span>{l.subject || tr("Lekcja")} · {l.tutor}</span></span>{due(l)}</div>; })}</div>}      {(() => { const notes = all.filter((l) => l.status === "done" && l.notes).sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time)).slice(0, 5);
+            <span className="m" onClick={() => lessonModal(l.id)} style={{ cursor: "pointer" }}><b style={dn ? { textDecoration: "line-through", color: "var(--mu)" } : undefined}>{l.hw}</b><span>{l.subject || tr("Lekcja")} · {l.tutor}{l.hwNote && l.hwCheck ? " · „" + l.hwNote + "”" : ""}</span></span>{l.hwCheck === "ok" ? <span className="tag gr">{tr("sprawdzone 👍")}</span> : l.hwCheck === "fix" && !dn ? <span className="tag rd">{tr("do poprawy ✋")}</span> : l.hwSubmit && !dn ? <span className="tag ac">{tr("prześlij")}</span> : null}{due(l)}</div>; })}</div>}      {(() => { const notes = all.filter((l) => l.status === "done" && l.notes).sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time)).slice(0, 5);
         return <div className="card" style={{ marginTop: 16 }}><h2>{tr("Ostatnie notatki")}</h2>{notes.length ? <div className="blist">{notes.map((l) => <CRow key={l.id} l={l} onClick={() => lessonModal(l.id)} />)}</div> : <p className="hint" style={{ margin: 0 }}>{tr("Tu pojawią się notatki od korepetytora po lekcjach.")}</p>}</div>; })()}
     </>;
   }

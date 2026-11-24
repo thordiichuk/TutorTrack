@@ -232,3 +232,30 @@ test("materials: links for all, files in Pro, access for student and parent only
   assert.equal((await call("DELETE", `/api/materials/${sol.body.material.id}`, undefined, kid)).status, 200);
   assert.equal((await call("GET", "/api/tutor/data", undefined, t)).body.materials.length, 2);
 });
+
+test("homework: submit flag, student done, tutor check ok / fix", async () => {
+  const t = await register("tutor");
+  const sid = (await call("POST", "/api/students", { name: "Ola", subject: "Matematyka", rate: 10000 }, t)).body.student.id;
+  const l = (await call("POST", "/api/lessons", { sid, date: "2026-10-02", time: "16:00", min: 60, status: "done", amount: 10000, hw: "zad 1", hd: "2026-10-09", hwSubmit: true }, t)).body.lesson;
+  assert.equal(l.hwSubmit, true);
+  const code = (await call("POST", `/api/students/${sid}/invite`, undefined, t)).body.student.inviteCode;
+  const kid = await register("student", { code });
+  assert.equal((await call("GET", "/api/student/data", undefined, kid)).body.links[0].lessons[0].hwSubmit, true);
+  await call("PUT", "/api/student/homework/" + l.id, { done: true }, kid);
+  let tl = (await call("GET", "/api/tutor/data", undefined, t)).body.lessons[0];
+  assert.equal(tl.hwDone, true); assert.equal(tl.solutionAt, null);
+  // to fix: new due date, back on the student's list
+  assert.equal((await call("POST", `/api/lessons/${l.id}/homework-check`, { result: "fix", note: "Popraw zad 1", hd: "2026-10-16" }, t)).status, 200);
+  tl = (await call("GET", "/api/tutor/data", undefined, t)).body.lessons[0];
+  assert.equal(tl.hwCheck, "fix"); assert.equal(tl.hd, "2026-10-16"); assert.equal(tl.hwDone, false);
+  const sl = (await call("GET", "/api/student/data", undefined, kid)).body;
+  assert.equal(sl.links[0].lessons[0].hwNote, "Popraw zad 1"); assert.equal(sl.done.length, 0);
+  // checked ok
+  await call("POST", `/api/lessons/${l.id}/homework-check`, { result: "ok", note: "Super" }, t);
+  tl = (await call("GET", "/api/tutor/data", undefined, t)).body.lessons[0];
+  assert.equal(tl.hwCheck, "ok"); assert.ok(tl.hwCheckedAt);
+  // no homework -> 400; another tutor -> 404
+  const l2 = (await call("POST", "/api/lessons", { sid, date: "2026-10-03", time: "16:00", min: 60, status: "done", amount: 10000 }, t)).body.lesson;
+  assert.equal((await call("POST", `/api/lessons/${l2.id}/homework-check`, { result: "ok" }, t)).status, 400);
+  assert.equal((await call("POST", `/api/lessons/${l.id}/homework-check`, { result: "ok" }, await register("tutor"))).status, 404);
+});

@@ -8,7 +8,7 @@ import { tr } from "../lib/i18n";
 /* ---------- per-session UI state shared by tutor views (filters, months) ---------- */
 export type Ui = {
   q: string; sf: "active" | "arch" | "all"; so: "az" | "za" | "ln" | "new"; subj: string;
-  lf: { m: "week" | "pay" | "up" | "past" | "all"; w: number; sv: "up" | "past" | "all"; st: string; sb: string; mo: string; ls: string; ps: string; q: string; o: "desc" | "asc" };
+  lf: { m: "week" | "pay" | "hw" | "up" | "past" | "all"; w: number; sv: "up" | "past" | "all"; st: string; sb: string; mo: string; ls: string; ps: string; q: string; o: "desc" | "asc" };
   sel: string; month: string; bm: string; open: Record<string, boolean>; lv: "list" | "cal"; cm: string; cd: string; sr: string;
 };
 export const initialUi = (): Ui => ({
@@ -95,6 +95,18 @@ export function LessonItem({ l, nd, quick = true, noName }: { l: Lesson; nd?: bo
     </div>
   );
 }
+/** Homework state for the tutor (null: the lesson has no homework). */
+export type HwState = "check" | "todo" | "done" | "late" | "ok";
+export function hwStatus(l: Lesson): HwState | null {
+  if (!l.hw || l.status !== "done") return null;
+  if (l.solutionAt && (!l.hwCheckedAt || l.solutionAt > l.hwCheckedAt)) return "check";
+  if (l.hwCheck === "ok") return "ok";
+  if (l.hwDone) return "done";
+  if (l.hd && l.hd < ymd(new Date())) return "late";
+  return "todo";
+}
+export const HW_LABEL = (): Record<HwState, [string, string]> => ({ check: [tr("do sprawdzenia"), "am"], todo: [tr("zadane"), ""], done: [tr("zrobione"), "gr"], late: [tr("po terminie"), "rd"], ok: [tr("sprawdzone 👍"), "gr"] });
+
 /* set by Forms.tsx to avoid a circular import at module load */
 export let LessonSheetLazy: (p: { id: string }) => ReactNode = () => null;
 export let QuickDone: (p: { l: Lesson }) => ReactNode = () => null;

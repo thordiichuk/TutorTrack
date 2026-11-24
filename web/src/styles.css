@@ -580,3 +580,5 @@ body.stu .pgrp{border:2px dashed var(--bdh);border-radius:16px;padding:0 8px 8px
 .matacts{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .clip{font-style:normal;font-size:12px;font-weight:600;color:var(--mu);margin-left:6px;white-space:nowrap}
 .matlink{display:flex;align-items:center;gap:10px;width:100%;margin:0 0 12px;padding:12px 14px;background:var(--card);border:1px solid var(--bd);border-radius:14px;font:inherit;color:inherit;cursor:pointer;text-align:left}.matlink b{flex:1}.matlink>span:not([aria-hidden]){color:var(--mu);font-size:13px}.matlink:hover{border-color:var(--ac)}
+.hwres{margin-top:8px;padding:10px 12px;border-radius:12px;background:var(--grl)}.hwres.fix{background:var(--rdl)}.hwres b{display:block;font-size:14px}.hwres span{display:block;font-size:13px;color:var(--tx);margin-top:2px}
+.hwtabs{margin-bottom:12px;flex-wrap:wrap;overflow:visible}

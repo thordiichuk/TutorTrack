@@ -9,7 +9,7 @@ import { fd, fm, lekcje, MGEN as MLONG_G, MSHORT, pd, pln, subjColor, te, WDL, W
 export type VLesson = {
   id: string; date: string; time: string; min: number; subject: string; topic: string; status: "planned" | "done" | "cancelled";
   notes: string; hw: string; hd: string; amount: number; paid: boolean; tutor: string;
-  hwDone?: boolean; cr?: { status: string; kind?: string; reason?: string; note?: string } | null;
+  hwDone?: boolean; hwSubmit?: boolean; hwCheck?: string; hwNote?: string; cr?: { status: string; kind?: string; reason?: string; note?: string } | null;
 };
 export type VEvent = { id: string; title: string; cat: string; repeat: "w" | "o"; weekday: number; date: string; start: string; end: string; hideParent?: boolean };
 
@@ -129,7 +129,9 @@ export function VSheet({ l, title, contact, hwDone, actions, noCr, mats }: { l: 
     <div className="kv"><span>{tr("Kwota")}</span><b>{pay}</b></div>
     {l.status === "done" && <div className="kvb"><span>{tr("Po zajęciach")}</span><p className="pre">{l.notes || <span className="hint">{tr("Brak notatki.")}</span>}</p></div>}
     {l.hw && <div className="kvb"><span>{tr("Praca domowa")}{l.hd ? tr(" · termin ") + fd(l.hd) : ""}</span><p className="pre">{l.hw}</p>
-      {hwDone !== undefined && <span className={"lchip " + (hwDone ? "gr" : "am")} style={{ display: "inline-block", marginTop: 6 }}>{hwDone ? tr("Zadanie zrobione") : tr("Zadanie niezrobione")}</span>}</div>}
+      {hwDone !== undefined && <span className={"lchip " + (hwDone ? "gr" : "am")} style={{ display: "inline-block", marginTop: 6 }}>{hwDone ? tr("Zadanie zrobione") : tr("Zadanie niezrobione")}</span>}
+      {l.hwSubmit && !l.hwCheck && <span className="hint" style={{ display: "block", fontSize: 12, marginTop: 4 }}>{tr("Korepetytor prosi o przesłanie rozwiązania (zdjęcie lub plik).")}</span>}
+      {l.hwCheck && <div className={"hwres " + l.hwCheck}><b>{l.hwCheck === "ok" ? tr("👍 Sprawdzone") : tr("✋ Do poprawy")}</b>{l.hwNote && <span>„{l.hwNote}”</span>}</div>}</div>}
     {mats}
     {!noCr && l.cr?.status === "pending" && <div className="rqbox"><b>{l.cr.kind === "move" ? tr("Prośba o przeniesienie na następny tydzień") : tr("Prośba o odwołanie")}</b><span>{tr("Przyczyna: „")}{l.cr.reason}”</span></div>}
     {!noCr && l.cr?.status === "rejected" && l.status === "planned" && <p className="hint">{tr("Korepetytor odrzucił prośbę.")}{l.cr.note ? " " + l.cr.note : ""}</p>}

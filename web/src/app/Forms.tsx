@@ -3,13 +3,13 @@ import { api, isDemo } from "../lib/api";
 import {
   printText, shareText, FREE, calc, cancelFee, copyText, emailOk, fd, fm, gStr, Lesson, lev, MSHORT, overlap, pd, pln, rateFor, sortL, Student, subjList, toG, ymd, amt, billable, sumAmt, te,
   subjRates,
-  bySurname,
+  bySurname, addDays,
 } from "../lib/util";
 import { useAuth, useTutor } from "../state";
 import { errMsg, Field, useOverlay } from "../ui/overlay";
 import { Empty, Ic } from "../lib/icons";
 import { laterInSeries, newRep, Rep, RepeatBox, repDates, ScopeAsk, SeriesList } from "./series";
-import { LessonItem, LessonTags, registerLessonUi, useData, useUi, useUpsell } from "./common";
+import { HW_LABEL, hwStatus, LessonItem, LessonTags, registerLessonUi, useData, useUi, useUpsell } from "./common";
 import { tr } from "../lib/i18n";
 import { AddLink, MatList, pickFile, uploadFile } from "../ui/materials";
 
@@ -120,7 +120,7 @@ export function LessonForm({ l, pre, draft }: { l?: Lesson; pre?: string; draft?
   const first = stu(pre || "") || act[0];
   const init: Lesson = l ? { ...l } : {
     id: "", sid: first.id, subject: subjList(first)[0] || "", date: ymd(new Date()), time: user?.settings.time || "16:00", min: user?.settings.dur || 60,
-    topic: "", prep: "", notes: "", hw: "", hd: "", status: "planned", paid: false, amount: calc(rateFor(first, subjList(first)[0]), user?.settings.dur || 60), fee: 0,
+    topic: "", prep: "", notes: "", hw: "", hd: "", hwSubmit: false, status: "planned", paid: false, amount: calc(rateFor(first, subjList(first)[0]), user?.settings.dur || 60), fee: 0,
   };
   const d0 = { ...init, ...(draft || {}) };
   const [d, setD] = useState({ ...d0, minS: String(d0.min), amtS: gStr(d0.amount), feeS: gStr(d0.fee > 0 ? d0.fee : cancelFee(stu(d0.sid), d0.amount)) });
@@ -153,6 +153,7 @@ export function LessonForm({ l, pre, draft }: { l?: Lesson; pre?: string; draft?
       // notes and homework are only edited once the lesson is done; otherwise keep what was saved before
       notes: d.status === "done" ? d.notes.trim() : l?.notes || "",
       hw: d.status === "done" ? d.hw.trim() : l?.hw || "", hd: d.status === "done" ? (d.hw.trim() ? d.hd : "") : l?.hd || "",
+      hwSubmit: d.status === "done" ? !!d.hw.trim() && !!d.hwSubmit : !!l?.hwSubmit,
       status: d.status, paid: d.paid, amount: a, fee: d.status === "cancelled" ? fe : 0,
     };
     if (rec.status === "cancelled" && !rec.fee) rec.paid = false;
@@ -200,6 +201,7 @@ export function LessonForm({ l, pre, draft }: { l?: Lesson; pre?: string; draft?
     {d.status === "done" ? <>
       <div className="f"><label htmlFor="lno">{tr("Notatka po zajęciach")}</label><TplSel onPick={(t) => upd({ notes: (d.notes ? d.notes + "\n" : "") + t })} /><textarea id="lno" rows={3} value={d.notes} onChange={(ev) => upd({ notes: ev.target.value })} /></div>
       <div className="f2"><div className="f"><label htmlFor="lhw">{tr("Praca domowa")}</label><textarea id="lhw" rows={2} placeholder={tr("Np. zad. 3–7, str. 52")} value={d.hw} onChange={(ev) => upd({ hw: ev.target.value })} /></div><Field id="lhd" label={tr("Termin pracy domowej")} type="date" value={d.hd} onChange={(v) => upd({ hd: v })} /></div>
+      {d.hw.trim() && <HwSubmitCheck v={!!d.hwSubmit} set={(v) => upd({ hwSubmit: v })} />}
       <p className="hint" style={{ margin: "-6px 0 10px" }}>{tr("Notatka po zajęciach i praca domowa są widoczne w panelu ucznia, jeśli uczeń jest połączony z Tobą kodem. Notatka przed zajęciami zostaje prywatna.")}</p>
     </> : d.status === "planned" && <p className="hint" style={{ margin: "-6px 0 10px" }}>{tr("Notatkę po zajęciach i pracę domową dodasz, gdy oznaczysz lekcję jako przeprowadzoną.")}</p>}
     {d.status === "cancelled" && <Field id="lfe" label={tr("Opłata za odwołanie (zł)")} value={d.feeS} onChange={(v) => { setFeeManual(true); setD({ ...d, feeS: v }); }} error={e.fee} inputMode="decimal" />}
@@ -213,17 +215,18 @@ function DoneModal({ l }: { l: Lesson }) {
   const { stu } = useData();
   const { run } = useTutor();
   const { close } = useOverlay();
-  const [n, setN] = useState(l.notes), [hw, setHw] = useState(l.hw), [hd, setHd] = useState(l.hd);
+  const [n, setN] = useState(l.notes), [hw, setHw] = useState(l.hw), [hd, setHd] = useState(l.hd), [sub, setSub] = useState(!!l.hwSubmit);
   const s = stu(l.sid);
   return <>
     <h2>{tr("Oznaczyć lekcję jako przeprowadzoną?")}</h2>
     <p className="hint">{l.topic || tr("Bez tematu")} · {s ? s.name : ""} · {fd(l.date)}, {l.time}</p>
     <div className="f"><label htmlFor="dn">{tr("Notatka podsumowująca (opcjonalnie)")}</label><textarea id="dn" rows={4} placeholder={tr("Co omówiliście? Co warto powtórzyć na następnej lekcji?")} value={n} onChange={(e) => setN(e.target.value)} /></div>
     <div className="f2"><div className="f"><label htmlFor="dhw">{tr("Praca domowa (opcjonalnie)")}</label><textarea id="dhw" rows={2} placeholder={tr("Np. zad. 3–7, str. 52")} value={hw} onChange={(e) => setHw(e.target.value)} /></div><Field id="dhd" label={tr("Termin pracy domowej")} type="date" value={hd} onChange={setHd} /></div>
+    {hw.trim() && <HwSubmitCheck v={sub} set={setSub} />}
     <p className="hint">{tr("Po potwierdzeniu lekcja trafi do rozliczeń jako przeprowadzona.")}</p>
     <div className="mf"><button className="btn" onClick={close}>{tr("Anuluj")}</button><button className="btn p" onClick={async () => {
       close();
-      await run(() => api("PATCH", "/api/lessons/" + l.id, { status: "done", notes: n.trim() || l.notes, hw: hw.trim(), hd: hw.trim() ? hd : "" }), n.trim() ? tr("Lekcja przeprowadzona, notatka zapisana.") : tr("Lekcja oznaczona jako przeprowadzona."));
+      await run(() => api("PATCH", "/api/lessons/" + l.id, { status: "done", notes: n.trim() || l.notes, hw: hw.trim(), hd: hw.trim() ? hd : "", hwSubmit: !!hw.trim() && sub }), n.trim() ? tr("Lekcja przeprowadzona, notatka zapisana.") : tr("Lekcja oznaczona jako przeprowadzona."));
     }}>{tr("Potwierdź")}</button></div>
   </>;
 }
@@ -348,6 +351,41 @@ export function StudentDetail({ id, noHistory }: { id: string; noHistory?: boole
   </>;
 }
 
+/** Checking homework: the student's solutions, a comment, and 👍 checked / ✋ to fix (with a new due date). */
+export function HwCheck({ id }: { id: string }) {
+  const { lessons, stu, materials = [] } = useData();
+  const { run } = useTutor();
+  const { close, modal } = useOverlay();
+  const l = lessons.find((x) => x.id === id);
+  const [note, setNote] = useState(l?.hwNote || ""), [fix, setFix] = useState(false), [hd, setHd] = useState(addDays(7));
+  if (!l) return null;
+  const s = stu(l.sid), st = hwStatus(l), lab = st ? HW_LABEL()[st] : null;
+  const sols = materials.filter((m) => m.lessonId === l.id && m.byStudent);
+  const send = (result: "ok" | "fix" | "") => run(() => api("POST", `/api/lessons/${l.id}/homework-check`, { result, note: note.trim(), hd: result === "fix" ? hd : "" }),
+    result === "ok" ? tr("Praca sprawdzona.") : result === "fix" ? tr("Praca wróciła do ucznia do poprawy.") : tr("Cofnięto sprawdzenie.")).then((ok) => { if (ok) close(); });
+  return <div className="lsheet">
+    <div className="lsh"><div><h2>{tr("Praca domowa")} · {s ? s.name : ""}</h2><div className="hint">{l.subject || (s ? subjList(s)[0] : "")} · {fd(l.date)}{lab && <> · <span className={"lchip " + lab[1]}>{lab[0]}</span></>}</div></div></div>
+    <div className="kvb"><span>{tr("Zadanie")}{l.hd ? tr(" · termin ") + fd(l.hd) : ""}</span><p className="pre">{l.hw}</p></div>
+    <div className="kvb"><span>{l.hwSubmit ? tr("Rozwiązanie ucznia") : tr("Sprawdzane na lekcji")}</span>
+      {l.hwSubmit ? <MatList items={sols} empty={l.hwDone ? tr("Uczeń oznaczył zadanie jako zrobione, ale nie przesłał pliku.") : tr("Uczeń jeszcze nic nie przesłał.")} />
+        : <p className="hint" style={{ margin: "2px 0 0" }}>{l.hwDone ? tr("Uczeń oznaczył zadanie jako zrobione.") : tr("Uczeń nie oznaczył jeszcze zadania jako zrobione.")}</p>}</div>
+    {l.hwCheck && l.hwCheckedAt && <p className="hint">{l.hwCheck === "ok" ? tr("Sprawdzone 👍") : tr("Do poprawy ✋")} · {fd(new Date(l.hwCheckedAt).toISOString().slice(0, 10))}</p>}
+    <div className="f" style={{ marginTop: 10 }}><label htmlFor="hwn">{tr("Komentarz dla ucznia (opcjonalnie)")}</label><textarea id="hwn" rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder={tr("Np. Bardzo dobrze, uważaj na znaki w zad. 3.")} /></div>
+    {fix && <Field id="hwd" label={tr("Nowy termin")} type="date" value={hd} onChange={setHd} />}
+    <div className="acts">
+      <button className="btn p" onClick={() => send("ok")}>{tr("👍 Sprawdzone")}</button>
+      <button className="btn" onClick={() => (fix ? send("fix") : setFix(true))}>{fix ? tr("Wyślij do poprawy") : tr("✋ Do poprawy")}</button>
+      {l.hwCheck && <button className="btn" onClick={() => send("")}>{tr("Cofnij sprawdzenie")}</button>}
+      <button className="btn" onClick={() => modal(<LessonSheet id={l.id} />)}>{tr("Otwórz lekcję")}</button>
+    </div>
+  </div>;
+}
+
+/** "The student should send a solution" – off when the tutor checks homework during the lesson. */
+function HwSubmitCheck({ v, set }: { v: boolean; set: (v: boolean) => void }) {
+  return <div className="chk" style={{ margin: "-4px 0 12px" }}><input type="checkbox" id="hws" checked={v} onChange={(e) => set(e.target.checked)} /><label htmlFor="hws">{tr("Uczeń ma przesłać rozwiązanie (zdjęcie lub plik)")}<span className="hint" style={{ display: "block", fontSize: 12 }}>{tr("Nie zaznaczaj, jeśli sprawdzasz pracę na lekcji – uczeń tylko oznaczy ją jako zrobioną.")}</span></label></div>;
+}
+
 /* ---------- lesson materials (links for all, files in Pro) ---------- */
 function Materials({ sid, lessonId, seriesId, back }: { sid: string; lessonId: string; seriesId?: string | null; back: () => void }) {
   const { materials = [] } = useData();
@@ -448,7 +486,8 @@ export function LessonSheet({ id }: { id: string }) {
     <div className="kv"><span>{tr("Kwota")}</span><b>{pay}</b></div>
     {l.prep && <div className="kvb"><span>{tr("Przed zajęciami")}</span><p className="pre">{l.prep}</p></div>}
     {l.notes && <div className="kvb"><span>{tr("Po zajęciach")}</span><p className="pre">{l.notes}</p></div>}
-    {l.hw && <div className="kvb"><span>{tr("Praca domowa")}{l.hd ? tr(" · termin ") + fd(l.hd) : ""}</span><p className="pre">{l.hw}</p></div>}
+    {l.hw && <div className="kvb"><span>{tr("Praca domowa")}{l.hd ? tr(" · termin ") + fd(l.hd) : ""}{l.hwSubmit ? " · " + tr("z przesłaniem rozwiązania") : ""}</span><p className="pre">{l.hw}</p>
+      {(() => { const st = hwStatus(l); if (!st) return null; const lab = HW_LABEL()[st]; return <div className="matacts" style={{ alignItems: "center" }}><span className={"lchip " + lab[1]}>{lab[0]}</span>{l.hwNote && <span className="hint" style={{ fontSize: 13 }}>„{l.hwNote}”</span>}<button className="btn s" onClick={() => modal(<HwCheck id={l.id} />)}>{tr("Sprawdź")}</button></div>; })()}</div>}
     {l.cr?.status === "pending" && <div className="rqbox"><b>{l.cr.kind === "move" ? tr("Prośba o przeniesienie na następny tydzień") : tr("Prośba o odwołanie")}</b><span>{tr("Przyczyna: „")}{l.cr.reason}”</span></div>}
     {l.cr?.status === "accepted" && l.status === "cancelled" && <p className="hint">{l.cr.kind === "move" ? tr("Uczeń prosił o przeniesienie – lekcja odwołana") : tr("Odwołana na prośbę ucznia")}: {l.cr.reason}{l.cr.note ? <><br />{tr("Twój komentarz:")}{" "}{l.cr.note}</> : null}</p>}
     {l.cr?.status === "moved" && <p className="hint">{tr("Przeniesiona na prośbę ucznia")}{l.cr.note ? tr(" z ") + fd(l.cr.note) : ""}{tr(". Przyczyna:")}{" "}{l.cr.reason}</p>}
