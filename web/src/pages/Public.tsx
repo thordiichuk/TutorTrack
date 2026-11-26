@@ -205,7 +205,10 @@ export function Legal({ kind }: { kind: "regulamin" | "prywatnosc" }) {
 /** Opens the 30-second product film in a full-screen player with native controls. */
 function FilmButton() {
   const [open, setOpen] = useState(false);
+  const [vert, setVert] = useState(false);
   const v = useRef<HTMLVideoElement>(null);
+  // phones held upright get the vertical (9:16) cut
+  const start = () => { setVert(window.matchMedia("(max-width: 760px) and (orientation: portrait)").matches); setOpen(true); };
   useEffect(() => {
     if (!open) return;
     const el = v.current!;
@@ -229,10 +232,10 @@ function FilmButton() {
     };
   }, [open]);
   return <>
-    <button className="btn filmb" onClick={() => setOpen(true)}><Ic n="play" s={16} />{tr("Obejrzyj film (30 s)")}</button>
+    <button className="btn filmb" onClick={start}><Ic n="play" s={16} />{tr("Obejrzyj film (30 s)")}</button>
     {open && <div className="filmov" role="dialog" aria-modal="true" aria-label={tr("Film o TutorTrack")} onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>
       <button className="filmx" aria-label={tr("Zamknij film")} onClick={() => setOpen(false)}><Ic n="x" s={22} /></button>
-      <video ref={v} src="/film/tutortrack.mp4" poster="/film/poster.jpg" controls playsInline preload="auto" />
+      <video ref={v} src={vert ? "/film/tutortrack-pion.mp4" : "/film/tutortrack.mp4"} poster={vert ? "/film/poster-pion.jpg" : "/film/poster.jpg"} controls playsInline preload="auto" />
     </div>}
   </>;
 }
