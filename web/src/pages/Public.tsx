@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { Ic, Logo } from "../lib/icons";
 import { navigate } from "../lib/router";
 import { calc, fm, FREE, pln, PRO_PLN, toG, ym } from "../lib/util";
@@ -137,7 +137,7 @@ export function Home() {
       </div><p className="hint">{tr("Płatność za Pro jest na razie symulowana – nic nie jest pobierane.")}</p></section>
       <section className="sec"><Calculator /></section>
       <section className="sec"><h2>{tr("Pytania")}</h2><Faq q={[[tr("Czy dane uczniów są bezpieczne?"), tr("Dane są przechowywane w bazie danych na serwerze TutorTrack i dostępne tylko po zalogowaniu na Twoje konto. Hasła są szyfrowane. Uczeń widzi wyłącznie swoje lekcje, notatki po zajęciach i prace domowe – Twoje notatki przed zajęciami zostają prywatne.")], [tr("Czy mogę wrócić do Free?"), tr("Tak. Dane zostają, ale nie można dodawać ani przywracać uczniów, dopóki aktywnych jest więcej niż {0}.", FREE)], [tr("Czy stracę historię po anulowaniu Pro?"), tr("Nie. Historia lekcji i rozliczeń zostaje zachowana.")], [tr("Czy muszę podać dane karty?"), tr("Nie. Rejestracja jest bezpłatna, a zakup Pro jest na razie symulowany.")], [tr("Czy to zastępuje księgowość?"), tr("Nie. To dziennik rozliczeń, a nie system księgowy i nie narzędzie do faktur.")]]} /></section>
-      <section className="cta rv"><h2>{tr("Zacznij porządkować lekcje")}</h2><p>{tr("Załóż konto w minutę – bez karty.")}</p><a className="btn" href="/rejestracja">{tr("Zacznij bezpłatnie")}</a></section>
+      <section className="cta rv"><h2>{tr("Zacznij porządkować lekcje")}</h2><p>{tr("Załóż konto w minutę – bez karty.")}</p><div className="ctab"><a className="btn" href="/rejestracja">{tr("Zacznij bezpłatnie")}</a><FilmButton /></div></section>
     </div></PubPage>
   );
 }
@@ -200,4 +200,39 @@ export function Legal({ kind }: { kind: "regulamin" | "prywatnosc" }) {
       {(T[1] as string[][]).map((x) => <div key={x[0]}><h3 style={{ margin: "16px 0 4px" }}>{x[0]}</h3><p style={{ margin: 0, color: "var(--mu)" }}>{x[1]}</p></div>)}
       <p><a className="btn" href="/">{tr("Wróć na stronę główną")}</a></p></div></PubPage>
   );
+}
+
+/** Opens the 30-second product film in a full-screen player with native controls. */
+function FilmButton() {
+  const [open, setOpen] = useState(false);
+  const v = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const el = v.current!;
+    const close = () => setOpen(false);
+    const onFs = () => { if (!document.fullscreenElement) close(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && !document.fullscreenElement) close(); };
+    document.addEventListener("fullscreenchange", onFs);
+    document.addEventListener("keydown", onKey);
+    el.addEventListener("webkitendfullscreen", close);
+    document.body.style.overflow = "hidden";
+    // full screen right away: standard API, or the iPhone video player
+    const fs = el.requestFullscreen?.bind(el) || (el as any).webkitEnterFullscreen?.bind(el);
+    try { const r = fs?.(); if (r && r.catch) r.catch(() => {}); } catch { /* the overlay already fills the window */ }
+    el.play().catch(() => {});
+    return () => {
+      document.removeEventListener("fullscreenchange", onFs);
+      document.removeEventListener("keydown", onKey);
+      el.removeEventListener("webkitendfullscreen", close);
+      document.body.style.overflow = "";
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    };
+  }, [open]);
+  return <>
+    <button className="btn filmb" onClick={() => setOpen(true)}><Ic n="play" s={16} />{tr("Obejrzyj film (30 s)")}</button>
+    {open && <div className="filmov" role="dialog" aria-modal="true" aria-label={tr("Film o TutorTrack")} onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>
+      <button className="filmx" aria-label={tr("Zamknij film")} onClick={() => setOpen(false)}><Ic n="x" s={22} /></button>
+      <video ref={v} src="/film/tutortrack.mp4" poster="/film/poster.jpg" controls playsInline preload="auto" />
+    </div>}
+  </>;
 }

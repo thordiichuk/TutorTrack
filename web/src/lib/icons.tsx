@@ -18,6 +18,7 @@ const P: Record<string, ReactNode> = {
   download: <path d="M12 3v12M7 10l5 5 5-5M5 21h14" />,
   trash: <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" />,
   plus: <path d="M12 5v14M5 12h14" />,
+  play: <path d="M8 5v14l11-7z" fill="currentColor" />,
   inbox: <><path d="M3 13l3-8h12l3 8v6H3z" /><path d="M3 13h5l1 3h6l1-3h5" /></>,
   check: <path d="m5 12 5 5 9-10" />,
   x: <path d="M6 6l12 12M18 6 6 18" />,
