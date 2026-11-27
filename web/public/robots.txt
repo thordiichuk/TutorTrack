@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /aplikacja
+Disallow: /admin
+Disallow: /api/
+Sitemap: https://tutortrack.pl/sitemap.xml
