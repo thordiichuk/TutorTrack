@@ -1383,7 +1383,6 @@
 "Obejrzyj film (30 s)": "Watch the video (30 s)",
 "Film o TutorTrack": "TutorTrack video",
 "Zamknij film": "Close video",
-"Bez karty, start w minutę": "No card, start in a minute",
 "Bezpłatnie": "Free",
 "Co widzi rodzic?": "What does the parent see?",
 "Czy TutorTrack działa na telefonie jak aplikacja?": "Does TutorTrack work on a phone like an app?",
@@ -1401,7 +1400,6 @@
 "Notatki po lekcjach i zadania z terminem": "Lesson notes and homework with deadlines",
 "Notatki po zajęciach i status zadań": "Lesson notes and homework status",
 "Notatki przed i po zajęciach": "Notes before and after lessons",
-"Notatki przed zajęciami widzisz tylko Ty": "Only you see your pre-lesson notes",
 "Plan dziecka i lekcje u wszystkich korepetytorów": "The child's schedule and lessons with all tutors",
 "Plan dziecka, lekcje u wszystkich korepetytorów, notatki po zajęciach, status zadań i płatności. Nie widzi Twoich notatek przed zajęciami ani zajęć, które dziecko przed nim ukryje. Panel rodzica jest bezpłatny.": "The child's schedule, lessons with all tutors, lesson notes, homework status and payments. They don't see your pre-lesson notes or activities the child hides from them. The parent panel is free.",
 "Prace domowe z przesyłaniem i sprawdzaniem rozwiązań": "Homework with solution upload and checking",
@@ -1413,12 +1411,14 @@
 "Sprawdź wszystko na przykładowych danych – bez zakładania konta.": "Try everything with sample data – no account needed.",
 "Tak. Linki (np. OneDrive, Google Drive, YouTube) dodasz w planie Free, a pliki PDF i zdjęcia – w planie Pro. Uczeń i rodzic widzą je przy lekcji.": "Yes. Links (e.g. OneDrive, Google Drive, YouTube) are available on the Free plan, PDF files and photos on Pro. The student and parent see them with the lesson.",
 "Tak. Otwórz stronę w telefonie i dodaj ją do ekranu głównego – uruchamia się jak aplikacja, a ostatnio pobrane dane widać także bez internetu.": "Yes. Open the site on your phone and add it to the home screen – it launches like an app, and recently loaded data is available offline too.",
-"Telefon i komputer": "Phone and computer",
 "TutorTrack – dziennik korepetytora, panel ucznia i rodzica": "TutorTrack – tutor's journal, student and parent panel",
-"Uczeń i rodzic za darmo": "Free for students and parents",
 "Uczniowie, stawki i kilka przedmiotów u jednego ucznia": "Students, rates and several subjects per student",
 "Widzi plan, lekcje i płatności dziecka – bez dopytywania.": "Sees the child's schedule, lessons and payments – no need to ask.",
 "Zobacz, jak to wygląda": "See what it looks like",
 "Prawdziwe ekrany aplikacji: pulpit i plan lekcji korepetytora.": "Real app screens: the tutor dashboard and lesson schedule.",
-"Plan lekcji korepetytora w TutorTrack na telefonie": "Tutor lesson schedule in TutorTrack on a phone"
+"Plan lekcji korepetytora w TutorTrack na telefonie": "Tutor lesson schedule in TutorTrack on a phone",
+"Prace domowe sprawdzasz online": "Check homework online",
+"Za darmo do 3 uczniów, bez karty": "Free for up to 3 students, no card",
+"Kwoty liczą się same": "Amounts calculate themselves",
+"Plan widzą uczeń i rodzic": "Students and parents see the schedule"
 }

@@ -1408,7 +1408,6 @@
 "Obejrzyj film (30 s)": "Переглянути відео (30 с)",
 "Film o TutorTrack": "Відео про TutorTrack",
 "Zamknij film": "Закрити відео",
-"Bez karty, start w minutę": "Без картки, старт за хвилину",
 "Bezpłatnie": "Безкоштовно",
 "Co widzi rodzic?": "Що бачать батьки?",
 "Czy TutorTrack działa na telefonie jak aplikacja?": "Чи працює TutorTrack на телефоні як застосунок?",
@@ -1426,7 +1425,6 @@
 "Notatki po lekcjach i zadania z terminem": "Нотатки після уроків і завдання з терміном",
 "Notatki po zajęciach i status zadań": "Нотатки після уроків і статус завдань",
 "Notatki przed i po zajęciach": "Нотатки до і після уроків",
-"Notatki przed zajęciami widzisz tylko Ty": "Нотатки до уроку бачите лише ви",
 "Plan dziecka i lekcje u wszystkich korepetytorów": "Розклад дитини та уроки в усіх репетиторів",
 "Plan dziecka, lekcje u wszystkich korepetytorów, notatki po zajęciach, status zadań i płatności. Nie widzi Twoich notatek przed zajęciami ani zajęć, które dziecko przed nim ukryje. Panel rodzica jest bezpłatny.": "Розклад дитини, уроки в усіх репетиторів, нотатки після уроків, статус завдань і оплати. Не бачать ваших нотаток до уроку і занять, які дитина від них приховає. Панель для батьків безкоштовна.",
 "Prace domowe z przesyłaniem i sprawdzaniem rozwiązań": "Домашні завдання з надсиланням і перевіркою розв'язків",
@@ -1438,12 +1436,14 @@
 "Sprawdź wszystko na przykładowych danych – bez zakładania konta.": "Перевірте все на прикладових даних – без створення акаунта.",
 "Tak. Linki (np. OneDrive, Google Drive, YouTube) dodasz w planie Free, a pliki PDF i zdjęcia – w planie Pro. Uczeń i rodzic widzą je przy lekcji.": "Так. Посилання (напр. OneDrive, Google Drive, YouTube) доступні в плані Free, а PDF-файли та фото – у плані Pro. Учень і батьки бачать їх біля уроку.",
 "Tak. Otwórz stronę w telefonie i dodaj ją do ekranu głównego – uruchamia się jak aplikacja, a ostatnio pobrane dane widać także bez internetu.": "Так. Відкрийте сайт на телефоні й додайте його на головний екран – він запускається як застосунок, а нещодавно завантажені дані видно й без інтернету.",
-"Telefon i komputer": "Телефон і комп'ютер",
 "TutorTrack – dziennik korepetytora, panel ucznia i rodzica": "TutorTrack – щоденник репетитора, панель учня та батьків",
-"Uczeń i rodzic za darmo": "Учні й батьки – безкоштовно",
 "Uczniowie, stawki i kilka przedmiotów u jednego ucznia": "Учні, ставки та кілька предметів в одного учня",
 "Widzi plan, lekcje i płatności dziecka – bez dopytywania.": "Бачать розклад, уроки й оплати дитини – без розпитувань.",
 "Zobacz, jak to wygląda": "Подивіться, як це виглядає",
 "Prawdziwe ekrany aplikacji: pulpit i plan lekcji korepetytora.": "Справжні екрани застосунку: панель і розклад уроків репетитора.",
-"Plan lekcji korepetytora w TutorTrack na telefonie": "Розклад уроків репетитора в TutorTrack на телефоні"
+"Plan lekcji korepetytora w TutorTrack na telefonie": "Розклад уроків репетитора в TutorTrack на телефоні",
+"Prace domowe sprawdzasz online": "Домашні завдання перевіряєте онлайн",
+"Za darmo do 3 uczniów, bez karty": "Безкоштовно до 3 учнів, без картки",
+"Kwoty liczą się same": "Суми рахуються самі",
+"Plan widzą uczeń i rodzic": "Розклад бачать учень і батьки"
 }
