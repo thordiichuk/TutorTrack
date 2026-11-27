@@ -1429,9 +1429,7 @@
 "Notatki przed zajęciami widzisz tylko Ty": "Нотатки до уроку бачите лише ви",
 "Plan dziecka i lekcje u wszystkich korepetytorów": "Розклад дитини та уроки в усіх репетиторів",
 "Plan dziecka, lekcje u wszystkich korepetytorów, notatki po zajęciach, status zadań i płatności. Nie widzi Twoich notatek przed zajęciami ani zajęć, które dziecko przed nim ukryje. Panel rodzica jest bezpłatny.": "Розклад дитини, уроки в усіх репетиторів, нотатки після уроків, статус завдань і оплати. Не бачать ваших нотаток до уроку і занять, які дитина від них приховає. Панель для батьків безкоштовна.",
-"Plan ucznia w TutorTrack na telefonie": "Розклад учня в TutorTrack на телефоні",
 "Prace domowe z przesyłaniem i sprawdzaniem rozwiązań": "Домашні завдання з надсиланням і перевіркою розв'язків",
-"Prawdziwe ekrany aplikacji: pulpit korepetytora i plan ucznia.": "Справжні екрани застосунку: панель репетитора і розклад учня.",
 "Prowadzi uczniów, lekcje i rozliczenia w jednym miejscu – kwoty liczą się same.": "Веде учнів, уроки й розрахунки в одному місці – суми рахуються самі.",
 "Przesyłanie rozwiązań i prośby o zmianę terminu": "Надсилання розв'язків і прохання про перенесення",
 "Pulpit korepetytora w TutorTrack": "Панель репетитора в TutorTrack",
@@ -1445,5 +1443,7 @@
 "Uczeń i rodzic za darmo": "Учні й батьки – безкоштовно",
 "Uczniowie, stawki i kilka przedmiotów u jednego ucznia": "Учні, ставки та кілька предметів в одного учня",
 "Widzi plan, lekcje i płatności dziecka – bez dopytywania.": "Бачать розклад, уроки й оплати дитини – без розпитувань.",
-"Zobacz, jak to wygląda": "Подивіться, як це виглядає"
+"Zobacz, jak to wygląda": "Подивіться, як це виглядає",
+"Prawdziwe ekrany aplikacji: pulpit i plan lekcji korepetytora.": "Справжні екрани застосунку: панель і розклад уроків репетитора.",
+"Plan lekcji korepetytora w TutorTrack na telefonie": "Розклад уроків репетитора в TutorTrack на телефоні"
 }

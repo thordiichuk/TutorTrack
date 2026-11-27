@@ -1404,9 +1404,7 @@
 "Notatki przed zajęciami widzisz tylko Ty": "Only you see your pre-lesson notes",
 "Plan dziecka i lekcje u wszystkich korepetytorów": "The child's schedule and lessons with all tutors",
 "Plan dziecka, lekcje u wszystkich korepetytorów, notatki po zajęciach, status zadań i płatności. Nie widzi Twoich notatek przed zajęciami ani zajęć, które dziecko przed nim ukryje. Panel rodzica jest bezpłatny.": "The child's schedule, lessons with all tutors, lesson notes, homework status and payments. They don't see your pre-lesson notes or activities the child hides from them. The parent panel is free.",
-"Plan ucznia w TutorTrack na telefonie": "Student schedule in TutorTrack on a phone",
 "Prace domowe z przesyłaniem i sprawdzaniem rozwiązań": "Homework with solution upload and checking",
-"Prawdziwe ekrany aplikacji: pulpit korepetytora i plan ucznia.": "Real app screens: the tutor dashboard and a student schedule.",
 "Prowadzi uczniów, lekcje i rozliczenia w jednym miejscu – kwoty liczą się same.": "Manages students, lessons and billing in one place – amounts are calculated automatically.",
 "Przesyłanie rozwiązań i prośby o zmianę terminu": "Solution upload and reschedule requests",
 "Pulpit korepetytora w TutorTrack": "Tutor dashboard in TutorTrack",
@@ -1420,5 +1418,7 @@
 "Uczeń i rodzic za darmo": "Free for students and parents",
 "Uczniowie, stawki i kilka przedmiotów u jednego ucznia": "Students, rates and several subjects per student",
 "Widzi plan, lekcje i płatności dziecka – bez dopytywania.": "Sees the child's schedule, lessons and payments – no need to ask.",
-"Zobacz, jak to wygląda": "See what it looks like"
+"Zobacz, jak to wygląda": "See what it looks like",
+"Prawdziwe ekrany aplikacji: pulpit i plan lekcji korepetytora.": "Real app screens: the tutor dashboard and lesson schedule.",
+"Plan lekcji korepetytora w TutorTrack na telefonie": "Tutor lesson schedule in TutorTrack on a phone"
 }
