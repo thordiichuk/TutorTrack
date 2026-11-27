@@ -4,7 +4,7 @@ import { navigate } from "../lib/router";
 import { calc, fm, FREE, pln, PRO_PLN, toG, ym } from "../lib/util";
 import { useAuth } from "../state";
 import { LangFlags } from "../ui/lang";
-import { tr } from "../lib/i18n";
+import { LANG, tr } from "../lib/i18n";
 
 /* ---------- shared chrome ---------- */
 export type Aud = "tutor" | "student";
@@ -209,6 +209,8 @@ export function Legal({ kind }: { kind: "regulamin" | "prywatnosc" }) {
   );
 }
 
+/** Film captions follow the interface language (Polish files have no suffix). */
+const FILM_LANG = LANG === "pl" ? "" : "-" + LANG;
 /** Opens the 30-second product film in a full-screen player with native controls. */
 function FilmButton({ link }: { link?: boolean }) {
   const [open, setOpen] = useState(false);
@@ -243,7 +245,7 @@ function FilmButton({ link }: { link?: boolean }) {
       : <button className="btn filmb" onClick={start}><Ic n="play" s={16} />{tr("Obejrzyj film (30 s)")}</button>}
     {open && <div className="filmov" role="dialog" aria-modal="true" aria-label={tr("Film o TutorTrack")} onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>
       <button className="filmx" aria-label={tr("Zamknij film")} onClick={() => setOpen(false)}><Ic n="x" s={22} /></button>
-      <video ref={v} src={vert ? "/film/tutortrack-pion.mp4" : "/film/tutortrack.mp4"} poster={vert ? "/film/poster-pion.jpg" : "/film/poster.jpg"} controls playsInline preload="auto" />
+      <video ref={v} src={`/film/tutortrack${vert ? "-pion" : ""}${FILM_LANG}.mp4`} poster={`/film/poster${vert ? "-pion" : ""}${FILM_LANG}.jpg`} controls playsInline preload="auto" />
     </div>}
   </>;
 }
