@@ -13,7 +13,7 @@ import { useApplyTheme } from "./ui/themes";
 import { LANG, setLang, tr } from "./lib/i18n";
 
 const TITLES: Record<string, string> = {
-  "/": tr("TutorTrack – dziennik korepetytora, panel ucznia i rodzica"), "/uczen": tr("TutorTrack – dla ucznia"), "/rejestracja": tr("Załóż konto – TutorTrack"), "/logowanie": tr("Zaloguj się – TutorTrack"),
+  "/": tr("TutorTrack – dziennik korepetytora"), "/uczen": tr("TutorTrack – dla ucznia"), "/rejestracja": tr("Załóż konto – TutorTrack"), "/logowanie": tr("Zaloguj się – TutorTrack"),
   "/uczen/rejestracja": tr("Rejestracja ucznia – TutorTrack"), "/uczen/logowanie": tr("Logowanie ucznia – TutorTrack"), "/regulamin": tr("Regulamin – TutorTrack"), "/prywatnosc": tr("Polityka prywatności – TutorTrack"), "/reset-hasla": tr("Nowe hasło – TutorTrack"),
   "/rodzic/rejestracja": tr("Rejestracja rodzica – TutorTrack"), "/rodzic/logowanie": tr("Logowanie rodzica – TutorTrack"),
 };
